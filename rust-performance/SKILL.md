@@ -24,7 +24,8 @@ Do performance work as a measurement-guided loop. Do not make speculative rewrit
 
 4. Profile before editing.
    - Prefer sampling profilers for CPU work.
-   - Preserve text or structured profiling artifacts: `perf report --stdio`, folded stacks, `xctrace` XML, `samply` profiles with symbols, or profiler JSON.
+   - Prefer `flambe` for Rust CPU sampling reports when available. It wraps `perf` on Linux and `xctrace` on macOS, emits folded stacks plus agent-readable text summaries, and can preserve raw profiler artifacts with `--keep-raw`.
+   - Preserve text or structured profiling artifacts: `flambe` summaries/text flamegraphs/folded stacks, `perf report --stdio`, folded stacks, `xctrace` XML, `samply` profiles with symbols, or profiler JSON.
    - Do not use SVG flamegraph scraping for performance analysis. If only SVG output is available, stop and ask the user to install or enable tooling that emits text or structured profiler data. SVG flamegraphs are human-facing companion artifacts only.
 
 5. Optimize one hypothesis at a time.
@@ -40,9 +41,40 @@ Do performance work as a measurement-guided loop. Do not make speculative rewrit
    - Include commands run, artifacts inspected, before/after numbers, percent change, correctness checks, and remaining bottlenecks.
    - Say when a result is inconclusive.
 
+## flambe
+
+Use `flambe` as the preferred Rust sampling wrapper on Linux and macOS when the task needs CPU profiler evidence. It uses Linux `perf` on Linux and `xcrun xctrace` on macOS. Install it from the GitHub repository when it is missing:
+
+```bash
+cargo install --git https://github.com/rot256/flambe flambe
+```
+
+Recommended capture/reporting flow for a built command:
+
+```bash
+cargo build --release
+flambe capture --keep-raw -o stacks.folded -- <command> <args>
+flambe summary -i stacks.folded -o flambe-summary.txt --top 30 --max-stacks 50
+flambe render -i stacks.folded -o flambe.txt
+```
+
+On Linux, pass `perf` sampling options through `flambe capture` when needed:
+
+```bash
+flambe capture --freq 997 --event cycles --keep-raw -o stacks.folded -- <command> <args>
+```
+
+On macOS, pass a time limit to `xctrace` through `flambe capture`:
+
+```bash
+flambe capture --time-limit 10s --keep-raw -o stacks.folded -- <command> <args>
+```
+
+Use `flambe-summary.txt`, `flambe.txt`, `stacks.folded`, and the kept raw artifacts as the primary profiler evidence. Keep the broader workflow intact: `flambe` replaces the capture/export/collapse/reporting mechanics, not correctness checks, timing baselines, hypothesis discipline, or before/after comparison.
+
 ## Linux
 
-Use Linux `perf` as the default sampling profiler when available. If `perf`, folded-stack tooling, or benchmark tooling is missing, stop and ask the user to install the missing tools instead of falling back to weak evidence.
+Use Linux `perf` through `flambe` by default. If `flambe` is missing, install it from `https://github.com/rot256/flambe`. If `perf`, folded-stack tooling, or benchmark tooling is missing, stop and ask the user to install the missing tools instead of falling back to weak evidence.
 
 Recommended baseline tools:
 
@@ -56,6 +88,14 @@ Recommended CPU sampling flow:
 
 ```bash
 cargo build --release
+flambe capture --keep-raw -o stacks.folded -- <command> <args>
+flambe summary -i stacks.folded -o flambe-summary.txt --top 30 --max-stacks 50
+flambe render -i stacks.folded -o flambe.txt
+```
+
+Manual fallback:
+
+```bash
 perf record -F 997 --call-graph dwarf -o perf.data -- <command>
 perf report --stdio -i perf.data > perf-report.txt
 perf script -i perf.data > perf-script.txt
@@ -63,12 +103,19 @@ inferno-collapse-perf perf-script.txt > stacks.folded
 inferno-flamegraph stacks.folded > flamegraph.svg
 ```
 
-Use `perf-report.txt`, `perf-script.txt`, and `stacks.folded` as the primary evidence. Keep `flamegraph.svg` only as a visual companion for humans.
+Use `flambe-summary.txt`, `flambe.txt`, `stacks.folded`, and any kept `.flambe/` raw artifacts as the primary evidence. For the manual fallback, use `perf-report.txt`, `perf-script.txt`, and `stacks.folded` as the primary evidence. Keep `flamegraph.svg` only as a visual companion for humans.
 
 For Criterion benchmarks, profile the benchmark's stable profiling mode:
 
 ```bash
 CARGO_PROFILE_BENCH_DEBUG=true cargo bench --bench <bench_name> -- --bench '<filter>' --profile-time 10
+flambe capture --keep-raw -o stacks.folded -- target/release/deps/<bench_binary> --bench '<filter>' --profile-time 10
+flambe summary -i stacks.folded -o flambe-summary.txt --top 30 --max-stacks 50
+```
+
+Manual fallback:
+
+```bash
 perf record -F 997 --call-graph dwarf -o perf.data -- target/release/deps/<bench_binary> --bench '<filter>' --profile-time 10
 ```
 
@@ -80,7 +127,7 @@ Use non-sampling tools only when sampling points at that class of problem:
 
 ## macOS
 
-Use `xcrun xctrace` Time Profiler exports as the default agent-readable sampling path. If Xcode Command Line Tools, `xctrace`, `samply`, or benchmark tooling is missing or broken, stop and ask the user to install or enable the missing tool. Do not substitute SVG parsing.
+Use `xcrun xctrace` Time Profiler through `flambe` as the default agent-readable sampling path. If `flambe` is missing, install it from `https://github.com/rot256/flambe`. If Xcode Command Line Tools, `xctrace`, `samply`, or benchmark tooling is missing or broken, stop and ask the user to install or enable the missing tool. Do not substitute SVG parsing.
 
 Recommended baseline tools:
 
@@ -94,6 +141,14 @@ Recommended Time Profiler flow:
 
 ```bash
 cargo build --release
+flambe capture --time-limit 10s --keep-raw -o stacks.folded -- <command> <args>
+flambe summary -i stacks.folded -o flambe-summary.txt --top 30 --max-stacks 50
+flambe render -i stacks.folded -o flambe.txt
+```
+
+Manual fallback:
+
+```bash
 xcrun xctrace record \
   --template 'Time Profiler' \
   --time-limit 10s \
@@ -112,7 +167,7 @@ xcrun xctrace export \
   --output time-profile.xml
 ```
 
-Use `time-profile.xml` as the primary sampling evidence. It contains symbolicated backtraces, weights, thread state, and process metadata when symbols are available.
+Use `flambe-summary.txt`, `flambe.txt`, `stacks.folded`, `.flambe/time-profile.xml`, and `.flambe/profile.trace` as the primary sampling evidence. For the manual fallback, use `time-profile.xml` as the primary sampling evidence. It contains symbolicated backtraces, weights, thread state, and process metadata when symbols are available.
 
 Use `samply` when it is a better fit for interactive inspection or archived profiles:
 
