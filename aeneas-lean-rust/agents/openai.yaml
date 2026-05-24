@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aeneas Lean Rust"
+  short_description: "Verify Rust in Lean 4 with Aeneas"
+  default_prompt: "Use $aeneas-lean-rust to translate Rust with Aeneas and develop Lean 4 specs/proofs."
