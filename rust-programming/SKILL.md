@@ -151,15 +151,51 @@ pub struct Config { ... }
 Never downgrade the `edition` field in `Cargo.toml` unless explicitly requested.
 When creating new projects or when edition is unspecified, prefer `edition = "2024"`.
 
+## Default Crates
+
+When multiple crates solve the same problem, prefer the standard library first.
+If the surrounding codebase already uses a competing crate, follow the project.
+Otherwise, use the defaults below.
+
+| Task | Default | Install | Notes |
+|------|---------|---------|-------|
+| Error reporting | `rootcause` | `cargo add rootcause` | Structured, inspectable error reports. |
+| Serialization derives | `serde` | `cargo add serde --features derive` | Ecosystem default for typed serialization. |
+| JSON | `serde_json` | `cargo add serde_json` | Prefer typed structs over `serde_json::Value` unless the schema is genuinely dynamic. |
+| TOML | `toml` | `cargo add toml` | Use `toml_edit` only when preserving comments/formatting matters. |
+| Compact binary serialization | `postcard` | `cargo add postcard` | Compact Serde format; add `alloc`/`use-std` only when needed. |
+| Zero-copy byte/layout parsing | `zerocopy` + `zerocopy-derive` | `cargo add zerocopy zerocopy-derive` | Do not write custom `unsafe` casts for byte/layout conversion. |
+| CLI framework | `clap` | `cargo add clap --features derive` | Use stdlib args only for trivial scripts. |
+| HTTP client | `reqwest` | `cargo add reqwest --no-default-features --features rustls,json` | Add cookies, compression, proxy, HTTP/2, blocking, etc. only when used. |
+| TLS | `rustls` | `cargo add rustls` | Avoid OpenSSL/native TLS unless platform policy requires it. |
+| QUIC | `quinn` | `cargo add quinn` | Also prefer when free to choose a secure app transport. |
+| Async runtime | `tokio` | `cargo add tokio --features macros,rt-multi-thread,signal,time` | Add `net`, `io-util`, `sync`, `fs`, etc. only when used. |
+| Diagnostics | `tracing` + `tracing-subscriber` | `cargo add tracing`; `cargo add tracing-subscriber --features env-filter,fmt` | Structured, async-aware diagnostics with env-based filtering. |
+| SQL ORM/query builder | `diesel` | `cargo add diesel --features postgres` or `sqlite`/`mysql` | Default for SQL work. Do not start new `sqlx`/SeaORM use unless the project already uses them. |
+| SQL migrations | `diesel_migrations` | `cargo add diesel_migrations` | Use when the app owns schema migrations. |
+| SQL pooling | Diesel `r2d2` feature | `cargo add diesel --features postgres,r2d2` | Use for long-running apps with synchronous DB connections. |
+| Datetimes | `jiff` | `cargo add jiff` | Prefer timezone-aware datetime handling over ad hoc timestamps. |
+| UTF-8 paths | `camino` | `cargo add camino` | Use when paths are user-visible, serialized, or displayed; keep std `Path` for arbitrary OS paths. |
+| Temporary files | `tempfile` | `cargo add tempfile` | Avoid manual temp path construction. |
+| Data parallelism | `rayon` | `cargo add rayon` | CPU-bound work only; not async I/O concurrency. |
+| Regex | `regex` | `cargo add regex` | No backreferences/look-around. |
+| Memory zeroing | `zeroize` | `cargo add zeroize --features derive` | Use for secret-bearing custom types. |
+| Constant-time primitives | `subtle` | `cargo add subtle` | Use for crypto-sensitive equality/selection. |
+| Content hashing | `blake3` | `cargo add blake3` | Not a password hash or MAC replacement. |
+
+Defaults explicitly not set: web framework, retry crate, YAML crate, low-level
+crypto primitive crate. Do not design custom TCP/TLS protocols when `quinn`
+fits the transport requirements.
+
 ## Dependency Management
 
 Always use `cargo add` instead of manually editing `Cargo.toml`:
 
 ```bash
 # Good: validates crate exists, uses latest compatible version
-cargo add serde
 cargo add serde --features derive
-cargo add tokio --features full
+cargo add tokio --features macros,rt-multi-thread,signal,time
+cargo add reqwest --no-default-features --features rustls,json
 
 # With specific version
 cargo add clap@4.0
