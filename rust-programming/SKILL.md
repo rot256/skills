@@ -1,7 +1,6 @@
 ---
-name: Rust Programming
+name: rust-programming
 description: The essential best practices for Rust development
-version: 1.0.0
 ---
 
 ## Avoid Direct Indexing
@@ -44,16 +43,46 @@ impl PartialEq for Order {
 }
 ```
 
-## Use `TryFrom` for Fallible Conversions
+## Use `From` and `TryFrom` for Type Conversions
 
-Never hide errors in `From`:
+Always use standard conversion traits when converting between types:
+
+- Use `From<T>` for infallible, lossless, unambiguous conversions.
+- Use `TryFrom<T>` for fallible, validating, narrowing, or otherwise rejectable conversions.
+- Do not create bespoke conversion methods like `to_domain`, `from_api`, `into_model`, or `parse_foo` when `From`/`TryFrom` fits.
+
+Never hide errors in `From`, and never encode conversion failure with `Option`, sentinel values, panics, or lossy defaults.
 
 ```rust
-// Bad: hides failure
-impl From<String> for MyType { ... }
+// Bad: ad hoc conversion API, easy to miss at call sites
+impl ApiUser {
+    fn to_domain(self) -> Result<User, UserError> {
+        User::new(self.email)
+    }
+}
 
-// Good: errors are explicit
-impl TryFrom<String> for MyType { ... }
+// Bad: fallible conversion hidden behind From
+impl From<ApiUser> for User {
+    fn from(value: ApiUser) -> Self {
+        User::new(value.email).unwrap()
+    }
+}
+
+// Good: call sites use User::try_from(api_user) or api_user.try_into()
+impl TryFrom<ApiUser> for User {
+    type Error = UserError;
+
+    fn try_from(value: ApiUser) -> Result<Self, Self::Error> {
+        User::new(value.email)
+    }
+}
+
+// Good: infallible conversion uses From
+impl From<User> for PublicUser {
+    fn from(value: User) -> Self {
+        Self { id: value.id, email: value.email }
+    }
+}
 ```
 
 ## Match All Enum Variants Explicitly
