@@ -1,11 +1,10 @@
 # SMT (cvc5 / SMT-LIB) for constraint golfing
 
-`cvc5` is the workhorse for two jobs: **verify** a candidate encoding and **prove
-impossibility**. It speaks the SMT-LIB finite-field theory `QF_FF` directly, so you
-reason in the *actual* field `F_p` — no "over the reals, plus a unit side condition"
-detour. Run it directly on a `.smt2` file: `cvc5 scripts/verify.smt2`. Do **not** wrap
-it in a Python driver; write SMT-LIB (by hand or generated from Sage via the shell) and
-invoke `cvc5` on the file.
+`cvc5` does two jobs: **verify** a candidate encoding and **prove impossibility**. It
+speaks the SMT-LIB finite-field theory `QF_FF` directly, so you reason in the *actual*
+field `F_p` — no "over the reals plus a unit side condition" detour. Run it on the file
+(`cvc5 scripts/verify.smt2`); write SMT-LIB by hand or generate it from Sage — no Python
+driver.
 
 `scripts/verify.smt2` and `scripts/impossible.smt2` are worked examples; this file
 explains the SMT-LIB so you can adapt them.
@@ -36,9 +35,8 @@ is usually what you want.
   denominators). This is the form the `clean` Lean proofs use (`char ∉ {2,3}`), so it is
   the better default when exploring techniques you intend to prove generically.
 
-Running a `QF_FF` query at one large prime is a strong sanity check, but it is **not**
-an all-fields statement — for that, use the `QQ` route. Use both: Sage to find/certify
-nice constants for all large fields, cvc5 to nail a particular field exactly.
+A `QF_FF` query at one large prime is a strong sanity check, **not** an all-fields
+statement; for that, use the `QQ` route.
 
 ## Modeling the field in QF_FF
 

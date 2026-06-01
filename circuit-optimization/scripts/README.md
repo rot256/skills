@@ -19,13 +19,10 @@ cvc5 verify.smt2          # XOR3/Maj: forces o=f (unsat) + non-vacuous (sat)
 cvc5 impossible.smt2      # AND3/OR3: no encoding of the shape (unsat)
 ```
 
-**Two complementary guarantees.** cvc5 `QF_FF` proves a statement about the *specific*
-prime in the `.smt2` file (swap it for your circuit's field) — exact, no "unit over the
-reals" side condition. Sage over `QQ` (`synthesize.sage`, `cofactors.sage`) yields
-small, prime-independent constants — integers or small-denominator fractions — and a
-single "holds for all fields of char > bound" result, which is the form the `clean`
-Lean proofs consume. Use both: Sage to find/certify nice constants for all large fields,
-cvc5 to nail down a particular field exactly.
+cvc5 `QF_FF` proves a statement about the *specific* prime in the `.smt2` file (swap it
+for your circuit's field) — exact, no "unit over the reals" side condition. Sage over
+`QQ` yields small, prime-independent constants and a single "holds for all char > bound"
+result (the form the `clean` Lean proofs consume). Use both.
 
 Load the search as a library:
 
