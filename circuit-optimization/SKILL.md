@@ -67,11 +67,6 @@ for all char > bound" result (the form Lean proofs consume). Use both. See
 - `scripts/` — `synthesize.sage`, `cofactors.sage`, `verify.smt2`, `impossible.smt2`.
   Self-checking, cross-checked against the verified SHA-256 gadgets in `~/src/clean`.
 
-## Non-negotiables
+## Lean / Clean
 
-- **Soundness first.** A cheaper circuit that is under-constrained is broken. Every
-  witness hint (`<--`) needs a determining constraint (`===`); every reduction needs its
-  bound proven (`techniques.md` §9).
-- **Verify end-to-end.** Prove the optimized gadget equals the spec (SMT/Sage, or a proof
-  assistant). If you cannot fully verify, say what is unproven.
-- **The catalogue is a floor.** Add new tricks you find to `references/techniques.md`.
+Circuits proven in Lean (e.g. Clean, `~/src/clean`): unless explicitly asked, never change the spec to make a proof pass, and never leave `sorry` — leave the proof unfinished and say what is missing.
