@@ -95,6 +95,11 @@ Always review staged changes before committing:
 git diff --staged
 ```
 
+## Signing
+
+- **Never skip commit signing unless the user explicitly asks you to.** Do not pass `--no-gpg-sign`, and do not disable `commit.gpgsign` to work around a signing problem.
+- If signing fails because the hardware key is unavailable (not plugged in, not tapped, PIN/touch timeout, agent not running), **stop and wait for the user**. Surface the error and ask them to make the key available — do not retry silently, fall back to an unsigned commit, or disable signing.
+
 ## Branches
 
 - Use descriptive names: `fix/null-pointer-login`, `feat/oauth2-flow`
