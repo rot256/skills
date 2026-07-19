@@ -35,16 +35,19 @@ to `POST /api/agent/v1/challenges/{slug}/submissions` with `Authorization: Beare
 Pipeline fully automated: tick.py refreshes jobs -> on IDLE downloads output, gates (no sorry,
 score<best) -> auto-submits to zkGolf -> polls -> NOTIFY. notify_watch.py runs it under Monitor.
 
-## Active jobs (2 per challenge: big-win + small-win, primary key)
-- keccak-f1600 [big-win]: 3df118f9-2ce1-4e37-83d3-c81ad60f10e5
-- keccak-f1600 [small-win]: 4185bcfe-fa4b-49b0-9ff0-b7cc658c94ee
-- rsa-pkcs1v15-sha256-4096-65537 [big-win]: bf17255d-451f-4c55-9e63-580c8c5c00d4
-- rsa-pkcs1v15-sha256-4096-65537 [small-win]: b00cd45b-5e8b-4375-8c4e-fd83d427bc83
-- secp256k1-fixed-base-scalar-mul [big-win]: 4ad3e1df-f399-4ad3-bf37-bb35832721e0
-- secp256k1-fixed-base-scalar-mul [small-win]: d940292c-52f3-4853-84cd-1c2c6b305b08
-- secp256k1-scalar-mul [big-win]: adc39f3b-89bc-4412-baad-cef887f1e3b1
-- secp256k1-scalar-mul [small-win]: 4bd509fb-7c1b-4892-9b13-99bb7cb36a22
-- sha256-hash [big-win]: 1b8a3e4e-d768-4b89-b06e-704be32ef390
-- sha256-hash [small-win]: 5b6de625-17b9-497c-83dd-fe0d23b16269
+## Active jobs (round 2 — FIXED env: clean pinned to 041c6e7e)
+Root cause of round-1 failures: lakefile said `clean @ "main"`, so Aristotle fetched clean's
+newer HEAD (needs Mathlib 4.30) instead of the pinned 041c6e7e (Mathlib 4.28) -> couldn't build.
+Fixed by pinning the exact clean SHA in lakefile + manifest. Verified 041c6e7e has the needed
+APIs (FormalCircuitBase, interact) and pins Mathlib v4.28.0.
 
-Note: ARISTOTLE_API_KEY_ALT provided was rejected (invalid); all jobs on primary key.
+- keccak-f1600 [big-win]: 48a2f155-0741-4ea1-bce7-2c22c08f9c87
+- keccak-f1600 [small-win]: 62a8e3cd-4281-49b9-9be7-11f5030dcf8b
+- rsa-pkcs1v15-sha256-4096-65537 [big-win]: 5de33b8a-4d56-4fa2-949b-977afbc427a6
+- rsa-pkcs1v15-sha256-4096-65537 [small-win]: 9468f9e2-4bc3-41cd-a417-a429d855fc4b
+- secp256k1-fixed-base-scalar-mul [big-win]: 31776143-c089-48a2-a9e8-35363fcc49a0
+- secp256k1-fixed-base-scalar-mul [small-win]: 85be2c88-3691-448e-9d6e-4e87698a260c
+- secp256k1-scalar-mul [big-win]: a82b02ec-c3b5-42de-a0c9-ec88ccf9a649
+- secp256k1-scalar-mul [small-win]: f7f1f64a-2b24-4b0c-8d26-ea02dad0e4db
+- sha256-hash [big-win]: bfe7a23d-6762-483c-9f07-0b864aab0d3d
+- sha256-hash [small-win]: 293fa9f4-5c24-4290-8d32-fae89c4babe0

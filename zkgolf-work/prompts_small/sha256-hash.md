@@ -1,3 +1,5 @@
+ENVIRONMENT (already fixed — do not touch): the dependency pins are correct and reproducible — clean is pinned to the exact commit 041c6e7ebc06f5cbfd534c2a19c4120f3de62435 (Lean v4.28.0, Mathlib v4.28.0 = 8f9d9cff). Do NOT run `lake update` or change any dependency; build against the provided lake-manifest.json. The supplied record already fully builds and verifies in this environment.
+
 STARTING POINT: `Solution/SHA256/` contains the CURRENT LEADERBOARD RECORD for this
 challenge — score = allocations+constraints = 411754 (by alik-eth) — and it ALREADY FULLY VERIFIES
 (no `sorry`). 

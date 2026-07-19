@@ -15,3 +15,13 @@
 {"ts": "2026-07-19T17:45:48.288013Z", "slug": "rsa-pkcs1v15-sha256-4096-65537", "project_id": "b00cd45b-5e8b-4375-8c4e-fd83d427bc83", "purpose": "small-win", "key": "primary"}
 {"ts": "2026-07-19T17:45:48.288013Z", "slug": "secp256k1-scalar-mul", "project_id": "4bd509fb-7c1b-4892-9b13-99bb7cb36a22", "purpose": "small-win", "key": "primary"}
 {"ts": "2026-07-19T17:45:48.288013Z", "slug": "secp256k1-fixed-base-scalar-mul", "project_id": "d940292c-52f3-4853-84cd-1c2c6b305b08", "purpose": "small-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:27.117081Z", "slug": "sha256-hash", "project_id": "bfe7a23d-6762-483c-9f07-0b864aab0d3d", "purpose": "big-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:27.117081Z", "slug": "keccak-f1600", "project_id": "48a2f155-0741-4ea1-bce7-2c22c08f9c87", "purpose": "big-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:27.117081Z", "slug": "rsa-pkcs1v15-sha256-4096-65537", "project_id": "5de33b8a-4d56-4fa2-949b-977afbc427a6", "purpose": "big-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:27.117081Z", "slug": "secp256k1-scalar-mul", "project_id": "a82b02ec-c3b5-42de-a0c9-ec88ccf9a649", "purpose": "big-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:27.117081Z", "slug": "secp256k1-fixed-base-scalar-mul", "project_id": "31776143-c089-48a2-a9e8-35363fcc49a0", "purpose": "big-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:29.745300Z", "slug": "sha256-hash", "project_id": "293fa9f4-5c24-4290-8d32-fae89c4babe0", "purpose": "small-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:29.745300Z", "slug": "keccak-f1600", "project_id": "62a8e3cd-4281-49b9-9be7-11f5030dcf8b", "purpose": "small-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:29.745300Z", "slug": "rsa-pkcs1v15-sha256-4096-65537", "project_id": "9468f9e2-4bc3-41cd-a417-a429d855fc4b", "purpose": "small-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:29.745300Z", "slug": "secp256k1-scalar-mul", "project_id": "f7f1f64a-2b24-4b0c-8d26-ea02dad0e4db", "purpose": "small-win", "key": "primary"}
+{"ts": "2026-07-19T19:07:29.745300Z", "slug": "secp256k1-fixed-base-scalar-mul", "project_id": "85be2c88-3691-448e-9d6e-4e87698a260c", "purpose": "small-win", "key": "primary"}

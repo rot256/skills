@@ -66,9 +66,17 @@ def parse_cost(soldir):
             if m: c = int(m.group(1))
     return a, c
 
+def strip_comments(t):
+    t = re.sub(r"/-.*?-/", " ", t, flags=re.S)   # block comments
+    t = re.sub(r"--[^\n]*", " ", t)              # line comments
+    return t
+
 def has_holes(soldir):
+    # scan only the submission's own solution files, ignoring comments (records/prompts
+    # legitimately *mention* these words) and any vendored .lake dependency.
     for f in glob.glob(os.path.join(soldir, "*.lean")):
-        t = open(f, errors="ignore").read()
+        if "/.lake/" in f: continue
+        t = strip_comments(open(f, errors="ignore").read())
         for bad in ("sorry", "admit", "native_decide"):
             if re.search(r"\b" + bad + r"\b", t): return bad
     return None
@@ -113,7 +121,8 @@ async def process_jobs():
                 with tarfile.open(tarp) as tf: tf.extractall(outdir)
             except Exception as e:
                 print(f"STATUS: {slug} download-error {e}"); continue
-            soldirs = glob.glob(os.path.join(outdir, "**", "Solution", inst), recursive=True)
+            soldirs = [d for d in glob.glob(os.path.join(outdir, "**", "Solution", inst), recursive=True)
+                       if "/.lake/" not in d]
             if not soldirs:
                 print(f"NOTIFY: aristotle {slug} COMPLETE but no Solution/{inst} in output");
                 j["processed"] = True; continue
