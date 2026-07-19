@@ -1,0 +1,12 @@
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "assert-bytes", "project_id": "daefcf10-8f1e-4d10-b782-7fa5f20d2316", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "sha256-hash", "project_id": "8ec05a30-6a40-41f7-af3e-c3b5c40239bc", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "keccak-f1600", "project_id": "7741a287-b4fe-42f7-81bc-12af7fc66e21", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "rsa-pkcs1v15-sha256-4096-65537", "project_id": "eba5dcd6-575c-4c62-92bd-c24f6eaaafe8", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "secp256k1-scalar-mul", "project_id": "0c274b8a-aa99-435f-8618-5dcbf46792f7", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:18:16.511806Z", "slug": "secp256k1-fixed-base", "project_id": "b16a8d8a-59e3-4be2-aaee-92150fbfe983", "purpose": "optimize+prove baseline", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "assert-bytes", "project_id": "4588f3f8-9dfe-4f08-b9da-7a1293344140", "purpose": "improve-on-record", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "sha256-hash", "project_id": "1b8a3e4e-d768-4b89-b06e-704be32ef390", "purpose": "improve-on-record", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "keccak-f1600", "project_id": "3df118f9-2ce1-4e37-83d3-c81ad60f10e5", "purpose": "improve-on-record", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "rsa-pkcs1v15-sha256-4096-65537", "project_id": "bf17255d-451f-4c55-9e63-580c8c5c00d4", "purpose": "improve-on-record", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "secp256k1-scalar-mul", "project_id": "adc39f3b-89bc-4412-baad-cef887f1e3b1", "purpose": "improve-on-record", "status": "SUBMITTED"}
+{"ts": "2026-07-19T17:28:06.414010Z", "slug": "secp256k1-fixed-base-scalar-mul", "project_id": "4ad3e1df-f399-4ad3-bf37-bb35832721e0", "purpose": "improve-on-record", "status": "SUBMITTED"}

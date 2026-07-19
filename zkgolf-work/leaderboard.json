@@ -1,0 +1,44 @@
+{
+  "assert-bytes": {
+    "best": 240.0,
+    "by": "mimoo",
+    "alloc": 112,
+    "constr": 128,
+    "baseline": 272
+  },
+  "sha256-hash": {
+    "best": 411754.0,
+    "by": "alik-eth",
+    "alloc": 204216,
+    "constr": 207538,
+    "baseline": 413810
+  },
+  "keccak-f1600": {
+    "best": 284160.0,
+    "by": "bufferhe4d",
+    "alloc": 138240,
+    "constr": 145920,
+    "baseline": 307200
+  },
+  "rsa-pkcs1v15-sha256-4096-65537": {
+    "best": 827118.0,
+    "by": "nickponline",
+    "alloc": 412130,
+    "constr": 414988,
+    "baseline": 827136
+  },
+  "secp256k1-scalar-mul": {
+    "best": 16457480.0,
+    "by": "SebastienGllmt",
+    "alloc": 8179840,
+    "constr": 8277640,
+    "baseline": 16462088
+  },
+  "secp256k1-fixed-base-scalar-mul": {
+    "best": 14882824.0,
+    "by": "gopikannappan",
+    "alloc": 7397504,
+    "constr": 7485320,
+    "baseline": 16462088
+  }
+}

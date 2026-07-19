@@ -1,0 +1,8 @@
+env.local
+out/
+projs/
+proj/
+zk-golf-challenges/
+probe/
+*.tar.gz
+__pycache__/
