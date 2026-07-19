@@ -125,7 +125,7 @@
   },
   "bfe7a23d-6762-483c-9f07-0b864aab0d3d": {
     "slug": "sha256-hash",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "big-win",
     "key": "primary",
@@ -133,7 +133,7 @@
   },
   "48a2f155-0741-4ea1-bce7-2c22c08f9c87": {
     "slug": "keccak-f1600",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "big-win",
     "key": "primary",
@@ -141,7 +141,7 @@
   },
   "5de33b8a-4d56-4fa2-949b-977afbc427a6": {
     "slug": "rsa-pkcs1v15-sha256-4096-65537",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "big-win",
     "key": "primary",
@@ -149,7 +149,7 @@
   },
   "a82b02ec-c3b5-42de-a0c9-ec88ccf9a649": {
     "slug": "secp256k1-scalar-mul",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "big-win",
     "key": "primary",
@@ -157,7 +157,7 @@
   },
   "31776143-c089-48a2-a9e8-35363fcc49a0": {
     "slug": "secp256k1-fixed-base-scalar-mul",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "big-win",
     "key": "primary",
@@ -165,7 +165,7 @@
   },
   "293fa9f4-5c24-4290-8d32-fae89c4babe0": {
     "slug": "sha256-hash",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "small-win",
     "key": "primary",
@@ -173,7 +173,7 @@
   },
   "62a8e3cd-4281-49b9-9be7-11f5030dcf8b": {
     "slug": "keccak-f1600",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "small-win",
     "key": "primary",
@@ -181,7 +181,7 @@
   },
   "9468f9e2-4bc3-41cd-a417-a429d855fc4b": {
     "slug": "rsa-pkcs1v15-sha256-4096-65537",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "small-win",
     "key": "primary",
@@ -189,7 +189,7 @@
   },
   "f7f1f64a-2b24-4b0c-8d26-ea02dad0e4db": {
     "slug": "secp256k1-scalar-mul",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "small-win",
     "key": "primary",
@@ -197,7 +197,7 @@
   },
   "85be2c88-3691-448e-9d6e-4e87698a260c": {
     "slug": "secp256k1-fixed-base-scalar-mul",
-    "status": "SUBMITTED",
+    "status": "RUNNING",
     "processed": false,
     "purpose": "small-win",
     "key": "primary",
