@@ -106,7 +106,10 @@ async def process_jobs():
             os.makedirs(outdir, exist_ok=True)
             tarp = os.path.join(outdir, "solution.tar.gz")
             try:
-                await p.get_solution(destination=tarp)
+                if not getattr(p, "has_files", True):
+                    print(f"NOTIFY: aristotle {slug} {status} produced no result files — needs re-dispatch")
+                    j["processed"] = True; st[pid] = j; continue
+                await p.get_files(destination=tarp)
                 with tarfile.open(tarp) as tf: tf.extractall(outdir)
             except Exception as e:
                 print(f"STATUS: {slug} download-error {e}"); continue

@@ -40,11 +40,16 @@
   },
   "1b8a3e4e-d768-4b89-b06e-704be32ef390": {
     "slug": "sha256-hash",
-    "status": "RUNNING",
-    "processed": false,
+    "status": "IDLE",
+    "processed": true,
     "purpose": "big-win",
     "ts": "2026-07-19T17:28:06.414010Z",
-    "key": "primary"
+    "key": "primary",
+    "alloc": 204216,
+    "constr": 207538,
+    "score": 411754,
+    "best": 411754.0,
+    "soldir": "out/sha256-hash/sha256-hash_aristotle/Solution/SHA256"
   },
   "3df118f9-2ce1-4e37-83d3-c81ad60f10e5": {
     "slug": "keccak-f1600",
