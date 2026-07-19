@@ -2,7 +2,8 @@
   "daefcf10-8f1e-4d10-b782-7fa5f20d2316": {
     "slug": "assert-bytes",
     "status": "CANCELED",
-    "processed": true
+    "processed": true,
+    "excluded": "hello-world (240 optimal)"
   },
   "8ec05a30-6a40-41f7-af3e-c3b5c40239bc": {
     "slug": "sha256-hash",
@@ -31,10 +32,11 @@
   },
   "4588f3f8-9dfe-4f08-b9da-7a1293344140": {
     "slug": "assert-bytes",
-    "status": "RUNNING",
-    "processed": false,
+    "status": "CANCELED",
+    "processed": true,
     "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "excluded": "hello-world (240 optimal)"
   },
   "1b8a3e4e-d768-4b89-b06e-704be32ef390": {
     "slug": "sha256-hash",
