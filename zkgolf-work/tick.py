@@ -16,6 +16,12 @@ os.chdir(HERE)
 ZK = os.environ["ZKGOLF_KEY"]
 H = {"Authorization": f"Bearer {ZK}"}
 NOW = datetime.datetime.utcnow().isoformat() + "Z"
+# Aristotle projects are account-scoped: poll each with the key that created it.
+KEYS = {"primary": os.environ.get("ARISTOTLE_API_KEY", ""),
+        "alt": os.environ.get("ARISTOTLE_API_KEY_ALT", "")}
+def use_key(name):
+    k = KEYS.get(name) or KEYS["primary"]
+    os.environ["ARISTOTLE_API_KEY"] = k   # get_api_key() reads env per-request
 
 SLUG2INST = {
     "assert-bytes": "AssertBytes",
@@ -87,6 +93,7 @@ async def process_jobs():
         if j.get("processed"):
             continue
         slug = j["slug"]; inst = SLUG2INST[slug]
+        use_key(j.get("key", "primary"))
         try:
             p = await refresh(pid)
         except Exception as e:

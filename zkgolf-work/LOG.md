@@ -35,10 +35,16 @@ to `POST /api/agent/v1/challenges/{slug}/submissions` with `Authorization: Beare
 Pipeline fully automated: tick.py refreshes jobs -> on IDLE downloads output, gates (no sorry,
 score<best) -> auto-submits to zkGolf -> polls -> NOTIFY. notify_watch.py runs it under Monitor.
 
-## Active jobs (improve-on-record round 1)
-- assert-bytes: 4588f3f8-9dfe-4f08-b9da-7a1293344140 [RUNNING]
-- keccak-f1600: 3df118f9-2ce1-4e37-83d3-c81ad60f10e5 [RUNNING]
-- rsa-pkcs1v15-sha256-4096-65537: bf17255d-451f-4c55-9e63-580c8c5c00d4 [RUNNING]
-- secp256k1-fixed-base-scalar-mul: 4ad3e1df-f399-4ad3-bf37-bb35832721e0 [RUNNING]
-- secp256k1-scalar-mul: adc39f3b-89bc-4412-baad-cef887f1e3b1 [RUNNING]
-- sha256-hash: 1b8a3e4e-d768-4b89-b06e-704be32ef390 [RUNNING]
+## Active jobs (2 per challenge: big-win + small-win, primary key)
+- keccak-f1600 [big-win]: 3df118f9-2ce1-4e37-83d3-c81ad60f10e5
+- keccak-f1600 [small-win]: 4185bcfe-fa4b-49b0-9ff0-b7cc658c94ee
+- rsa-pkcs1v15-sha256-4096-65537 [big-win]: bf17255d-451f-4c55-9e63-580c8c5c00d4
+- rsa-pkcs1v15-sha256-4096-65537 [small-win]: b00cd45b-5e8b-4375-8c4e-fd83d427bc83
+- secp256k1-fixed-base-scalar-mul [big-win]: 4ad3e1df-f399-4ad3-bf37-bb35832721e0
+- secp256k1-fixed-base-scalar-mul [small-win]: d940292c-52f3-4853-84cd-1c2c6b305b08
+- secp256k1-scalar-mul [big-win]: adc39f3b-89bc-4412-baad-cef887f1e3b1
+- secp256k1-scalar-mul [small-win]: 4bd509fb-7c1b-4892-9b13-99bb7cb36a22
+- sha256-hash [big-win]: 1b8a3e4e-d768-4b89-b06e-704be32ef390
+- sha256-hash [small-win]: 5b6de625-17b9-497c-83dd-fe0d23b16269
+
+Note: ARISTOTLE_API_KEY_ALT provided was rejected (invalid); all jobs on primary key.

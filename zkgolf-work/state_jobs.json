@@ -42,35 +42,80 @@
     "slug": "sha256-hash",
     "status": "RUNNING",
     "processed": false,
-    "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "purpose": "big-win",
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "key": "primary"
   },
   "3df118f9-2ce1-4e37-83d3-c81ad60f10e5": {
     "slug": "keccak-f1600",
     "status": "RUNNING",
     "processed": false,
-    "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "purpose": "big-win",
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "key": "primary"
   },
   "bf17255d-451f-4c55-9e63-580c8c5c00d4": {
     "slug": "rsa-pkcs1v15-sha256-4096-65537",
     "status": "RUNNING",
     "processed": false,
-    "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "purpose": "big-win",
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "key": "primary"
   },
   "adc39f3b-89bc-4412-baad-cef887f1e3b1": {
     "slug": "secp256k1-scalar-mul",
     "status": "RUNNING",
     "processed": false,
-    "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "purpose": "big-win",
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "key": "primary"
   },
   "4ad3e1df-f399-4ad3-bf37-bb35832721e0": {
     "slug": "secp256k1-fixed-base-scalar-mul",
     "status": "RUNNING",
     "processed": false,
-    "purpose": "improve-on-record",
-    "ts": "2026-07-19T17:28:06.414010Z"
+    "purpose": "big-win",
+    "ts": "2026-07-19T17:28:06.414010Z",
+    "key": "primary"
+  },
+  "5b6de625-17b9-497c-83dd-fe0d23b16269": {
+    "slug": "sha256-hash",
+    "status": "RUNNING",
+    "processed": false,
+    "purpose": "small-win",
+    "key": "primary",
+    "ts": "2026-07-19T17:45:48.288013Z"
+  },
+  "4185bcfe-fa4b-49b0-9ff0-b7cc658c94ee": {
+    "slug": "keccak-f1600",
+    "status": "RUNNING",
+    "processed": false,
+    "purpose": "small-win",
+    "key": "primary",
+    "ts": "2026-07-19T17:45:48.288013Z"
+  },
+  "b00cd45b-5e8b-4375-8c4e-fd83d427bc83": {
+    "slug": "rsa-pkcs1v15-sha256-4096-65537",
+    "status": "RUNNING",
+    "processed": false,
+    "purpose": "small-win",
+    "key": "primary",
+    "ts": "2026-07-19T17:45:48.288013Z"
+  },
+  "4bd509fb-7c1b-4892-9b13-99bb7cb36a22": {
+    "slug": "secp256k1-scalar-mul",
+    "status": "RUNNING",
+    "processed": false,
+    "purpose": "small-win",
+    "key": "primary",
+    "ts": "2026-07-19T17:45:48.288013Z"
+  },
+  "d940292c-52f3-4853-84cd-1c2c6b305b08": {
+    "slug": "secp256k1-fixed-base-scalar-mul",
+    "status": "RUNNING",
+    "processed": false,
+    "purpose": "small-win",
+    "key": "primary",
+    "ts": "2026-07-19T17:45:48.288013Z"
   }
 }
