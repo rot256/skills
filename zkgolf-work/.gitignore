@@ -6,3 +6,4 @@ zk-golf-challenges/
 probe/
 *.tar.gz
 __pycache__/
+.tick.lock
