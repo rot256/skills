@@ -167,4 +167,23 @@ async def main():
     process_subs()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # single-flight lock so the Monitor loop and the 15-min cron never double-submit
+    lock = os.path.join(HERE, ".tick.lock")
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        import sys
+        # stale lock older than 20 min -> steal it
+        try:
+            if time.time() - os.path.getmtime(lock) > 1200:
+                os.remove(lock); fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY); os.close(fd)
+            else:
+                print("STATUS: tick already running, skip"); sys.exit(0)
+        except Exception:
+            print("STATUS: tick lock contended, skip"); sys.exit(0)
+    try:
+        asyncio.run(main())
+    finally:
+        try: os.remove(lock)
+        except Exception: pass
