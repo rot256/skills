@@ -11,7 +11,7 @@ async def main():
     for p in projs:
         status = getattr(p.status, "name", str(p.status))
         if status != "RUNNING": continue
-        name = (p.file_name or "").strip() or ""
+        name = (getattr(p, "description", "") or "").strip()
         slug = next((s for s in SLUGS if s in name), None)
         if not slug: continue
         n = seen.get(slug, 0); seen[slug] = n + 1
