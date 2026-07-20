@@ -3,7 +3,6 @@
 APIs (see bootstrap.sh); only this tooling needs to persist. Location-independent."""
 import os, re, json, glob, time, tarfile, asyncio, datetime, subprocess
 import requests, aristotlelib
-MAX_RUNTIME_S = 9000  # cancel jobs stuck RUNNING far beyond the normal ~1.5h so the slot re-dispatches
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 ZK = os.environ["ZKGOLF_KEY"]; H = {"Authorization": f"Bearer {ZK}"}
 NOW = datetime.datetime.utcnow().isoformat() + "Z"
@@ -93,22 +92,7 @@ async def process_jobs():
                 save("state_subs.json", subs); audit("submissions.jsonl", subs[sid] | {"submission_id": sid}); j["zk_id"] = sid
             j["processed"] = True
         else:
-            # cancel genuinely-stuck jobs (RUNNING far beyond normal) so the slot re-dispatches
-            age = None
-            try:
-                ca = getattr(p, "created_at", None)
-                if ca is not None:
-                    dt = ca if hasattr(ca, "timestamp") else datetime.datetime.fromisoformat(str(ca).replace("Z", "+00:00"))
-                    if dt.tzinfo is None: dt = dt.replace(tzinfo=datetime.timezone.utc)
-                    age = (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds()
-            except Exception:
-                age = None
-            if age is not None and age > MAX_RUNTIME_S:
-                subprocess.run(["uv","run","--with","aristotlelib","aristotle","cancel",pid], capture_output=True)
-                j["processed"] = True; j["status"] = "CANCELED-stuck"
-                print(f"NOTIFY: aristotle {slug} stuck ({age/3600:.1f}h RUNNING) — cancelled, will re-dispatch")
-            else:
-                print(f"STATUS: aristotle {slug} {status}")
+            print(f"STATUS: aristotle {slug} {status}")  # never auto-cancel long-running jobs
         st[pid] = j
     save("state_jobs.json", st)
 KEYS_TO_USE = ["primary"] + (["alt"] if KEYS.get("alt") else [])  # dual-account fleet
