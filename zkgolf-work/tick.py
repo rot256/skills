@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """zkGolf/Aristotle loop tick. Runtime state is regenerable from the zk.golf + Aristotle
 APIs (see bootstrap.sh); only this tooling needs to persist. Location-independent."""
-import os, re, json, glob, time, tarfile, asyncio, datetime
+import os, re, json, glob, time, tarfile, asyncio, datetime, subprocess
 import requests, aristotlelib
+MAX_RUNTIME_S = 9000  # cancel jobs stuck RUNNING far beyond the normal ~1.5h so the slot re-dispatches
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 ZK = os.environ["ZKGOLF_KEY"]; H = {"Authorization": f"Bearer {ZK}"}
 NOW = datetime.datetime.utcnow().isoformat() + "Z"
@@ -92,27 +93,39 @@ async def process_jobs():
                 save("state_subs.json", subs); audit("submissions.jsonl", subs[sid] | {"submission_id": sid}); j["zk_id"] = sid
             j["processed"] = True
         else:
-            print(f"STATUS: aristotle {slug} {status}")
+            # cancel genuinely-stuck jobs (RUNNING far beyond normal) so the slot re-dispatches
+            age = None
+            try:
+                ca = getattr(p, "created_at", None)
+                if ca is not None:
+                    dt = ca if hasattr(ca, "timestamp") else datetime.datetime.fromisoformat(str(ca).replace("Z", "+00:00"))
+                    if dt.tzinfo is None: dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    age = (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds()
+            except Exception:
+                age = None
+            if age is not None and age > MAX_RUNTIME_S:
+                subprocess.run(["uv","run","--with","aristotlelib","aristotle","cancel",pid], capture_output=True)
+                j["processed"] = True; j["status"] = "CANCELED-stuck"
+                print(f"NOTIFY: aristotle {slug} stuck ({age/3600:.1f}h RUNNING) — cancelled, will re-dispatch")
+            else:
+                print(f"STATUS: aristotle {slug} {status}")
         st[pid] = j
     save("state_jobs.json", st)
-COOLDOWN_S = 0  # no cooldown — always keep all 10 slots full (refills are rate-limited to 1 per tick cycle anyway)
+KEYS_TO_USE = ["primary"] + (["alt"] if KEYS.get("alt") else [])  # dual-account fleet
 async def ensure_inflight(st):
-    active = set((j["slug"], j.get("purpose")) for j in st.values() if not j.get("processed"))
-    cd = load("cooldown.json", {}); now = time.time()
+    # keep >=1 job per (challenge, big/small, account) in flight — up to 20 with two keys
+    active = set((j["slug"], j.get("purpose"), j.get("key", "primary")) for j in st.values() if not j.get("processed"))
     for slug in CHALLENGES5:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
-            if (slug, purpose) in active: continue
-            key = f"{slug}|{purpose}"
-            if now - cd.get(key, 0) < COOLDOWN_S:
-                continue  # slot recently dispatched — avoid rapid-fire churn
-            try:
-                use_key("primary"); prompt = open(f"{pdir}/{slug}.md").read()
-                p = await aristotlelib.Project.create_from_directory(prompt=prompt, project_dir=f"projs/{slug}")
-                st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": purpose, "key": "primary", "ts": NOW}
-                cd[key] = now; save("cooldown.json", cd)
-                print(f"NOTIFY: auto-dispatched {slug} [{purpose}] -> {p.project_id}")
-            except Exception as e:
-                print(f"STATUS: refill {slug}/{purpose} failed {e}")
+            for kname in KEYS_TO_USE:
+                if (slug, purpose, kname) in active: continue
+                try:
+                    use_key(kname); prompt = open(f"{pdir}/{slug}.md").read()
+                    p = await aristotlelib.Project.create_from_directory(prompt=prompt, project_dir=f"projs/{slug}")
+                    st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": purpose, "key": kname, "ts": NOW}
+                    print(f"NOTIFY: auto-dispatched {slug} [{purpose}/{kname}] -> {p.project_id}")
+                except Exception as e:
+                    print(f"STATUS: refill {slug}/{purpose}/{kname} failed {e}")
 def process_subs():
     subs = load("state_subs.json", {})
     for sid, s in list(subs.items()):
