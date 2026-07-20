@@ -95,15 +95,21 @@ async def process_jobs():
             print(f"STATUS: aristotle {slug} {status}")
         st[pid] = j
     save("state_jobs.json", st)
+COOLDOWN_S = 900  # min seconds between re-dispatches of the same (slug,purpose) slot
 async def ensure_inflight(st):
     active = set((j["slug"], j.get("purpose")) for j in st.values() if not j.get("processed"))
+    cd = load("cooldown.json", {}); now = time.time()
     for slug in CHALLENGES5:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
             if (slug, purpose) in active: continue
+            key = f"{slug}|{purpose}"
+            if now - cd.get(key, 0) < COOLDOWN_S:
+                continue  # slot recently dispatched — avoid rapid-fire churn
             try:
                 use_key("primary"); prompt = open(f"{pdir}/{slug}.md").read()
                 p = await aristotlelib.Project.create_from_directory(prompt=prompt, project_dir=f"projs/{slug}")
                 st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": purpose, "key": "primary", "ts": NOW}
+                cd[key] = now; save("cooldown.json", cd)
                 print(f"NOTIFY: auto-dispatched {slug} [{purpose}] -> {p.project_id}")
             except Exception as e:
                 print(f"STATUS: refill {slug}/{purpose} failed {e}")

@@ -14,3 +14,4 @@ prompts/
 prompts_small/
 submissions.jsonl
 jobs.jsonl
+cooldown.json
