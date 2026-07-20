@@ -95,7 +95,7 @@ async def process_jobs():
             print(f"STATUS: aristotle {slug} {status}")
         st[pid] = j
     save("state_jobs.json", st)
-COOLDOWN_S = 900  # min seconds between re-dispatches of the same (slug,purpose) slot
+COOLDOWN_S = 240  # min seconds between re-dispatches of the same (slug,purpose) slot (keep pushing)
 async def ensure_inflight(st):
     active = set((j["slug"], j.get("purpose")) for j in st.values() if not j.get("processed"))
     cd = load("cooldown.json", {}); now = time.time()
