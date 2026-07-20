@@ -2,8 +2,15 @@ env.local
 out/
 projs/
 proj/
+records/
 zk-golf-challenges/
-probe/
 *.tar.gz
 __pycache__/
 .tick.lock
+state_jobs.json
+state_subs.json
+targets.json
+prompts/
+prompts_small/
+submissions.jsonl
+jobs.jsonl
