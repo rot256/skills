@@ -31,11 +31,7 @@ for slug,inst in INST.items():
     tg[slug]={"target":new,"seed":f"valid record {new} by {t['github_login']}","by":t["github_login"]}
     changed.append((slug,old,new,t["github_login"]))
 json.dump(tg,open("targets.json","w"),indent=2)
-if changed:
-    st=json.load(open("state_jobs.json")); slugs={c[0] for c in changed}
-    for pid,j in st.items():
-        if not j.get("processed") and j.get("slug") in slugs:
-            subprocess.run(["uv","run","--with","aristotlelib","aristotle","cancel",pid],capture_output=True)
-            j["processed"]=True; j["status"]="CANCELED-record-moved"
-    json.dump(st,open("state_jobs.json","w"),indent=2)
-for slug,o,n,by in changed: print(f"NOTIFY: record moved {slug} {o}->{n} (by {by}); re-seeded")
+# NOTE: never cancel in-flight jobs. When a record moves we only re-seed projs + update
+# targets/prompts for FUTURE dispatches; running jobs finish on their own and the tick gate
+# re-evaluates their output against the new best.
+for slug,o,n,by in changed: print(f"NOTIFY: record moved {slug} {o}->{n} (by {by}); re-seeded (running jobs left to finish)")
