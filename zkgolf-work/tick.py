@@ -47,6 +47,21 @@ def parse_cost(soldir):
         if c is None:
             m = re.search(r"def\s+constraints\s*:?\s*(?:Nat)?\s*:=\s*(\d+)", t); c = int(m.group(1)) if m else c
     return a, c
+XPOLL_MARK = {  # if the seed's cross-pollinated gadget appears, credit the technique
+    "rsa-pkcs1v15-sha256-4096-65537": ("EqViaCarriesFlex", "flexible-limb equality/carry (ported from secp)"),
+    "secp256k1-scalar-mul": ("EqViaCarriesFlex", "flexible-limb equality/carry (ported from secp-fixed)"),
+    "secp256k1-fixed-base-scalar-mul": ("GroupedEqXV", "XV equality-grouping (ported from secp-mul)"),
+}
+def describe(slug, score, alloc, constr, best, purpose, soldir):
+    parts = [f"{score} = {alloc} alloc + {constr} constr"]
+    if best is not None:
+        d = score - best
+        parts.append(f"({d:+d} vs prev best {best})" if d else f"(matches best {best})")
+    tag, note = XPOLL_MARK.get(slug, (None, None))
+    if tag and any(tag in os.path.basename(f) for f in glob.glob(os.path.join(soldir, "*.lean"))):
+        parts.append(f"via {note}")
+    parts.append(f"Aristotle {purpose or 'run'}")
+    return " — ".join(parts)
 def zk_submit(slug, alloc, constr, desc, files):
     fs = [("artifact", (os.path.basename(f), open(f, "rb"), "text/plain")) for f in files]
     data = {"allocations": str(alloc), "constraints": str(constr), "description": desc, "assisted_by": "Aristotle (Harmonic)"}
@@ -86,7 +101,8 @@ async def process_jobs():
             if len(files) > 1000:  # zkGolf accepts at most 1000 files; larger submissions 400
                 print(f"NOTIFY: aristotle {slug} score {score} BEATS best {best} but has {len(files)}>1000 files — cannot submit, needs consolidation")
                 j["processed"] = True; st[pid] = j; continue
-            code, text = zk_submit(slug, alloc, constr, f"Aristotle-optimized ({score}={alloc}+{constr})", files)
+            desc = describe(slug, score, alloc, constr, best, j.get("purpose"), soldir)
+            code, text = zk_submit(slug, alloc, constr, desc, files)
             try: sid = json.loads(text).get("id")
             except Exception: sid = None
             print(f"NOTIFY: SUBMITTED {slug} score {score} (best {best}) http={code} sub={sid}")
