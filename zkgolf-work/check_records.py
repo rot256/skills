@@ -27,7 +27,10 @@ for slug,inst in INST.items():
     for f in glob.glob(soldir+"/*.lean"): os.remove(f)
     for f in files: shutil.copy(f, soldir)
     for pf in (f"prompts/{slug}.md", f"prompts_small/{slug}.md"):
-        if os.path.exists(pf): open(pf,"w").write(open(pf).read().replace(str(old), str(new)))
+        if os.path.exists(pf):
+            c = open(pf).read()            # read FIRST (never truncate-before-read)
+            if c.strip():                  # never blank out a prompt
+                open(pf, "w").write(c.replace(str(old), str(new)))
     tg[slug]={"target":new,"seed":f"valid record {new} by {t['github_login']}","by":t["github_login"]}
     changed.append((slug,old,new,t["github_login"]))
 json.dump(tg,open("targets.json","w"),indent=2)

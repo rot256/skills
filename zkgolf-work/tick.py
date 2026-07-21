@@ -108,6 +108,9 @@ async def ensure_inflight(st):
                 if (slug, purpose, kname) in active: continue
                 try:
                     use_key(kname); prompt = open(f"{pdir}/{slug}.md").read()
+                    if not prompt.strip():  # never submit an empty prompt
+                        print(f"STATUS: {slug}/{purpose}/{kname} prompt EMPTY — skipping (run gen_prompts.py)")
+                        continue
                     p = await aristotlelib.Project.create_from_directory(prompt=prompt, project_dir=f"projs/{slug}")
                     st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": purpose, "key": kname, "ts": NOW}
                     print(f"NOTIFY: auto-dispatched {slug} [{purpose}/{kname}] -> {p.project_id}")
