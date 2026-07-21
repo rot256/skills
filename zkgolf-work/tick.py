@@ -55,8 +55,8 @@ XPOLL_MARK = {  # if the seed's cross-pollinated gadget appears, credit the tech
 def describe(slug, score, alloc, constr, best, purpose, soldir):
     parts = [f"{score} = {alloc} alloc + {constr} constr"]
     if best is not None:
-        d = score - best
-        parts.append(f"({d:+d} vs prev best {best})" if d else f"(matches best {best})")
+        b = int(best); d = int(score) - b
+        parts.append(f"({d:+d} vs prev best {b})" if d else f"(matches best {b})")
     tag, note = XPOLL_MARK.get(slug, (None, None))
     if tag and any(tag in os.path.basename(f) for f in glob.glob(os.path.join(soldir, "*.lean"))):
         parts.append(f"via {note}")
