@@ -83,8 +83,8 @@ async def process_jobs():
             if score is None: print(f"NOTIFY: aristotle {slug} unparseable cost"); j["processed"]=True; st[pid]=j; continue
             if best is not None and score >= best: print(f"NOTIFY: aristotle {slug} score {score} does NOT beat best {best} — NOT submitting"); j["processed"]=True; st[pid]=j; continue
             files = sorted(glob.glob(os.path.join(soldir, "*.lean")))
-            if len(files) > 100:  # zkGolf accepts at most 100 files; larger submissions 400
-                print(f"NOTIFY: aristotle {slug} score {score} BEATS best {best} but has {len(files)}>100 files — cannot submit, needs consolidation")
+            if len(files) > 1000:  # zkGolf accepts at most 1000 files; larger submissions 400
+                print(f"NOTIFY: aristotle {slug} score {score} BEATS best {best} but has {len(files)}>1000 files — cannot submit, needs consolidation")
                 j["processed"] = True; st[pid] = j; continue
             code, text = zk_submit(slug, alloc, constr, f"Aristotle-optimized ({score}={alloc}+{constr})", files)
             try: sid = json.loads(text).get("id")

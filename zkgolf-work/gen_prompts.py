@@ -28,7 +28,7 @@ HARD REQUIREMENTS: do NOT change `Challenge/`; keep exact signatures; NO `sorry`
 axioms only (`propext`,`Quot.sound`,`Classical.choice`, the challenge `hCircomPrime`, and `Specs.*.hPrime` if the seed
 uses it); `mainCost` proves `circuitCost main ⟨allocations,constraints⟩`; `isR1CS` holds; keep the build green.
 If a full rewrite is too big, make the single highest-impact FULLY-PROVED reduction keeping all declarations.
-- HARD LIMIT: the zkGolf submission accepts at most 100 .lean files. Your Solution/ MUST contain <=100 files. Do NOT add new modules beyond the seed's file set — if you need helpers, put them in existing files. Consolidate rather than split.
+- FILE LIMIT: the zkGolf submission accepts at most 1000 .lean files (plenty of headroom). Splitting proofs across many focused modules is fine; do NOT contort the circuit to minimize file count. Optimize for LOWEST cost (allocations+constraints), not fewest files.
 
 OPTIMIZATION IDEAS (verify before use): {ideas}
 Return the complete updated `Solution/{inst}/` files, fully compiling."""
