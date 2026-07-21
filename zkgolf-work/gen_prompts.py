@@ -12,12 +12,20 @@ IDEAS={
  "secp256k1-fixed-base-scalar-mul":"Precompute window multiples of G as circuit CONSTANTS (free); signed-digit (wNAF) windows; minimal-constraint selection; carry-save non-native adds with top-bit-fold range checks.",
 }
 os.makedirs("prompts",exist_ok=True); os.makedirs("prompts_small",exist_ok=True)
-def tmpl(inst,t,framing,ideas):
+def tmpl(inst,t,framing,ideas,show_target=True):
+    if show_target:
+        goal=(f"scoring allocations+constraints = {t}, defining ALL\n"
+              f"required declarations INCLUDING `computableWitness`, and it passes the verifier. GOAL: a NEW solution scoring\n"
+              f"STRICTLY BELOW {t} that STILL fully verifies.")
+    else:
+        # small-win: no numeric anchor — the seed IS the SOTA; beat it by any margin
+        goal=("defining ALL required declarations INCLUDING `computableWitness`, and it passes the verifier — this\n"
+              "seed IS the current state of the art (SOTA). GOAL: ANY new solution that scores STRICTLY LESS than the\n"
+              "seed and STILL fully verifies. There is no number to hit — beat the seed by ANY margin, however small; a\n"
+              "single-unit fully-verified reduction is a win. Read `allocations`+`constraints` in the seed to know what to beat.")
     return f"""You are optimizing a zkGolf circuit in the Clean Lean-4 framework (clean pinned @ 041c6e7e, Lean v4.28.0, Mathlib v4.28.0).
 
-TARGET: `Solution/{inst}/` contains a VALID, VERIFIED seed scoring allocations+constraints = {t}, defining ALL
-required declarations INCLUDING `computableWitness`, and it passes the verifier. GOAL: a NEW solution scoring
-STRICTLY BELOW {t} that STILL fully verifies. {framing}
+TARGET: `Solution/{inst}/` contains a VALID, VERIFIED seed {goal} {framing}
 
 Rewrite `main` (and helpers); set `@[reducible] def allocations` and `def constraints` to the true new cost; KEEP
 + re-prove EVERY required declaration: `main`, `elaborated`, `soundness`, `completeness`, `mainCost`, `isR1CS`, and
@@ -35,7 +43,7 @@ Return the complete updated `Solution/{inst}/` files, fully compiling."""
 for slug,inst in INST.items():
     t=tg[slug]["target"]
     open(f"prompts/{slug}.md","w").write(tmpl(inst,t,"Be ambitious — aim for a large structural reduction.",IDEAS[slug]))
-    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug]))
+    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug],show_target=False))
 kref="\n\nREFERENCE: `reference/*.lean.txt` is the record which hits the target cost but OMITS `computableWitness` (now invalid). Reproduce its circuit optimization on the valid baseline AND add a fully-proved `computableWitness` (adapt the baseline's). Reference files are context only, not compiled."
 for f in ("prompts/keccak-f1600.md","prompts_small/keccak-f1600.md"):
     if os.path.exists(f): open(f,"a").write(kref)
