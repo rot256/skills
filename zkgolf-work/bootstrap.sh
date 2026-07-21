@@ -26,6 +26,20 @@ json.dump(m,open(p,"w"),indent=2)
 PY
 done
 uv run --with requests python3 seed_valid.py
+# Cross-pollination reference gadgets (donor sibling-challenge .lean, context only, not compiled).
+# Must exist BEFORE gen_prompts so it emits the CROSS-POLLINATION directive for these slugs.
+MSOL=projs/secp256k1-scalar-mul/Solution/Secp256k1ScalarMul
+FSOL=projs/secp256k1-fixed-base-scalar-mul/Solution/Secp256k1ScalarMulFixedBase
+for tgt in projs/rsa-pkcs1v15-sha256-4096-65537 projs/secp256k1-scalar-mul; do
+  mkdir -p "$tgt/reference"
+  for g in EqViaCarriesFlex EqViaCarriesFlexT GroupedFlex FlexInstances GroupedFlexInstances; do
+    cp "$FSOL/$g.lean" "$tgt/reference/$g.lean.txt" 2>/dev/null || true
+  done
+done
+mkdir -p projs/secp256k1-fixed-base-scalar-mul/reference
+for g in GroupedEqXV GroupedEqX MulModTargetW MulModVariants; do
+  cp "$MSOL/$g.lean" "projs/secp256k1-fixed-base-scalar-mul/reference/$g.lean.txt" 2>/dev/null || true
+done
 uv run python3 gen_prompts.py
 mkdir -p projs/keccak-f1600/reference
 for f in records/keccak-f1600/*.lean; do cp "$f" "projs/keccak-f1600/reference/$(basename "$f").txt" 2>/dev/null || true; done
