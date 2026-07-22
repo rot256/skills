@@ -36,6 +36,17 @@ HARD REQUIREMENTS: do NOT change `Challenge/`; keep exact signatures; NO `sorry`
 axioms only (`propext`,`Quot.sound`,`Classical.choice`, the challenge `hCircomPrime`, and `Specs.*.hPrime` if the seed
 uses it); `mainCost` proves `circuitCost main ⟨allocations,constraints⟩`; `isR1CS` holds; keep the build green.
 If a full rewrite is too big, make the single highest-impact FULLY-PROVED reduction keeping all declarations.
+
+MANDATORY SELF-VERIFICATION BEFORE RETURNING (a submission that only *looks* right but fails the real Lean build is
+WORSE than no submission — it wastes a record attempt). You MUST, in your own environment:
+  1. Run `lake build` on the full Solution and confirm it compiles with ZERO errors (warnings-as-errors too). Do not
+     trust that edits compile — actually build them.
+  2. Run `#print axioms main` (and for `soundness`,`completeness`,`isR1CS`,`computableWitness`) and confirm the printed
+     axioms are a SUBSET of the permitted set above — in particular NO `sorryAx` and no newly-declared `axiom`.
+  3. Confirm no `opaque`/trusted-predicate shortcut left a required theorem vacuously true or unprovable at the config layer.
+If you CANNOT achieve a clean build + clean axioms at your target cost, DO NOT return the broken lower-cost attempt —
+instead return the best solution you DID build and axiom-check successfully, even if its cost is higher (a verified
+higher cost beats an unverified lower one). Never return code you have not compiled.
 - FILE LIMIT: the zkGolf submission accepts at most 1000 .lean files (plenty of headroom). Splitting proofs across many focused modules is fine; do NOT contort the circuit to minimize file count. Optimize for LOWEST cost (allocations+constraints), not fewest files.
 
 OPTIMIZATION IDEAS (verify before use): {ideas}
