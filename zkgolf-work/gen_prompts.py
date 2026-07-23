@@ -3,6 +3,8 @@
 import json, os
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 tg=json.load(open("targets.json"))
+try: RESEARCH=json.load(open("research.json"))
+except Exception: RESEARCH={}
 INST={"sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
 IDEAS={
  "sha256-hash":"Single-constraint XOR3/Maj/Ch gadgets; carry-save multi-operand addition; fold the top bit of 32-bit range checks; keep XOR/rotations as free linear combos.",
@@ -84,4 +86,14 @@ XPOLL={
 for slug,txt in XPOLL.items():
     f=f"prompts/{slug}.md"
     if os.path.exists(f) and os.path.isdir(f"projs/{slug}/reference"): open(f,"a").write("\n\n"+txt)
+
+# Externally-researched techniques (research.json, refreshed by periodic web research) — injected
+# into BOTH big- and small-win prompts. These are candidate ideas from the ZK literature; this
+# challenge is R1CS with cost = allocations+constraints, so Aristotle MUST verify each applies here.
+for slug in INST:
+    bullets=[b for b in RESEARCH.get(slug,[]) if isinstance(b,str)]
+    if not bullets: continue
+    block="\n\nRESEARCHED TECHNIQUES (from external ZK literature — VERIFY each maps to this R1CS cost model before use; ignore lookup/GKR/sum-check-only tricks that don't lower allocations+constraints here):\n"+"\n".join(f"- {b}" for b in bullets)
+    for f in (f"prompts/{slug}.md", f"prompts_small/{slug}.md"):
+        if os.path.exists(f): open(f,"a").write(block)
 print("prompts generated")
