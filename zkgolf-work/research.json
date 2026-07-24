@@ -24,7 +24,9 @@
   ],
   "secp256k1-scalar-mul": [
     "GLV: decompose k = k1 + k2*lambda (mod n) into two ~128-bit halves; the endomorphism psi(x,y)=(beta*x mod p, y) costs ~6 constraints; then k*P = k1*P + k2*psi(P) halves the number of doublings.",
-    "Run the two GLV halves as a width-w windowed 2-MSM (double-then-add) sharing doublings — reference figure ~2176 constraints for the MSM core.",
+    "GLV-3 / higher-dimensional decomposition (eprint 2025/1151, 2025/933): split k into THREE ~85-bit sub-scalars using the endomorphism twice (k = k0 + k1*lambda + k2*lambda^2 mod n); ~85 doublings instead of ~128, run as a joint 3-MSM sharing every doubling. Fewer doublings = fewer non-native Fp ops.",
+    "Find SHORTEST decomposition vectors via integer lattice reduction or a half-extended Euclidean algorithm in the endomorphism ring (eprint 2025/933); secp256k1's small CM discriminant (D=-3, j=0) admits extra reductions (reported 22-53% proving-time drop vs prior SOTA).",
+    "Run the decomposed halves/thirds as a width-w windowed joint-MSM (double-then-add) sharing doublings — reference figure ~2176 constraints for the 2-MSM core.",
     "Per scalar bit the naive cost is ~4 (point selects) + ~4 (adds) + ~2 (double); wNAF / signed-digit windows cut the number of ADDITIONS via longer zero runs.",
     "Use INCOMPLETE / affine addition formulas (cheaper than complete-addition) where exceptional cases are ruled out by the decomposition, guarded by a soundness argument.",
     "Non-native Fp: minimal-limb schoolbook mul + reduce with carry-save accumulation and top-bit-fold limb range checks; the flexible-limb EqViaCarries family (see reference/) may pack the equality check tighter."
@@ -34,6 +36,7 @@
     "Comb method: k = sum b_{i} 2^{i}; group bits into d combs of width w so each step is ONE table select + ONE add; fewer adds than plain windowed double-and-add.",
     "Width-w NAF / signed-digit recoding of the scalar so table entries cover +/- multiples, halving table size and generating more zero (skip) positions.",
     "Constant-table point selection as a multiplexer over field constants: select cost is linear in window size but touches only additions/booleans, no non-native mul.",
-    "Port secp256k1-scalar-mul's GroupedEqXV / MulModTarget non-native machinery (see reference/) if it lowers the per-add Fp mul-mod cost below the current Flex path."
+    "Combine comb sub-scalars as a joint accumulation sharing point doublings/additions (multi-comb), analogous to the joint-MSM trick, so the fixed precompute is amortized across all windows in one add-chain.",
+    "Port secp256k1-scalar-mul's GroupedEqXV / MulModTarget non-native machinery (see reference/) if it lowers the per-add Fp mul-mod cost below the current Flex path; competitor csko pushed this challenge to 90041, a large structural gap — a comb-table + incomplete-add rewrite is likely needed, not incremental tweaks."
   ]
 }
