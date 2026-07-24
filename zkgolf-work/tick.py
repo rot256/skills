@@ -172,8 +172,13 @@ async def ensure_inflight(st):
     # keep >=1 job per (challenge, big/small, account) in flight — up to 20 with two keys
     active = set((j["slug"], j.get("purpose"), j.get("key", "primary")) for j in st.values() if not j.get("processed"))
     sal = load("state_salvage.json", {})
-    for slug in list(sal):  # retire exhausted near-misses
-        if sal[slug].get("attempts", 0) >= SALVAGE_ATTEMPTS: del sal[slug]
+    for slug in list(sal):  # retire exhausted near-misses...
+        if sal[slug].get("attempts", 0) >= SALVAGE_ATTEMPTS:
+            print(f"NOTIFY: salvage {slug} @{sal[slug]['score']} exhausted {SALVAGE_ATTEMPTS} tries — giving up"); del sal[slug]; continue
+        # ...and any a competitor has since overtaken (completing it would no longer be a record)
+        lb = leaderboard_best(slug)
+        if lb is not None and sal[slug]["score"] >= lb:
+            print(f"NOTIFY: salvage {slug} @{sal[slug]['score']} no longer beats record {int(lb)} — dropping"); del sal[slug]
     save("state_salvage.json", sal)
     for slug in CHALLENGES5:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
