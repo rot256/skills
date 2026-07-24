@@ -20,7 +20,8 @@
     "CIOS/Montgomery with carry elimination: when the top modulus word is bounded ((D-1)/2-1), the t[N]/t[N+1] carries are provably zero, dropping ~5N+2 additions per multiply (gnark result).",
     "Limb count sweet spot N<=12 wide limbs; minimize the number of carries that need range checks — each naive range check costs ~1/2 constraint per bit, so wider limbs with fewer carries win.",
     "CRT / RNS residue representation to split the 4096-bit reduce into independent smaller-modulus channels; recombine once at the end.",
-    "Only range-check the modular residual, the quotient coefficient, and carries — not every intermediate; use top-bit-fold range checks."
+    "Only range-check the modular residual, the quotient coefficient, and carries — not every intermediate; use top-bit-fold range checks.",
+    "mulmod as ONE polynomial-identity check at a single constant point (gnark/eprint 2025/933): hint quotient q and error/carry limbs e out of circuit, then enforce a(X)b(X) = c(X) + alpha(X)q(X) + (2^B - X)e(X) evaluated at ONE fixed X=2^B — collapses the full limb-by-limb equality into a single rank-1 product plus range checks on q,c,e, instead of one constraint per limb coefficient. Evaluate-at-a-point beats coefficient-matching in this R1CS metric; reuse the same hinted-then-checked shape for all 17 squarings/multiplies."
   ],
   "secp256k1-scalar-mul": [
     "GLV: decompose k = k1 + k2*lambda (mod n) into two ~128-bit halves; the endomorphism psi(x,y)=(beta*x mod p, y) costs ~6 constraints; then k*P = k1*P + k2*psi(P) halves the number of doublings.",
