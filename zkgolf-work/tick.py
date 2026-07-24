@@ -67,33 +67,48 @@ def zk_submit(slug, alloc, constr, desc, files):
     data = {"allocations": str(alloc), "constraints": str(constr), "description": desc, "assisted_by": "Aristotle (Harmonic)"}
     r = requests.post(f"https://zk.golf/api/agent/v1/challenges/{slug}/submissions", headers=H, data=data, files=fs, timeout=120)
     return r.status_code, r.text
-SALVAGE_ATTEMPTS = 3  # give up completing a near-miss proof after this many tries
+SALVAGE_ATTEMPTS = 6  # give up only after this many CONSECUTIVE non-improving proof-completion tries
+def count_holes(soldir):
+    n = 0
+    for f in glob.glob(os.path.join(soldir, "*.lean")):
+        if "/.lake/" in f: continue
+        n += len(re.findall(r"\b(sorry|admit)\b", strip_comments(open(f, errors="ignore").read())))
+    return n
 def stage_salvage(slug, soldir, score):
-    # A near-miss: circuit BEATS the record but has only a `sorry`/`admit`. Stash the full
-    # project with this Solution swapped in, so a follow-up job can complete just the proof.
-    sal = load("state_salvage.json", {})
-    cur = sal.get(slug)
-    if cur and cur.get("score", 1 << 62) <= score and cur.get("attempts", 0) < SALVAGE_ATTEMPTS:
-        return False  # already have an equal-or-better pending near-miss still being worked
+    # A near-miss: circuit BEATS the record but has only `sorry`/`admit`. Stash the full project
+    # with this Solution swapped in so a follow-up job completes just the proof. KEEP PUSHING on
+    # partial progress: re-stage (resetting the attempt counter) whenever a result improves either
+    # cost OR the number of remaining holes, so we build on half-finished work instead of restarting.
+    sal = load("state_salvage.json", {}); holes = count_holes(soldir); cur = sal.get(slug)
+    if cur:
+        ch = cur.get("holes", 1 << 30)
+        # progress = closer to a complete proof (fewer holes), ties broken by lower cost. Any
+        # below-record valid solution is a win, so proof-completion outranks marginal cost.
+        improved = (holes < ch) or (holes == ch and score < cur["score"])
+        if not improved and cur.get("attempts", 0) < SALVAGE_ATTEMPTS:
+            return False  # no progress and not yet exhausted → keep working the current snapshot
     inst = SLUG2INST[slug]; dst = os.path.join("salvage", slug)
     shutil.rmtree(dst, ignore_errors=True)
     shutil.copytree(f"projs/{slug}", dst)  # full project (Challenge/, lakefile, configs, reference/)
     soldst = os.path.join(dst, "Solution", inst)
     for f in glob.glob(soldst + "/*.lean"): os.remove(f)
     for f in glob.glob(soldir + "/*.lean"): shutil.copy(f, soldst)
-    sal[slug] = {"score": score, "attempts": 0}; save("state_salvage.json", sal)
+    sal[slug] = {"score": score, "holes": holes, "attempts": 0}; save("state_salvage.json", sal)
     return True
 def salvage_prompt(slug, score):
     inst = SLUG2INST[slug]
-    return (f"You are optimizing a zkGolf circuit in the Clean Lean-4 framework (clean @ 041c6e7e, Lean v4.28.0).\n\n"
-            f"`Solution/{inst}/` ALREADY contains a circuit whose cost (allocations+constraints) is {score}, which is "
-            f"BELOW the current record — but one or more proofs are INCOMPLETE (contain `sorry`/`admit`). Your ONLY job "
-            f"is to COMPLETE EVERY PROOF so the whole Solution fully verifies, WITHOUT raising allocations+constraints "
-            f"above {score}. Do NOT change the circuit shape, `main`, `allocations`, or `constraints` unless a change is "
-            f"strictly required to close a proof (and then keep the cost <= {score}). Keep ALL required declarations "
-            f"(`soundness`,`completeness`,`mainCost`,`isR1CS`,`computableWitness`). NO `sorry`/`admit`/`native_decide`; "
-            f"permitted axioms only. MANDATORY before returning: run `lake build` to ZERO errors and `#print axioms` to "
-            f"confirm only permitted axioms (no `sorryAx`). Return the complete, fully-compiling `Solution/{inst}/`.")
+    return (f"You are FINISHING half-completed work in the Clean Lean-4 framework (clean @ 041c6e7e, Lean v4.28.0) — "
+            f"do NOT start over.\n\n"
+            f"`Solution/{inst}/` ALREADY contains a circuit at cost (allocations+constraints) {score}, BELOW the current "
+            f"record. MOST proofs are already DONE; only a few `sorry`/`admit` placeholders remain. Your ONLY job is to "
+            f"CONTINUE this exact solution and close those remaining holes so the whole thing verifies — reuse every "
+            f"lemma and structure that is already there; do not rewrite what already works. Do NOT change the circuit "
+            f"shape, `main`, `allocations`, or `constraints` unless strictly required to close a proof, and then keep "
+            f"cost <= {score}. Even partial progress helps: if you cannot close every hole, close as many as you can and "
+            f"return the result with the rest still marked — a solution with FEWER remaining `sorry`s is real progress we "
+            f"will build on next. If you DO close them all: keep ALL required declarations (`soundness`,`completeness`,"
+            f"`mainCost`,`isR1CS`,`computableWitness`), no `native_decide`, permitted axioms only, and MANDATORY run "
+            f"`lake build` to ZERO errors + `#print axioms` (no `sorryAx`) before returning the complete Solution/{inst}/.")
 async def process_jobs():
     st = load("state_jobs.json", {})
     for pid, j in list(st.items()):
