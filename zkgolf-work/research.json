@@ -29,6 +29,7 @@
     "Run the decomposed halves/thirds as a width-w windowed joint-MSM (double-then-add) sharing doublings — reference figure ~2176 constraints for the 2-MSM core.",
     "Per scalar bit the naive cost is ~4 (point selects) + ~4 (adds) + ~2 (double); wNAF / signed-digit windows cut the number of ADDITIONS via longer zero runs.",
     "Use INCOMPLETE / affine addition formulas (cheaper than complete-addition) where exceptional cases are ruled out by the decomposition, guarded by a soundness argument.",
+    "Precomputed-points-as-HINTS (eprint 2025/933): compute the scalar-mul result and per-step accumulator points OUTSIDE the circuit and pass them as witnesses; the circuit only CHECKS each group-law relation, which is cheaper than deriving points in-circuit. The prior R1CS baseline was ~9 constraints per scalar bit — beat that per bit.",
     "Non-native Fp: minimal-limb schoolbook mul + reduce with carry-save accumulation and top-bit-fold limb range checks; the flexible-limb EqViaCarries family (see reference/) may pack the equality check tighter."
   ],
   "secp256k1-fixed-base-scalar-mul": [
