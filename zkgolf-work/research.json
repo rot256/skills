@@ -5,6 +5,8 @@
     "Represent each 32-bit word's bits once and reuse; XOR / rotation / shift are FREE affine combinations of bit variables — never allocate constraints for them, only for the AND (booleanity + one rank-1 product).",
     "Carry-save (3:2 compressor) addition to combine the 6-7 addends in the round function before a single final modular reduction, rather than chained 2-input adds.",
     "Fold the top bit of every 32-bit range decomposition (prove the MSB via the boolean already forced elsewhere) to save one boolean per word.",
+    "Smart bitwidth adjustment (xJsnark): track a STATIC upper bound on every intermediate 32-bit word through the adds/XOR-folds and insert a bit-decomposition/normalization ONLY when that bound would overflow the native field — not after every operation. Reported ~3.2k constraints saved vs Geppetto and ~10k vs Buffet on SHA-256; each skipped decomposition removes 32 allocations + its booleanity constraints, so it pays double in this metric.",
+    "Global common-subexpression / multivariate-polynomial minimization across the 64 rounds (xJsnark, reported ~8.8k constraints on SHA-256): the message schedule and round function reuse the same sigma/XOR-fold subexpressions — allocate each distinct affine combination ONCE and share it everywhere rather than per-round.",
     "If the framework exposes lookups: 'spread'/interleaved-bit tables (Barretenberg-style) turn XOR3 and Maj into table reads; only worth it if a lookup is cheaper than the ~1 constraint the arithmetic form already costs — verify against this R1CS cost model first."
   ],
   "keccak-f1600": [
@@ -21,6 +23,7 @@
     "Limb count sweet spot N<=12 wide limbs; minimize the number of carries that need range checks — each naive range check costs ~1/2 constraint per bit, so wider limbs with fewer carries win.",
     "CRT / RNS residue representation to split the 4096-bit reduce into independent smaller-modulus channels; recombine once at the end.",
     "Only range-check the modular residual, the quotient coefficient, and carries — not every intermediate; use top-bit-fold range checks.",
+    "LAZY REDUCTION with static limb-bound tracking (xJsnark long-integer arithmetic): carry a compile-time upper bound per limb and let partial products accumulate in wider limbs; emit a carry-normalization + range check ONLY when a limb's tracked bound would exceed field capacity, instead of normalizing after every op. Across the 16 squarings + 1 multiply this removes whole normalization passes, not just individual carries.",
     "mulmod as ONE polynomial-identity check at a single constant point (gnark/eprint 2025/933): hint quotient q and error/carry limbs e out of circuit, then enforce a(X)b(X) = c(X) + alpha(X)q(X) + (2^B - X)e(X) evaluated at ONE fixed X=2^B — collapses the full limb-by-limb equality into a single rank-1 product plus range checks on q,c,e, instead of one constraint per limb coefficient. Evaluate-at-a-point beats coefficient-matching in this R1CS metric; reuse the same hinted-then-checked shape for all 17 squarings/multiplies."
   ],
   "secp256k1-scalar-mul": [
@@ -31,6 +34,7 @@
     "Per scalar bit the naive cost is ~4 (point selects) + ~4 (adds) + ~2 (double); wNAF / signed-digit windows cut the number of ADDITIONS via longer zero runs.",
     "Use INCOMPLETE / affine addition formulas (cheaper than complete-addition) where exceptional cases are ruled out by the decomposition, guarded by a soundness argument.",
     "Precomputed-points-as-HINTS (eprint 2025/933): compute the scalar-mul result and per-step accumulator points OUTSIDE the circuit and pass them as witnesses; the circuit only CHECKS each group-law relation, which is cheaper than deriving points in-circuit. The prior R1CS baseline was ~9 constraints per scalar bit — beat that per bit.",
+    "AUDIT FOR OVER-ALLOCATION in the incomplete-add ladder (circom-ecdsa finding): only the first ~3 steps actually need the complete-addition guard, so accumulator/point arrays sized [bits] can be cut to [bits-3] and [3]. Allocations are HALF the cost metric here — sweep every witness array for entries that are never constrained or never read.",
     "Non-native Fp: minimal-limb schoolbook mul + reduce with carry-save accumulation and top-bit-fold limb range checks; the flexible-limb EqViaCarries family (see reference/) may pack the equality check tighter."
   ],
   "secp256k1-fixed-base-scalar-mul": [
