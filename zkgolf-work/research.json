@@ -1,8 +1,12 @@
 {
   "_meta": "Externally-researched circuit-optimization techniques injected into Aristotle prompts by gen_prompts.py. Techniques are candidate ideas from the ZK literature — the Clean challenge is R1CS with cost = allocations + constraints, so some lookup/GKR/sumcheck tricks may NOT map; Aristotle must verify applicability before use. Refreshed periodically via web research.",
+  "_common": [
+    "MECHANICAL POST-PASS over the finished constraint system (arkworks r1cs-optimizer passes): (a) DEAD VARIABLE ELIMINATION — drop every allocated witness never read by a surviving constraint; (b) CONSTRAINT DEDUPLICATION — identical rank-1 rows collapse to one; (c) CONSTANT FOLDING; (d) LINEAR SUBSTITUTION — a variable defined by an affine constraint is inlined into its uses and both it and its defining row disappear. Cost here is allocations+constraints, so each pass pays twice; run this sweep at the END of any rewrite, since hand-golfing reliably leaves orphaned witnesses behind."
+  ],
   "sha256-hash": [
     "Majority(B,C,D) = (B&C) ^ (B&D) ^ (C&D): three ANDs + XOR-fold; Ch(E,F,G) = G ^ (E&(F^G)) uses ONE AND (E&(F^G)) instead of two.",
     "Represent each 32-bit word's bits once and reuse; XOR / rotation / shift are FREE affine combinations of bit variables — never allocate constraints for them, only for the AND (booleanity + one rank-1 product).",
+    "CALIBRATION: an optimized pure-R1CS circom SHA-256 compression costs 26,170 nonlinear constraints (bkomuves/hash-circuits), ~13% below circomlib — treat ~26k constraints/compression as the bar a straightforward good encoding already clears.",
     "Carry-save (3:2 compressor) addition to combine the 6-7 addends in the round function before a single final modular reduction, rather than chained 2-input adds.",
     "Fold the top bit of every 32-bit range decomposition (prove the MSB via the boolean already forced elsewhere) to save one boolean per word.",
     "Smart bitwidth adjustment (xJsnark): track a STATIC upper bound on every intermediate 32-bit word through the adds/XOR-folds and insert a bit-decomposition/normalization ONLY when that bound would overflow the native field — not after every operation. Reported ~3.2k constraints saved vs Geppetto and ~10k vs Buffet on SHA-256; each skipped decomposition removes 32 allocations + its booleanity constraints, so it pays double in this metric.",
@@ -13,6 +17,7 @@
     "theta/rho/pi are pure linear XOR + fixed rotations — keep them as FREE affine combinations; charge constraints ONLY for bit booleanity and chi.",
     "chi_i = a_i ^ ((¬a_{i+1}) & a_{i+2}); ¬b = 1-b is affine, so chi is ONE rank-1 AND plus an XOR-fold per bit — 3200 constraints/round is the target to beat.",
     "Optional ±1 (Fourier) basis where true=-1,false=+1: XOR becomes a single multiplication and negation is free (Keccacheck); can collapse some XOR-chains — verify it doesn't inflate the booleanity/const-folding cost in R1CS.",
+    "CALIBRATION: an optimized pure-R1CS circom implementation (bkomuves/hash-circuits) reaches 144,830 nonlinear constraints for ONE Keccak-f1600 compression, vs 185,856 for the naive encoding that charges 4480/round for theta. If your constraint count sits near 185k, theta is still being paid for — it must be free affine combinations.",
     "iota XORs a round constant — a pure affine offset, zero constraints.",
     "NOTE: the leaderboard record (184320) omits computableWitness; reproduce its circuit shape on the valid baseline AND add a fully-proved computableWitness. GKR/sum-check results (<4k) are a DIFFERENT proof system and do not transfer to this R1CS metric."
   ],
@@ -41,6 +46,7 @@
     "Base G is FIXED: every window multiple j*(2^{w*i})*G is a COMPILE-TIME CONSTANT — bake the whole comb table into the circuit as constants (zero constraints to build it), unlike the variable-base case.",
     "Comb method: k = sum b_{i} 2^{i}; group bits into d combs of width w so each step is ONE table select + ONE add; fewer adds than plain windowed double-and-add.",
     "Width-w NAF / signed-digit recoding of the scalar so table entries cover +/- multiples, halving table size and generating more zero (skip) positions.",
+    "Signed-digit tables cost almost nothing to apply: -P = (x, -y), so the sign bit drives ONE modular negation of y (an affine op), NOT a second multiplexer. So a width-w signed table needs only 2^{w-1} constant entries selected, plus a conditional y-negation — half the select cost of an unsigned width-w table for the same window count.",
     "Constant-table point selection as a multiplexer over field constants: select cost is linear in window size but touches only additions/booleans, no non-native mul.",
     "Combine comb sub-scalars as a joint accumulation sharing point doublings/additions (multi-comb), analogous to the joint-MSM trick, so the fixed precompute is amortized across all windows in one add-chain.",
     "Port secp256k1-scalar-mul's GroupedEqXV / MulModTarget non-native machinery (see reference/) if it lowers the per-add Fp mul-mod cost below the current Flex path; competitor csko pushed this challenge to 90041, a large structural gap — a comb-table + incomplete-add rewrite is likely needed, not incremental tweaks."

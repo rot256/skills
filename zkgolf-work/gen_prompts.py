@@ -92,6 +92,7 @@ for slug,txt in XPOLL.items():
 # challenge is R1CS with cost = allocations+constraints, so Aristotle MUST verify each applies here.
 for slug in INST:
     bullets=[b for b in RESEARCH.get(slug,[]) if isinstance(b,str)]
+    bullets+=[b for b in RESEARCH.get("_common",[]) if isinstance(b,str)]  # cross-cutting: applies to every challenge
     if not bullets: continue
     block="\n\nRESEARCHED TECHNIQUES (from external ZK literature — VERIFY each maps to this R1CS cost model before use; ignore lookup/GKR/sum-check-only tricks that don't lower allocations+constraints here):\n"+"\n".join(f"- {b}" for b in bullets)
     for f in (f"prompts/{slug}.md", f"prompts_small/{slug}.md"):
