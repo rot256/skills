@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """zkGolf/Aristotle loop tick. Runtime state is regenerable from the zk.golf + Aristotle
 APIs (see bootstrap.sh); only this tooling needs to persist. Location-independent."""
-import os, re, json, glob, time, tarfile, asyncio, datetime, subprocess, shutil
+import os, sys, re, json, glob, time, tarfile, asyncio, datetime, subprocess, shutil
 import requests, aristotlelib
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 ZK = os.environ["ZKGOLF_KEY"]; H = {"Authorization": f"Bearer {ZK}"}
@@ -167,6 +167,26 @@ async def process_jobs():
             print(f"STATUS: aristotle {slug} {status}")  # never auto-cancel long-running jobs
         st[pid] = j
     save("state_jobs.json", st)
+def regen_prompts_if_stale():
+    """Prompts are gitignored, so a filesystem/container rollback can revert them while
+    research.json stays current — silently dispatching stale prompts. Regenerate whenever
+    any prompt is older than research.json/gen_prompts.py, or is missing/empty."""
+    try:
+        srcs = [os.path.join(HERE, f) for f in ("research.json", "gen_prompts.py")]
+        newest = max(os.path.getmtime(f) for f in srcs if os.path.exists(f))
+        outs = [os.path.join(HERE, d, f"{sl}.md") for d in ("prompts", "prompts_small") for sl in CHALLENGES5]
+        outs = [f for f in outs if os.path.exists(f)] or None
+        if outs is None:
+            subprocess.run([sys.executable, os.path.join(HERE, "gen_prompts.py")], check=True, capture_output=True, timeout=120)
+            print("STATUS: prompts missing — generated from research.json"); return
+        stale = any(os.path.getsize(f) == 0 for f in outs) or min(os.path.getmtime(f) for f in outs) < newest
+        if stale:
+            subprocess.run([sys.executable, os.path.join(HERE, "gen_prompts.py")], check=True, capture_output=True, timeout=120)
+            print("STATUS: prompts were stale — regenerated from research.json")
+    except Exception as e:
+        print(f"STATUS: prompt regen check failed {e}")
+
+
 KEYS_TO_USE = ["primary"] + (["alt"] if KEYS.get("alt") else [])  # dual-account fleet
 async def ensure_inflight(st):
     # keep >=1 job per (challenge, big/small, account) in flight — up to 20 with two keys
@@ -180,6 +200,7 @@ async def ensure_inflight(st):
         if lb is not None and sal[slug]["score"] >= lb:
             print(f"NOTIFY: salvage {slug} @{sal[slug]['score']} no longer beats record {int(lb)} — dropping"); del sal[slug]
     save("state_salvage.json", sal)
+    regen_prompts_if_stale()
     for slug in CHALLENGES5:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
             for kname in KEYS_TO_USE:
