@@ -12,6 +12,9 @@ while True:
             c=subprocess.run(BASE+["check_records.py"],capture_output=True,text=True,timeout=600)
             for line in c.stdout.splitlines():
                 if line.startswith("NOTIFY:") and any(k in line for k in ("SUBMITTED","verified","failed","RECORD","record moved")): print(line,flush=True)
+            if c.returncode!=0 and c.stderr.strip():
+                # a crash here silently kills record detection — surface it
+                print("NOTIFY: check_records FAILED: "+c.stderr.strip().splitlines()[-1],flush=True)
         p=subprocess.run(BASE+["tick.py"],capture_output=True,text=True,timeout=900)
         for line in p.stdout.splitlines():
             if line.startswith("NOTIFY:") and any(k in line for k in ("SUBMITTED","verified","failed","RECORD","record moved")): print(line,flush=True)

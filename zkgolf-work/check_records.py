@@ -7,12 +7,15 @@ INST={"gf2-k12-compress-canonical":"KangarooTwelveGF2","gf2-sha256-compress-cano
 try: tg=json.load(open("targets.json"))
 except Exception: tg={}
 if not tg: print("STATUS: no targets"); raise SystemExit(0)
-chs={c["slug"]:int(c["best_score"]) for c in requests.get("https://zk.golf/api/agent/v1/challenges",headers=H,timeout=30).json() if c["slug"] in tg}
+# best_score is None for challenges with no submissions yet (unclaimed) — keep them, never int(None)
+chs={c["slug"]:c["best_score"] for c in requests.get("https://zk.golf/api/agent/v1/challenges",headers=H,timeout=30).json() if c["slug"] in tg}
 changed=[]
 for slug,inst in INST.items():
     if slug not in tg: continue
     new=chs.get(slug); old=tg[slug]["target"]
-    if new is None or new>=old: continue
+    if new is None: continue          # unclaimed challenge: nothing to re-seed from
+    new=int(new)
+    if new>=old: continue
     lb=requests.get(f"https://zk.golf/api/agent/v1/challenges/{slug}/leaderboard",headers=H,timeout=30).json()
     t=min(lb,key=lambda e:e["score"]); new=int(t["score"]); sid=t["submission_id"]
     d=f"records/{slug}"; os.makedirs(d,exist_ok=True)
