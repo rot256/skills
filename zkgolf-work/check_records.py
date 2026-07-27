@@ -3,7 +3,7 @@
 import requests, os, json, tarfile, glob, io, shutil, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 KEY=os.environ["ZKGOLF_KEY"]; H={"Authorization":f"Bearer {KEY}"}
-INST={"sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
+INST={"gf2-k12-compress-canonical":"KangarooTwelveGF2","gf2-sha256-compress-canonical":"SHA256CompressGF2Canonical","sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
 try: tg=json.load(open("targets.json"))
 except Exception: tg={}
 if not tg: print("STATUS: no targets"); raise SystemExit(0)

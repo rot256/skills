@@ -4,10 +4,20 @@ lacks computableWitness); write targets.json. Location-independent."""
 import requests, os, json, tarfile, glob, io, shutil
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 KEY=os.environ["ZKGOLF_KEY"]; H={"Authorization":f"Bearer {KEY}"}
-INST={"sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
+INST={"gf2-k12-compress-canonical":"KangarooTwelveGF2","gf2-sha256-compress-canonical":"SHA256CompressGF2Canonical","sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
 targets={}
+CHS={c["slug"]:c for c in requests.get("https://zk.golf/api/agent/v1/challenges",headers=H,timeout=30).json()}
 for slug,inst in INST.items():
     lb=requests.get(f"https://zk.golf/api/agent/v1/challenges/{slug}/leaderboard",headers=H,timeout=30).json()
+    if not lb:
+        # No submissions yet: seed from the challenge baseline and target its baseline_score.
+        score=int(CHS[slug]["baseline_score"])
+        soldir=f"projs/{slug}/Solution/{inst}"; os.makedirs(soldir,exist_ok=True)
+        for f in glob.glob(soldir+"/*.lean"): os.remove(f)
+        for f in glob.glob(f"zk-golf-challenges/Solution/{inst}/*.lean"): shutil.copy(f, soldir)
+        targets[slug]={"target":score,"seed":f"baseline {score} (NO submissions yet — first valid entry takes the record)","by":None}
+        print(f"{slug}: target<{score} seed=baseline UNCLAIMED ({len(glob.glob(soldir+'/*.lean'))} files)")
+        continue
     t=min(lb,key=lambda e:e["score"]); sid=t["submission_id"]; score=int(t["score"])
     d=f"records/{slug}"; os.makedirs(d,exist_ok=True)
     for f in glob.glob(d+"/*.lean"): os.remove(f)

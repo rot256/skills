@@ -7,8 +7,9 @@ cd "$(dirname "$(readlink -f "$0")")"
 source env.local
 REV=041c6e7ebc06f5cbfd534c2a19c4120f3de62435
 [ -d zk-golf-challenges/.git ] || { rm -rf zk-golf-challenges; git clone --depth 1 https://github.com/zksecurity/zk-golf-challenges.git; }
+(cd zk-golf-challenges && git fetch --depth 1 origin main -q && git reset --hard FETCH_HEAD -q) || true  # pick up newly published challenges
 rm -rf proj && cp -r zk-golf-challenges proj && rm -rf proj/.git proj/.github
-declare -A MAP=( [sha256-hash]=SHA256 [keccak-f1600]=KeccakF1600 [rsa-pkcs1v15-sha256-4096-65537]=RSASSAPKCS1v15_SHA256_4096_65537 [secp256k1-scalar-mul]=Secp256k1ScalarMul [secp256k1-fixed-base-scalar-mul]=Secp256k1ScalarMulFixedBase )
+declare -A MAP=( [gf2-k12-compress-canonical]=KangarooTwelveGF2 [gf2-sha256-compress-canonical]=SHA256CompressGF2Canonical [sha256-hash]=SHA256 [keccak-f1600]=KeccakF1600 [rsa-pkcs1v15-sha256-4096-65537]=RSASSAPKCS1v15_SHA256_4096_65537 [secp256k1-scalar-mul]=Secp256k1ScalarMul [secp256k1-fixed-base-scalar-mul]=Secp256k1ScalarMulFixedBase )
 for slug in "${!MAP[@]}"; do
   inst="${MAP[$slug]}"; d="projs/$slug"; rm -rf "$d"; cp -r proj "$d"
   for sd in "$d"/Solution/*/; do [ "$(basename "$sd")" != "$inst" ] && rm -rf "$sd"; done

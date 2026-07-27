@@ -60,5 +60,21 @@
     "COORDINATE-SYSTEM TRAP: in R1CS an inversion costs ~1 allocation + 1 constraint (hint inv as a witness, enforce x*inv = 1), so division is nearly FREE here — the opposite of the software cost model. Jacobian/projective/co-Z formulas (incl. Meloni co-Z ladders at ~11M+5S+23A per scalar bit) exist ONLY to avoid inversion, and pay for it with extra MULTIPLICATIONS — which are the expensive non-native op in-circuit. Prefer plain AFFINE add/double with hinted inverses; do NOT port inversion-free coordinate systems from the ECC literature.",
     "Combine comb sub-scalars as a joint accumulation sharing point doublings/additions (multi-comb), analogous to the joint-MSM trick, so the fixed precompute is amortized across all windows in one add-chain.",
     "Port secp256k1-scalar-mul's GroupedEqXV / MulModTarget non-native machinery (see reference/) if it lowers the per-add Fp mul-mod cost below the current Flex path; competitor csko pushed this challenge to 90041, a large structural gap — a comb-table + incomplete-add rewrite is likely needed, not incremental tweaks."
+  ],
+  "gf2-k12-compress-canonical": [
+    "GF(2) CHANGES THE COST MODEL: every element IS a bit, so booleanity constraints vanish entirely — the ONLY cost is chi's multiplication. theta/rho/pi/iota are all F2-LINEAR (XOR = addition, rotation = index permutation, round constant = affine offset) and must cost ZERO.",
+    "Baseline 38400 = 12 rounds x 1600 bits x (1 alloc + 1 constraint) — exactly ONE multiplication per state bit. Beating it means beating the MULTIPLICATIVE COMPLEXITY of chi, not shaving overhead.",
+    "chi over GF(2): chi_i = a_i + a_{i+2} + a_{i+1}*a_{i+2} (since NOT b = 1+b is affine). Per 5-bit row the products are a1a2,a2a3,a3a4,a4a0,a0a1 — 5 products for 5 outputs, each seemingly used once. LOOK FOR: an algebraic identity computing all 5 row outputs with FEWER than 5 multiplications, products shared between adjacent rows/slices, or a change of basis making chi cheaper.",
+    "Only 12 rounds (KangarooTwelve), not 24 — half the rounds of keccak-f1600, so per-round savings are worth proportionally more of the total.",
+    "FINAL-ROUND TRIM: the last round's chi feeds only the output. Check whether any intermediate there can be left unmaterialized, or whether the output bits can BE the product witnesses rather than separate allocations — allocations are half the score.",
+    "An allocation is only needed for a value that a rank-1 product must reference. Any bit expressible as an affine combination of existing witnesses needs NO allocation — over GF(2) that covers all of theta/rho/pi/iota, so the allocation count should equal the MULTIPLICATION count exactly, never more."
+  ],
+  "gf2-sha256-compress-canonical": [
+    "GF(2): bits are free of booleanity; XOR/rotate/shift are FREE affine combinations. Cost concentrates in (a) AND gates in Ch/Maj and (b) the mod-2^32 ADDITION carry chains, which are NOT linear over GF(2) and usually dominate.",
+    "Minimum-AND forms: Ch(e,f,g) = g + e*(f+g) is ONE multiplication. Maj(a,b,c) = a*b + c*(a+b) is TWO; the symmetric ab+ac+bc form costs three — always use the factored version.",
+    "The adder is the real target: a ripple-carry over 32 bits costs ~32 muls per addition and SHA-256 does 6-7 additions per round over 64 rounds. Use carry-save (3:2 compressor) trees to collapse many addends into two before ONE final carry-propagate, so the expensive ripple happens once per round rather than per addend.",
+    "A full-adder carry over GF(2) is maj(a,b,cin) = ab + cin(a+b) — ONE multiplication; the sum bit a+b+cin is free. So a 32-bit ripple costs ~32 muls, and a 3:2 compressor costs 32 muls while removing an entire addend.",
+    "Baseline 95904 vs record 44784 — a >2x gap, so the record is NOT using a naive per-addend ripple. Assume a carry-save tree plus minimum-AND Ch/Maj, and look for further sharing of carry subexpressions across the 64 rounds.",
+    "Reference point: Flock's pinned SHA-256 R1CS encoder is 30,632 allocations + 30,632 constraints = 61,264 interface-normalized — already beaten by the 44784 record, so treat 61k as a floor to clear, not a goal."
   ]
 }
