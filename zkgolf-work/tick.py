@@ -188,6 +188,34 @@ def regen_prompts_if_stale():
 
 
 KEYS_TO_USE = ["primary"] + (["alt"] if KEYS.get("alt") else [])  # dual-account fleet
+async def reconcile_orphans(st):
+    """A filesystem rollback wipes state_jobs.json but NOT the Aristotle side, so its jobs keep
+    running as orphans: we never poll them (their results are lost) and they still count against
+    the per-key RUNNING cap, starving refill. Re-adopt every RUNNING project whose description
+    names a known challenge so its result is harvested and the state reflects reality."""
+    for kname in KEYS_TO_USE:
+        use_key(kname)
+        try:
+            ps, pk = [], None
+            while True:
+                page, pk = await aristotlelib.Project.list_projects(
+                    pagination_key=pk, limit=30, status=aristotlelib.ProjectStatus.RUNNING)
+                ps += page
+                if not pk: break
+        except Exception as e:
+            print(f"STATUS: reconcile {kname} list failed {e}"); continue
+        for p in ps:
+            pid = str(p.project_id)
+            if pid in st: continue
+            slug = (getattr(p, "description", "") or "").strip()
+            if slug not in SLUG2INST:
+                print(f"STATUS: reconcile {kname} {pid[:8]} description {slug!r} not a challenge — leaving alone"); continue
+            # keep slot bookkeeping honest: take a free (slug,purpose,key) slot, else mark "extra"
+            taken = set((j["slug"], j.get("purpose"), j.get("key", "primary")) for j in st.values() if not j.get("processed"))
+            purpose = next((pp for pp in ("big-win", "small-win") if (slug, pp, kname) not in taken), "extra")
+            st[pid] = {"slug": slug, "status": "RUNNING", "processed": False, "purpose": purpose,
+                       "key": kname, "ts": NOW, "salvage": False, "adopted": True}
+            print(f"NOTIFY: adopted orphaned job {slug} [{purpose}/{kname}] {pid[:8]} — state had lost it")
 async def ensure_inflight(st):
     # keep >=1 job per (challenge, big/small, account) in flight — up to 20 with two keys
     active = set((j["slug"], j.get("purpose"), j.get("key", "primary")) for j in st.values() if not j.get("processed"))
@@ -241,6 +269,7 @@ def process_subs():
             print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} -> {final} score={score} {tag}(claimed {s.get('score')})")
     save("state_subs.json", subs)
 async def main():
+    st0 = load("state_jobs.json", {}); await reconcile_orphans(st0); save("state_jobs.json", st0)
     await process_jobs()
     st = load("state_jobs.json", {}); await ensure_inflight(st); save("state_jobs.json", st)
     process_subs()
