@@ -13,7 +13,14 @@ CHALLENGES5 = list(SLUG2INST)
 def load(p, d):
     try: return json.load(open(p))
     except Exception: return d
-def save(p, o): json.dump(o, open(p, "w"), indent=2)
+def save(p, o):
+    # Atomic: a container death mid-write once truncated state_jobs.json, and `load` turns an
+    # unparseable file into {} — which reads as "no jobs" and re-dispatches the whole fleet.
+    # Write to a temp file, fsync, then rename: readers see either the old file or the new one.
+    tmp = p + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(o, f, indent=2); f.flush(); os.fsync(f.fileno())
+    os.replace(tmp, p)
 def audit(p, rec):
     with open(p, "a") as f: f.write(json.dumps(rec) + "\n")
 def leaderboard_best(slug):
