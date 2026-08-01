@@ -269,6 +269,13 @@ def process_subs():
         except Exception as e:
             print(f"STATUS: sub {sid[:8]} poll-error {e}"); continue
         stt = r.get("status"); score = r.get("score")
+        if stt == "timeout" and score is None:
+            # the zk.golf verifier gave up, not the solution — a real improvement was dropped for
+            # infrastructure reasons. Mark it terminal so we stop polling, but say so loudly.
+            s["status"] = "failed"; s["verifier_timeout"] = True; subs[sid] = s
+            print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} -> failed (VERIFIER TIMEOUT, not a bad solution; "
+                  f"claimed {s.get('score')} — worth resubmitting)")
+            continue
         if stt in ("verified","failed","error") or score is not None:
             final = "verified" if (stt == "verified" or score is not None) else "failed"
             s["status"] = final; s["is_record"] = r.get("is_record"); subs[sid] = s
