@@ -71,12 +71,22 @@ WORKQUEUE={
 def workqueue_block(slug):
     wq=WORKQUEUE.get(slug)
     if not wq: return ""
-    cur,pred,items=wq
+    derived,pred,items=wq
+    now=tg[slug]["target"]           # live, so the header cannot go stale as records land
     head=(f"\n\nPRIORITY WORK QUEUE — DERIVED FROM THIS SOLUTION'S OWN SOURCE AND COST PROOFS, NOT SPECULATION.\n"
-          f"Each item below was worked out against the current {cur} solution, with the saving predicted from its own\n"
-          f"measured primitive costs. These are NOT literature candidates to evaluate — they are work items. They are\n"
-          f"ordered CHEAPEST-AND-SAFEST FIRST, so if you can only land one, take the first one you can fully prove.\n")
-    if pred: head+=f"Implementing all of them is predicted to reach about {pred}.\n"
+          f"Each item was worked out against the {derived} solution, with the saving predicted from its own measured\n"
+          f"primitive costs. These are NOT literature candidates to evaluate — they are work items. They are ordered\n"
+          f"CHEAPEST-AND-SAFEST FIRST, so if you can only land one, take the first one you can fully prove.\n")
+    if now!=derived:
+        head+=(f"*** THE SEED HAS MOVED ON TO {now} SINCE THESE WERE DERIVED, SO SOME MAY ALREADY BE DONE. ***\n"
+               f"CHECK THE SEED BEFORE IMPLEMENTING ANY ITEM — re-deriving work already in the tree wastes the whole job.\n"
+               f"The mechanisms and bound arithmetic below remain valid regardless of which have landed; only the\n"
+               f"predicted savings are relative to {derived}. A quick way to tell which non-native sites are still\n"
+               f"UNFOLDED: an unfolded site uses the `gfQuad`/`gfWideFat` grouped-carry path and witnesses a full 4-limb\n"
+               f"quotient with a ~252/256 NormalizeImplicit on it; a folded one uses `gfFold` with ONE carry and a single\n"
+               f"quotient wire. Grep for those and work the sites that are still on the unfolded path.\n")
+    elif pred:
+        head+=f"Implementing all of them is predicted to reach about {pred}.\n"
     return head+"\n".join(f"  [~{s} score] {t}" for s,t in items)
 os.makedirs("prompts",exist_ok=True); os.makedirs("prompts_small",exist_ok=True)
 def tmpl(inst,t,framing,ideas,show_target=True,wq=""):
