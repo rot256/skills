@@ -60,6 +60,26 @@ WORKQUEUE={
            "(lam1^2 - 2*xP - xQ)*(lam1 + lam2) + 2*yP = 0 (mod p). VERIFIED 200/200. REQUIRES the 8x32 re-limb first — at "
            "4x64 a D=3 certificate is 1597 and the folded position overflows 2^253; at 8x32 it is 454 against a 531 materialisation."),
  ]),
+ "keccak-f1600": (307200, 184320, [
+  ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
+            "Solution/KeccakF1600/ is the 307200 BASELINE, not the record: it has no Xor3Lane.lean and its allocations "
+            "are 153600. The 184320 record is in reference/ and it OMITS computableWitness, which configs lists in "
+            "theorem_names, so it cannot be submitted as-is. THE PORT IS SMALL AND MECHANICAL: diffing baseline against "
+            "record file by file, AndLane/XorLane/ThetaD differ ONLY by the deleted computableWitnesses block and ThetaC "
+            "only by that block plus a Fact (p > 3) instance. The real work is TWO NEW LEAF PROOFS — "
+            "Xor3Lane.computableWitnesses and ChiLane.computableWitnesses — and both gadgets are exactly "
+            "`witnessVector 64 ...; Circuit.forEach ... assertZero`, the SAME SHAPE as the baseline's XorLane, whose "
+            "proof at XorLane.lean:104-135 is about 30 lines and transposes directly (h_input.1 / .2.1 / .2.2 for three "
+            "inputs). Everything else is recomposition — Xor5Lane over two Xor3Lane subcircuits, ThetaXor taking Inputs "
+            "field c instead of d, Theta dropping the ThetaD step — plus verbatim copies of Cost.lean, "
+            "PermutationDefs.lean, PermutationCost.lean and Main.lean from reference/."),
+  ("1","AND YOU MUST BEAT 184320, NOT MATCH IT. ordian already holds 184320, and a TIE DOES NOT DISPLACE A RECORD — "
+        "confirmed on the gf2-k12 challenge, where a baseline-equal submission verified but never reached the "
+        "leaderboard. So pair the port with at least ONE point of saving. Where it is NOT: chi is at the proved "
+        "multiplicative floor (1 row per state bit, MC(chi_5) = 5 is SAT-proved), rho/pi/iota are free, and the "
+        "input/output boundary is exactly 0. ALL remaining slack is THETA's 2240 per round — of which 320 are Xor5 "
+        "INTERMEDIATES (the t = a^b^c of each 5-input column parity) and 320 the C bits, with D already fused away."),
+ ]),
  "rsa-pkcs1v15-sha256-4096-65537": (321889, None, [
   ("1450","The q*n limb caps are UNSIGNED (limbCap = 2^B - 1) while the a^2 caps are balanced (fixedBalCap ~ 2^(B-1)), and "
           "q*n DOMINATES the coefficient cap: peak 2^55.74 against 2^54.42 balanced. Witness q's limbs offset "
