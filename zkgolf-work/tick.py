@@ -313,6 +313,43 @@ async def reconcile_orphans(st):
             st[pid] = {"slug": slug, "status": "RUNNING", "processed": False, "purpose": purpose,
                        "key": kname, "ts": NOW, "salvage": False, "adopted": True}
             print(f"NOTIFY: adopted orphaned job {slug} [{purpose}/{kname}] {pid[:8]} — state had lost it")
+PRIMARY_STALL_HOURS = float(os.environ.get("PRIMARY_STALL_HOURS", "2"))
+PRIMARY_PROBE_CAP   = int(os.environ.get("PRIMARY_PROBE_CAP", "1"))
+
+async def primary_dispatch_cap(st):
+    """Rate-limit the primary account while it ACCEPTS jobs but does not RUN them.
+
+    Observed 2026-08-04: all 12 primary projects sat with their agent task QUEUED and zero
+    progress events for ~13h while the alt account executed normally — half the fleet was dead
+    weight, and nothing in our state showed it, because `Project.status == RUNNING` only means
+    the project EXISTS. Task status is the real signal. Filling primary's slots in that state
+    buries real work in a queue that is not draining, so cap it at a single probe job until one
+    is seen running. Self-healing: the moment any primary task leaves QUEUED the cap lifts.
+    """
+    inflight = [(pid, j) for pid, j in st.items()
+                if not j.get("processed") and j.get("key", "primary") == "primary"]
+    if not inflight: return 10**6
+    use_key("primary")
+    oldest = 0.0; healthy = False; seen = 0
+    for pid, j in inflight:
+        try:
+            p = await aristotlelib.Project.from_id(pid); await p.refresh()
+            if getattr(p.status, "name", str(p.status)) == "IDLE":
+                healthy = True; break                 # it finished something: definitely consuming
+            tasks, _ = await p.get_tasks(limit=3)
+            if not tasks: continue                    # taskless zombie: says nothing about health
+            seen += 1
+            if any(t.status.name != "QUEUED" for t in tasks): healthy = True; break
+            age = (datetime.datetime.now(datetime.timezone.utc) -
+                   datetime.datetime.fromisoformat(j["ts"].replace("Z", "+00:00"))).total_seconds() / 3600
+            oldest = max(oldest, age)
+        except Exception as e:
+            print(f"STATUS: primary health probe {pid[:8]} {e}")
+    if healthy or seen == 0 or oldest < PRIMARY_STALL_HOURS: return 10**6
+    print(f"NOTIFY: primary key STALLED — {seen} jobs queued, oldest {oldest:.1f}h, none running; "
+          f"capping primary dispatch at {PRIMARY_PROBE_CAP} until it drains")
+    return PRIMARY_PROBE_CAP
+
 async def ensure_inflight(st):
     # keep >=1 job per (challenge, big/small, account) in flight — up to 20 with two keys
     active = set((j["slug"], j.get("purpose"), j.get("key", "primary")) for j in st.values() if not j.get("processed"))
@@ -326,10 +363,14 @@ async def ensure_inflight(st):
             print(f"NOTIFY: salvage {slug} @{sal[slug]['score']} no longer beats record {int(lb)} — dropping"); del sal[slug]
     save("state_salvage.json", sal)
     regen_prompts_if_stale()
+    pcap = await primary_dispatch_cap(st)
+    pcount = sum(1 for j in st.values()
+                 if not j.get("processed") and j.get("key", "primary") == "primary")
     for slug in DISPATCH:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
             for kname in KEYS_TO_USE:
                 if (slug, purpose, kname) in active: continue
+                if kname == "primary" and pcount >= pcap: continue
                 # big-win slot preferentially completes a pending near-miss's proof
                 do_salvage = purpose == "big-win" and slug in sal and sal[slug].get("attempts", 0) < SALVAGE_ATTEMPTS
                 try:
@@ -348,6 +389,7 @@ async def ensure_inflight(st):
                         print(f"NOTIFY: auto-dispatched {slug} [SALVAGE proof-completion @{sal[slug]['score']}, attempt {sal[slug]['attempts']}/{SALVAGE_ATTEMPTS}] -> {p.project_id}")
                     else:
                         print(f"NOTIFY: auto-dispatched {slug} [{purpose}/{kname}] -> {p.project_id}")
+                    if kname == "primary": pcount += 1
                 except Exception as e:
                     print(f"STATUS: refill {slug}/{purpose}/{kname} failed {e}")
 def process_subs():
