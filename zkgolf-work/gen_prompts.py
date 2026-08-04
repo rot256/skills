@@ -21,31 +21,37 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (68797, 49536, [
-  ("1308","stageO2: apply the pseudo-Mersenne fold. ZERO new bound work needed — PairAddQ6Zero.stageO2's "
-          "circuit body uses only xA, xT1, lam1 and its lhs/rhs are CHARACTER-IDENTICAL to ChainFold.stageX, "
-          "so stageO2 xA yA xT1 yT1 lam1 IS stageX xA xT1 lam1 modulo one lemma x3Val = x2W. 720/724 -> 394/396, x2 sites."),
-  ("1292","stageX: the shipped RangeCheck is 67 bits but the true quotient bound is 33. q = (cFold*hi + lo + bias - rem) div p "
-          "<= cFold*H/p + 1 + bias_mult = cFold + 5 = 2^32 + 982. Since q < 2^33 implies q < 2^67, FoldQuad and hgvFold are "
-          "UNTOUCHED — change `RangeCheck.circuit 67` to `33` and prove the completeness bound. 34+34 per site x19."),
-  ("12787","stageC1: apply the fold. Bounds ARE derived and green — C = 20*2^128 (12 from val_conv_lam_dtil_le + 8 from "
-           "val_convLX_lt, both already proved in-tree at PairAddTheorems 1283/2454), OFF_L(0) = 5*2^98, W0 = 101, quotient 36 bits. "
-           "741/746 -> 406/408, x19 sites. Two products summed: define the coefficient vector as convLD2 + convLX1 and the same "
-           "split7 identity goes through."),
-  ("1334","stageY (ChainFinish): fold. C = 8*2^128 via val_convLX_lt, W0 = 100, quotient 36 bits. 730/735 -> 398/400, x2."),
-  ("1320","stageA: fold. C = 12*2^128 via val_conv_lam_dtil_le, W0 = 100, quotient 34 bits. 725/729 -> 396/398, x2."),
-  ("420","Select12 inner one-hot misses the proved 2^w-w-1 minimum by exactly 10 per window (pays 3+15+48+64 = 130 against "
-         "3+9+45+63 = 120). The needed identity is ALREADY IN THE SAME FILE (hot4o's drop-last-row-and-column). See the "
-         "one-hot entry below for the exact cells. x21 windows."),
-  ("2000","Fold the top window in as a 20th ChainExt step and reuse the ONE existing ChainFinish, deleting the second y "
+ "secp256k1-fixed-base-scalar-mul": (54677, 49536, [
+  ("2762","THE SHIPPED FOLDED-QUOTIENT RANGE CHECKS ARE 34-35 BITS TOO WIDE — pure numeral work, largest lever left. "
+          "The true folded quotient bound is q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 (33 bits) for a 4p-biased fold. "
+          "ChainFold.lean:299 stageX ships RangeCheck 68 (true 33) = 70 x 19 sites = 1330; ChainFold.lean:36 stageO2 "
+          "ships 68 (true 33) = 70 x 2 = 140; ChainFold.lean:160 stageC1 ships 70 (true 36) = 68 x 19 = 1292. "
+          "RangeCheck n costs (n-1, n). FoldQuad and hgvFold are UNTOUCHED because q < 2^33 implies q < 2^68 — change "
+          "the numeral and prove the completeness bound, one per stage."),
+  ("1334","stageY (ChainFinish) is still UNFOLDED at 730/735, byte-identical to the pre-fold rival. Apply the fold: "
+          "C = 8*2^128 via val_convLX_lt, W0 = 100, quotient 36 bits. 730/735 -> 398/400, x2 sites."),
+  ("1320","stageA is still unfolded. C = 12*2^128 via val_conv_lam_dtil_le, W0 = 100, quotient 34 bits. 725/729 -> 396/398, x2."),
+  ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. NOTE THE BASE HAS MOVED: SelectCost.lean:106 "
+         "already derives TWO cells affinely (v=15 and v=14), so inner4 and outer4 are `fields 14`, not 15 — the older "
+         "cell-by-cell recipe is written against a 15-cell hot4 and MUST BE RE-DERIVED from the 14-cell one. Remaining "
+         "targets: inner4 14->9, inner6 48->45, inner7 64->63 = 14 cells x 2 x 21 windows."),
+  ("2001","Fold the top window in as a 20th ChainExt step and reuse the ONE existing ChainFinish, deleting the second y "
           "materialisation inside FinalAdd's CheapIncompleteAdd. The screening reorder IS permitted (both mismatchCount "
-          "predicates depend only on scalarBits). Note the routed object becomes a 16-wire ChainState, so the guard widens "
-          "22/22 -> 30/30 — worth 2000 taken BEFORE the folds, only 762 after."),
+          "predicates depend only on scalarBits). RE-DERIVED ON POST-FOLD NUMBERS: 730+735+1907+1918 = 5290 becomes "
+          "872+876+730+735+44+32 = 3289. The older figure of 762 was computed against the pre-fold ledger."),
  ]),
- "secp256k1-scalar-mul": (351578, None, [
-  ("5400","The j=0 CM identity P + phi(P) = (beta^2 * x, -y) costs ZERO ROWS — P, phi(P), phi^2(P) are collinear on the "
-          "horizontal line y = y_P, so P + phi(P) = -phi^2(P), a constant scaling plus a negation. VERIFIED 200/200 on real "
-          "points. Two of the table's 11 non-trivial subset sums (P+phiP, Q+phiQ) become free."),
+ "secp256k1-scalar-mul": (350148, None, [
+  ("2584","SHIP THIS FIRST — MEASURED, and the rival tree is a complete worked blueprint. Replace ValidP.circuit lam "
+          "(260/267) with a NormalizeFe = four ToBitsAffine.toBitsAffine 63 and nothing else (252/256) at every "
+          "DivOrZeroF3 site: -19 score x 136 sites (134 divOrZeroF3 + 2 divUncheckedD3). Site counts are read off our own "
+          "cost proofs, not estimated. Canonicality is NOT needed on a witnessed slope: MulModFold.Assumptions bounds only "
+          "the TARGET and MulModFoldT.Assumptions is purely limbwise, so limb < 2^64 is exactly Ca and the cap "
+          "24*2^128 still holds. Copy the Spec propagation from reference/rival-RajeshRk18-561573/ValidP.lean.txt:455-470 "
+          "and DivOrZeroF3.lean.txt:203. 350148 -> 347564."),
+  ("108","Put SlopeXS's 2-row opposite-y detector into CompleteAdd. CompleteAdd.lean:585 still pays OppY 7/7 plus "
+         "`cancel <== sameX * oppY` 1/1 = 8/8 in all 9 table additions; SlopeXS.lean:55-57 does the same job in 2/2 and its "
+         "flag is ALREADY the AND, so cancel becomes a free wire. The soundness obligation is the one CompleteAddIsInf "
+         "already discharges."),
   ("6600","Drop the sparse x<p canonicality tail (8/11 each) on every value that is NOT a circuit output and is only "
           "consumed as a certificate target — canonicality is uniqueness, not soundness. Audit each ValidP call against "
           "'does any consumer need uniqueness, or only the congruence class?'"),
