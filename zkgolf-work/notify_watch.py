@@ -15,6 +15,16 @@ while True:
             if c.returncode!=0 and c.stderr.strip():
                 # a crash here silently kills record detection — surface it
                 print("NOTIFY: check_records FAILED: "+c.stderr.strip().splitlines()[-1],flush=True)
+        if cycles % 30 == 0:
+            # Harvest competitors' submissions into projs/<slug>/reference/ so we are not stuck in
+            # our own lineage. Rare (leaderboards move slowly) and non-fatal: a failure here must
+            # never stop the tick, which is what actually dispatches and submits.
+            try:
+                o=subprocess.run(BASE+["pull_others.py"],capture_output=True,text=True,timeout=900)
+                for line in o.stdout.splitlines():
+                    if line.startswith("NOTIFY:"): print(line,flush=True)
+            except Exception as e:
+                print(f"NOTIFY: pull_others failed {e}",flush=True)
         p=subprocess.run(BASE+["tick.py"],capture_output=True,text=True,timeout=900)
         for line in p.stdout.splitlines():
             if line.startswith("NOTIFY:") and any(k in line for k in ("SUBMITTED","verified","failed","RECORD","record moved","adopted")): print(line,flush=True)

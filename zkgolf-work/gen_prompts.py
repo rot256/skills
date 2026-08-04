@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Generate prompts/ (big-win) and prompts_small/ (small-win) from targets.json."""
-import json, os
+import json, os, glob
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
 tg=json.load(open("targets.json"))
 try: RESEARCH=json.load(open("research.json"))
@@ -161,6 +161,22 @@ XPOLL={
 for slug,txt in XPOLL.items():
     f=f"prompts/{slug}.md"
     if os.path.exists(f) and os.path.isdir(f"projs/{slug}/reference"): open(f,"a").write("\n\n"+txt)
+
+# Rival submissions harvested by pull_others.py. The seed is always the CURRENT RECORD (ours or a
+# competitor's), so without this we only ever see the #1 entry and never anyone else's approach.
+for slug in INST:
+    rivals=sorted(glob.glob(f"projs/{slug}/reference/rival-*"))
+    if not rivals: continue
+    who=", ".join(os.path.basename(d).replace("rival-","").replace("-"," @ ") for d in rivals)
+    blk=("\n\nRIVAL SOLUTIONS: `reference/rival-<author>-<score>/` holds another competitor's FULL submission to this "
+         f"same challenge ({who}), as .lean.txt — context only, NOT compiled and NOT part of your Solution. It is a "
+         "DIFFERENT line of attack from the seed, which is always the current record. READ IT. A worse TOTAL score can "
+         "still hide a better individual gadget: the score sums the whole circuit, so a solution 10% behind overall may "
+         "still beat the seed on one primitive. Look specifically for gadgets the seed lacks, different limb geometry, "
+         "different exception handling, and anything that costs fewer rows for the same job. Port what wins and re-prove "
+         "it; ignore what does not. MANIFEST.txt in each directory records the author, score and submission id.")
+    for f in (f"prompts/{slug}.md", f"prompts_small/{slug}.md"):
+        if os.path.exists(f): open(f,"a").write(blk)
 
 # Externally-researched techniques (research.json, refreshed by periodic web research) — injected
 # into BOTH big- and small-win prompts. These are candidate ideas from the ZK literature; this
