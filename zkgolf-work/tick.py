@@ -100,6 +100,18 @@ TECHNIQUES = {
         ("ChiLane", "chi at one row per state bit (outer XOR folded in)"),
         ("Xor5Lane", "column parity as two chained single-row XOR3s"),
     ],
+    "rsa-pkcs1v15-sha256-4096-65537": [
+        ("ModExp", "e = 65537 as 16 squarings + 1 multiply (optimal addition chain)"),
+        ("InterpMul", "limb products at 2m-1 evaluation points, interpolation free"),
+        ("MulModLazy", "lazy reduction: products accumulate unreduced, one reduction shared"),
+        ("SquareModLazy", "squaring symmetry: tri(m) coefficients, not m^2"),
+        ("GroupedEqXV", "grouped carries with per-group widths"),
+        ("BalancedZ", "balanced (signed) limb representation"),
+        ("MixedRadix", "mixed-radix limb widths"),
+        ("NormalizeTight", "tight normalisation bounds; top bit affine"),
+        ("Repack24To16", "re-packing between limb widths across the exponentiation"),
+        ("PadDigest", "PKCS#1 v1.5 padding checked against compile-time constants"),
+    ],
 }
 for _s in ("gf2-sha256-compress-canonical", "gf2-k12-compress-canonical"):
     TECHNIQUES[_s] = [("", "GF(2): score = 2 x AND count, so this is a multiplicative-complexity result")]
