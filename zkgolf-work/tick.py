@@ -10,6 +10,21 @@ KEYS = {"primary": os.environ.get("ARISTOTLE_API_KEY", ""), "alt": os.environ.ge
 def use_key(name): os.environ["ARISTOTLE_API_KEY"] = KEYS.get(name) or KEYS["primary"]
 SLUG2INST = {"gf2-k12-compress-canonical":"KangarooTwelveGF2","gf2-sha256-compress-canonical":"SHA256CompressGF2Canonical","sha256-hash":"SHA256","keccak-f1600":"KeccakF1600","rsa-pkcs1v15-sha256-4096-65537":"RSASSAPKCS1v15_SHA256_4096_65537","secp256k1-scalar-mul":"Secp256k1ScalarMul","secp256k1-fixed-base-scalar-mul":"Secp256k1ScalarMulFixedBase"}
 CHALLENGES5 = list(SLUG2INST)
+# Slugs we no longer DISPATCH to, while still keeping them in SLUG2INST so in-flight jobs are
+# still adopted, processed and submitted normally.
+#
+# gf2-k12: a submission that merely TIES the baseline does not make the leaderboard, so our
+# verified 38400 (= 2 x 19200, one AND per state bit) scores nothing and only <= 19199 ANDs
+# would. That is provably out of reach here: over ZMod 2 every output is affine in (x, w), so
+# quotienting by affine functions gives T >= dim span of the outputs' classes, and one Keccak
+# round has 1600 linearly independent degree-2 monomials u_{i+1}u_{i+2} => EXACTLY 1600 rows
+# per round, 19200 for twelve. The bound is a dimension count, hence additive across the 320
+# parallel chi instances, so the "joint MC" hope is dead; it also survives full nondeterminism
+# and re-proves MC(chi_5) >= 5 without a SAT solver. Cross-round reuse is separately impossible
+# (rank(rhoPi o theta) = 1600, so round r products have degree 2^r). Beating 19200 would be a
+# publishable cryptography result, not a golf. Freeing these 4 slots for winnable challenges.
+NO_DISPATCH = {"gf2-k12-compress-canonical"}
+DISPATCH = [s for s in CHALLENGES5 if s not in NO_DISPATCH]
 def load(p, d):
     try: return json.load(open(p))
     except Exception: return d
@@ -311,7 +326,7 @@ async def ensure_inflight(st):
             print(f"NOTIFY: salvage {slug} @{sal[slug]['score']} no longer beats record {int(lb)} — dropping"); del sal[slug]
     save("state_salvage.json", sal)
     regen_prompts_if_stale()
-    for slug in CHALLENGES5:
+    for slug in DISPATCH:
         for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
             for kname in KEYS_TO_USE:
                 if (slug, purpose, kname) in active: continue
