@@ -4,5 +4,6 @@
   "keccak-f1600/thryec": "20f52596-ae82-4c73-a290-b5981053aaac",
   "rsa-pkcs1v15-sha256-4096-65537/tekkac": "df8faacc-b4bc-49ca-beb3-bd62d7045e1d",
   "secp256k1-scalar-mul/RajeshRk18": "30208a87-fbc1-4a1a-9b34-b8d8f793f372",
-  "secp256k1-fixed-base-scalar-mul/yelhousni": "8fb40497-8c6c-4905-a4c0-38570b55928b"
+  "secp256k1-fixed-base-scalar-mul/yelhousni": "8fb40497-8c6c-4905-a4c0-38570b55928b",
+  "secp256k1-fixed-base-scalar-mul/csko": "214f1330-6133-4756-a562-eaf8da89148a"
 }
