@@ -46,28 +46,33 @@ WORKQUEUE={
  "secp256k1-scalar-mul": (350148, None, [
   ("2584","SHIP THIS FIRST — MEASURED, and the rival tree is a complete worked blueprint. Replace ValidP.circuit lam "
           "(260/267) with a NormalizeFe = four ToBitsAffine.toBitsAffine 63 and nothing else (252/256) at every "
-          "DivOrZeroF3 site: -19 score x 136 sites (134 divOrZeroF3 + 2 divUncheckedD3). Site counts are read off our own "
-          "cost proofs, not estimated. Canonicality is NOT needed on a witnessed slope: MulModFold.Assumptions bounds only "
-          "the TARGET and MulModFoldT.Assumptions is purely limbwise, so limb < 2^64 is exactly Ca and the cap "
-          "24*2^128 still holds. Copy the Spec propagation from reference/rival-RajeshRk18-561573/ValidP.lean.txt:455-470 "
-          "and DivOrZeroF3.lean.txt:203. 350148 -> 347564."),
+          "DivOrZeroF3 site: -19 score x 136 sites (134 divOrZeroF3 + 2 divUncheckedD3), counts read off our own cost "
+          "proofs. Canonicality is NOT needed on a witnessed slope: MulModFold.Assumptions bounds only the TARGET and "
+          "MulModFoldT.Assumptions is purely limbwise, so limb < 2^64 is exactly Ca and the cap 24*2^128 still holds. "
+          "Copy the Spec propagation from reference/rival-RajeshRk18-561573/ValidP.lean.txt:455-470 and "
+          "DivOrZeroF3.lean.txt:203. 350148 -> 347564."),
   ("108","Put SlopeXS's 2-row opposite-y detector into CompleteAdd. CompleteAdd.lean:585 still pays OppY 7/7 plus "
-         "`cancel <== sameX * oppY` 1/1 = 8/8 in all 9 table additions; SlopeXS.lean:55-57 does the same job in 2/2 and its "
-         "flag is ALREADY the AND, so cancel becomes a free wire. The soundness obligation is the one CompleteAddIsInf "
-         "already discharges."),
+         "`cancel <== sameX * oppY` 1/1 = 8/8 in all 9 table additions; SlopeXS.lean:55-57 does the same job in 2/2 and "
+         "its flag is ALREADY the AND, so cancel becomes a free wire. The soundness obligation is the one "
+         "CompleteAddIsInf already discharges."),
+  ("32400","RE-LIMB 4x64 -> 8x32, AND SHIP IT ALONE — the old instruction to ship it with the all-odd recode is "
+           "RETRACTED, they are INDEPENDENT. The fold constant c = 2^32 + 977 is ONE 33-bit limb in base 2^64 (f = 32) "
+           "but two tiny limbs (977, 1) in base 2^32 (f ~ 10), and f enters the carry width LINEARLY. CERT(4x64) = "
+           "176/178 = 354 measured; CERT(8x32) ~ 205, delta 150 +- 6. Then 350 certificates x 150 = -52,500, against "
+           "64 lookups x +240 = +15,360, 62 steps x +72 mux widening = +4,464, and ~300 table muxes: NET -32,376. "
+           "FRESH is unchanged, so the 512-per-element floor is untouched. IGNORE any older entry quoting CERT "
+           "365 -> 214 or -26,600 — it is internally inconsistent, though its bottom line is close."),
   ("6600","Drop the sparse x<p canonicality tail (8/11 each) on every value that is NOT a circuit output and is only "
           "consumed as a certificate target — canonicality is uniqueness, not soundness. Audit each ValidP call against "
-          "'does any consumer need uniqueness, or only the congruence class?'"),
-  ("32000","Re-limb 4x64 -> 8x32. The fold constant c = 2^32 + 977 is ONE 33-bit limb in base 2^64 (f = 32) but the two tiny "
-           "limbs (977, 1) in base 2^32 (f ~ 10), and f enters the carry width LINEARLY. CERT 365 -> 214. MUST SHIP WITH the "
-           "recode below: 8x32 doubles VarLookup 135 -> 255, which the +- table exactly cancels 255 -> 120."),
-  ("22000","Port the fixed-base all-odd signed-digit recode (digits d_i = 2b_i - 1 in {+-1}, a pure wire permutation at 0/0). "
-           "Halves the table to 8 +- entries, halves the lookup, and deletes the exception apparatus since no digit is zero. "
-           "It is ALSO the prerequisite for the y-free loop, which is currently unsatisfiable because table entry 0 is the "
-           "point at infinity. Costs 1-2 extra loop steps for the parity obligation."),
-  ("29200","Degree-3 certificate merging ELM rows 2 and 3 so x_R is never materialised: "
-           "(lam1^2 - 2*xP - xQ)*(lam1 + lam2) + 2*yP = 0 (mod p). VERIFIED 200/200. REQUIRES the 8x32 re-limb first — at "
-           "4x64 a D=3 certificate is 1597 and the folded position overflows 2^253; at 8x32 it is 454 against a 531 materialisation."),
+          "'does any consumer need uniqueness, or only the congruence class?'. NOTE this overlaps the NormalizeFe item "
+          "above; do that one first and re-count what is left."),
+  ("~2500","MARGINAL, DO LAST, AND ONLY AFTER 8x32: the all-odd signed-digit recode (digits d_i = 2b_i - 1 in {+-1}, a "
+           "pure wire permutation at 0/0). Its ledger is NOT the -22k an older entry claims: lookups -9,600, but only "
+           "about half the exception apparatus is deletable (-3,100) because R = O and x_S = x are NOT excludable, the "
+           "parity obligation costs ONE OR TWO extra glvStep at 4,907 each, and the 8-entry +- table needs 12 additions "
+           "against today's 11 (+2,781). NET -5,012 TO -112. The recode also does NOT make the table identity-free — "
+           "six values of q still select O. Lean will need a COSET Minkowski (the short all-odd representative lives in "
+           "a coset of 2L, covolume 16n, bound 2^65.6), not the existing pigeonhole."),
  ]),
  "keccak-f1600": (307200, 184320, [
   ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
