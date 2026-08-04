@@ -21,24 +21,27 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (54677, 49536, [
-  ("2762","THE SHIPPED FOLDED-QUOTIENT RANGE CHECKS ARE 34-35 BITS TOO WIDE — pure numeral work, largest lever left. "
-          "The true folded quotient bound is q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 (33 bits) for a 4p-biased fold. "
-          "ChainFold.lean:299 stageX ships RangeCheck 68 (true 33) = 70 x 19 sites = 1330; ChainFold.lean:36 stageO2 "
-          "ships 68 (true 33) = 70 x 2 = 140; ChainFold.lean:160 stageC1 ships 70 (true 36) = 68 x 19 = 1292. "
-          "RangeCheck n costs (n-1, n). FoldQuad and hgvFold are UNTOUCHED because q < 2^33 implies q < 2^68 — change "
-          "the numeral and prove the completeness bound, one per stage."),
-  ("1334","stageY (ChainFinish) is still UNFOLDED at 730/735, byte-identical to the pre-fold rival. Apply the fold: "
-          "C = 8*2^128 via val_convLX_lt, W0 = 100, quotient 36 bits. 730/735 -> 398/400, x2 sites."),
-  ("1320","stageA is still unfolded. C = 12*2^128 via val_conv_lam_dtil_le, W0 = 100, quotient 34 bits. 725/729 -> 396/398, x2."),
+ "secp256k1-fixed-base-scalar-mul": (52676, 49536, [
+  ("2762","THE SHIPPED FOLDED-QUOTIENT RANGE CHECKS ARE 34-35 BITS TOO WIDE — top lever, pure numeral work, and "
+          "RE-CONFIRMED PRESENT IN THE 52676 SEED. The true folded quotient bound is q <= cFold*H/p + 1 + bias_mult = "
+          "2^32 + 982 (33 bits) for a 4p-biased fold. ChainFold.lean:299 stageX still ships RangeCheck 68 (true 33) = "
+          "70 x 19 sites = 1330; ChainFold.lean:36 stageO2 still ships 68 (true 33) = 70 x 2 = 140; ChainFold.lean:160 "
+          "stageC1 still ships 70 (true 36) = 68 x 19 = 1292. RangeCheck n costs (n-1, n). FoldQuad and hgvFold are "
+          "UNTOUCHED because q < 2^33 implies q < 2^67 — change the numeral and prove the completeness bound, one per "
+          "stage."),
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. NOTE THE BASE HAS MOVED: SelectCost.lean:106 "
-         "already derives TWO cells affinely (v=15 and v=14), so inner4 and outer4 are `fields 14`, not 15 — the older "
+         "already derives TWO cells affinely (v=15 and v=14), so inner4 and outer4 are `fields 14`, not 15 — any older "
          "cell-by-cell recipe is written against a 15-cell hot4 and MUST BE RE-DERIVED from the 14-cell one. Remaining "
          "targets: inner4 14->9, inner6 48->45, inner7 64->63 = 14 cells x 2 x 21 windows."),
-  ("2001","Fold the top window in as a 20th ChainExt step and reuse the ONE existing ChainFinish, deleting the second y "
-          "materialisation inside FinalAdd's CheapIncompleteAdd. The screening reorder IS permitted (both mismatchCount "
-          "predicates depend only on scalarBits). RE-DERIVED ON POST-FOLD NUMBERS: 730+735+1907+1918 = 5290 becomes "
-          "872+876+730+735+44+32 = 3289. The older figure of 762 was computed against the pre-fold ledger."),
+  ("~667","Fold stageY. ChainFinish is 730/735 and is still UNFOLDED, but RE-COUNT THE SITES BEFORE COSTING IT: as of the "
+          "52676 seed it appears EXACTLY ONCE, inside FinalAdd.implicitMain (implicitScreenedCost 1640/1649 = 3+3+16+8 + "
+          "ChainExtFold 872/876 + ChainFinish 730/735 + 8). The top-level ChainFinish is gone. So this is one site, not "
+          "two — roughly 667, not 1334. Fold parameters: C = 8*2^128 via val_convLX_lt, W0 = 100, quotient 36 bits, "
+          "730/735 -> 398/400."),
+  ("~660","Fold stageA. Same warning: RE-COUNT THE SITES against the 52676 seed. ChainStartFold is 1155/1161 and is still "
+          "at top level, but CheapIncompleteAdd (1885/1896) is NO LONGER in the cost composition — implicitMain uses "
+          "extFold + finish instead — so the second stageA site is probably gone. Fold parameters: C = 12*2^128 via "
+          "val_conv_lam_dtil_le, W0 = 100, quotient 34 bits, 725/729 -> 396/398."),
  ]),
  "secp256k1-scalar-mul": (350148, None, [
   ("2584","SHIP THIS FIRST — MEASURED, and the rival tree is a complete worked blueprint. Replace ValidP.circuit lam "
