@@ -59,16 +59,79 @@ XPOLL_MARK = {  # if the seed's cross-pollinated gadget appears, credit the tech
     "secp256k1-scalar-mul": ("EqViaCarriesFlex", "flexible-limb equality/carry (ported from secp-fixed)"),
     "secp256k1-fixed-base-scalar-mul": ("GroupedEqXV", "XV equality-grouping (ported from secp-mul)"),
 }
+
+# Technique fingerprints: (marker, label). A marker matches if it appears in a Solution
+# FILENAME or anywhere in the Solution source. Order is the order they get listed, so put
+# the structurally important ones first. Labels are terse on purpose — the description
+# field is a one-liner on a public leaderboard, not a paper.
+TECHNIQUES = {
+    "secp256k1-scalar-mul": [
+        ("GLVScalarMul", "4-dim fake-GLV: result witnessed, closed by an =O assertion"),
+        ("FoldTarget", "pseudo-Mersenne quotient fold (1-wire quotient, 71-bit check)"),
+        ("InterpMul", "limb products at 2m-1 evaluation points (7 rows, not 16)"),
+        ("FusedStep", "ELM fused 2R+T, intermediate y never materialised"),
+        ("GLVStepLastSlope", "slope-only terminal assertion (x_S = x_A)"),
+        ("GroupedEq", "grouped carry propagation"),
+        ("ValidPBytes", "canonicality bits reused as the output byte encoding"),
+        ("DivOrZeroF3", "square muxed at polynomial level, one shared reduction"),
+    ],
+    "secp256k1-fixed-base-scalar-mul": [
+        ("Comb", "width-12 all-odd signed-digit comb, 21+1 windows"),
+        ("Recode", "recode is a wire permutation (0 rows); parity folded into the top table"),
+        ("Select12", "factored one-hot (2^7 x 2^4), contracted per output wire"),
+        ("ChainFold", "pseudo-Mersenne quotient fold"),
+        ("ChainState", "accumulator carried as (x, lambda); y materialised once"),
+        ("InterpMul", "limb products at 2m-1 evaluation points"),
+        ("SparseCanonical", "sparse-prime canonicality"),
+        ("EitherZero", "exceptional scalars screened by affine mismatch counts"),
+    ],
+    "sha256-hash": [
+        ("PackedCh", "lambda-packed twin gadgets: Ch/Maj at 1/2 row per bit"),
+        ("PackedMaj", "two-root row with an out-of-range decoy"),
+        ("Xor3", "single-row XOR3 (booleanity absorbed)"),
+        ("FusedAdders", "lambda-fused multi-operand mod-2^32 adds, no tie rows"),
+        ("CarrySumAdd32", "affine carry chain: zero carry allocations"),
+        ("ScheduleStepLast", "terminal schedule words left unreduced"),
+        ("CheckLenFlags", "binomial-moment one-hot for the length flag"),
+        ("Padding7", "7-of-8 bits per byte, high-bit checks paired"),
+    ],
+    "keccak-f1600": [
+        ("Xor3Lane", "single-row 3-input XOR per bit"),
+        ("ChiLane", "chi at one row per state bit (outer XOR folded in)"),
+        ("Xor5Lane", "column parity as two chained single-row XOR3s"),
+    ],
+}
+for _s in ("gf2-sha256-compress-canonical", "gf2-k12-compress-canonical"):
+    TECHNIQUES[_s] = [("", "GF(2): score = 2 x AND count, so this is a multiplicative-complexity result")]
+DESC_MAX = 480  # keep the public one-liner readable
+def techniques(slug, soldir):
+    files = [f for f in glob.glob(os.path.join(soldir, "*.lean")) if "/.lake/" not in f]
+    names = " ".join(os.path.basename(f) for f in files)
+    body = None; out = []
+    for marker, label in TECHNIQUES.get(slug, []):
+        if not marker:
+            out.append(label); continue
+        if marker in names:
+            out.append(label); continue
+        if body is None:  # only read the sources if a filename match failed
+            body = " ".join(open(f, errors="ignore").read() for f in files)
+        if marker in body:
+            out.append(label)
+    return out
 def describe(slug, score, alloc, constr, best, purpose, soldir):
     parts = [f"{score} = {alloc} alloc + {constr} constr"]
     if best is not None:
         b = int(best); d = int(score) - b
         parts.append(f"({d:+d} vs prev best {b})" if d else f"(matches best {b})")
+    head = " ".join(parts)
+    tech = techniques(slug, soldir)
     tag, note = XPOLL_MARK.get(slug, (None, None))
     if tag and any(tag in os.path.basename(f) for f in glob.glob(os.path.join(soldir, "*.lean"))):
-        parts.append(f"via {note}")
-    parts.append(f"Aristotle {purpose or 'run'}")
-    return " — ".join(parts)
+        tech.append(note)
+    tail = f"Aristotle {purpose or 'run'}"
+    while tech and len(f"{head}. {'; '.join(tech)}. {tail}") > DESC_MAX:
+        tech.pop()  # drop the least structurally important first
+    return f"{head}. {'; '.join(tech)}. {tail}" if tech else f"{head} — {tail}"
 def zk_submit(slug, alloc, constr, desc, files):
     fs = [("artifact", (os.path.basename(f), open(f, "rb"), "text/plain")) for f in files]
     data = {"allocations": str(alloc), "constraints": str(constr), "description": desc, "assisted_by": "Aristotle (Harmonic)"}
