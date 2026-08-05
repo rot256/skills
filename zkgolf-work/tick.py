@@ -23,7 +23,11 @@ CHALLENGES5 = list(SLUG2INST)
 # and re-proves MC(chi_5) >= 5 without a SAT solver. Cross-round reuse is separately impossible
 # (rank(rhoPi o theta) = 1600, so round r products have degree 2^r). Beating 19200 would be a
 # publishable cryptography result, not a golf. Freeing these 4 slots for winnable challenges.
-NO_DISPATCH = {"gf2-k12-compress-canonical"}
+# Challenges with no remaining headroom worth a job slot. gf2-k12: a valid submission only TIES
+# the 38400 baseline and a tie does not leaderboard. rsa: we hold 321889 and the measured floor is
+# ~321671 (0.068%), its one named lever re-measured from 1467 down to 218, and "assertion, not value"
+# is provably inapplicable because every materialised value there is an OPERAND, not a target.
+NO_DISPATCH = {"gf2-k12-compress-canonical", "rsa-pkcs1v15-sha256-4096-65537"}
 DISPATCH = [s for s in CHALLENGES5 if s not in NO_DISPATCH]
 def load(p, d):
     try: return json.load(open(p))
