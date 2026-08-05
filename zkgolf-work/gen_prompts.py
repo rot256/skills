@@ -22,13 +22,13 @@ IDEAS={
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (52676, 49536, [
-  ("2762","THE SHIPPED FOLDED-QUOTIENT RANGE CHECKS ARE 34-35 BITS TOO WIDE — top lever, pure numeral work, and "
-          "RE-CONFIRMED PRESENT IN THE 52676 SEED. The true folded quotient bound is q <= cFold*H/p + 1 + bias_mult = "
-          "2^32 + 982 (33 bits) for a 4p-biased fold. ChainFold.lean:299 stageX still ships RangeCheck 68 (true 33) = "
-          "70 x 19 sites = 1330; ChainFold.lean:36 stageO2 still ships 68 (true 33) = 70 x 2 = 140; ChainFold.lean:160 "
-          "stageC1 still ships 70 (true 36) = 68 x 19 = 1292. RangeCheck n costs (n-1, n). FoldQuad and hgvFold are "
-          "UNTOUCHED because q < 2^33 implies q < 2^67 — change the numeral and prove the completeness bound, one per "
-          "stage."),
+  ("2700","THE FOLDED-QUOTIENT RANGE CHECKS ARE STILL 34-36 BITS TOO WIDE. A previous job shaved exactly ONE bit off "
+           "each (stageO2 68->67, stageC1 70->69, stageX 68->67) and banked only 246 — it treated the width as something "
+           "to NUDGE. DERIVE IT INSTEAD. THE TRUE BOUND IS q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 = 33 BITS for a "
+           "4p-biased fold; stageC1's is 36. TARGET VALUES: ChainFold.lean:36 stageO2 67 -> 33, ChainFold.lean:160 "
+           "stageC1 69 -> 36, ChainFold.lean:299 stageX 67 -> 33. RangeCheck n costs (n-1, n), so this is ~2700 across "
+           "19 + 19 + 2 sites. FoldQuad and hgvFold are UNTOUCHED because q < 2^33 implies q < 2^67 — it is a numeral "
+           "change plus ONE completeness bound per stage, with no soundness obligation."),
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. NOTE THE BASE HAS MOVED: SelectCost.lean:106 "
          "already derives TWO cells affinely (v=15 and v=14), so inner4 and outer4 are `fields 14`, not 15 — any older "
          "cell-by-cell recipe is written against a 15-cell hot4 and MUST BE RE-DERIVED from the 14-cell one. Remaining "
