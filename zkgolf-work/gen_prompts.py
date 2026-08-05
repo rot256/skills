@@ -44,13 +44,13 @@ WORKQUEUE={
           "val_conv_lam_dtil_le, W0 = 100, quotient 34 bits, 725/729 -> 396/398."),
  ]),
  "secp256k1-scalar-mul": (350148, None, [
-  ("511","PORT SlopeLam + MulModEqFold FROM OUR OWN SUBMISSION a214dc30 (score 349106, verified). It beats the current "
-          "347071 record on ONE atom: glvStepLastSlopeCost 802/810 against 1046/1058. It never took the NormalizeFe "
-          "weakening, so after also applying -8/-11 there the terminal step becomes ~794/799, about 511 below the "
-          "record. SlopeLam computes the sameX1/oppY1 flags and the conditional slope WITHOUT forming x_S; "
-          "MulModEqFold asserts a*b = s1+s2 (mod p) by running MulModFold directly against target 0+s1+s2 instead of "
-          "witnessing a remainder. Download the tree from /api/submissions/a214dc30-a3e0-4ae2-8a25-42e96947e2d0/download."),
-  ("~531 each","SWEEP EVERY MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE. MulModSub2 witnesses the canonical "
+  ("~531 each","KEEP SWEEPING MulModSub2 — PARTLY LANDED, MORE REMAINS. Already converted: PointValid (-871 across more than one site) and the terminal glvStepLastSlope (-519). SWEEP EVERY REMAINING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE. MulModSub2 witnesses the canonical "
+          "remainder and pays ValidP (260/267) plus four limb witnesses = 440/445 = 885. If NO CONSUMER READS THE "
+          "REMAINDER — it only has to be zero — replace it with MulModEqFold: one MulModFold certificate, 176/178 = "
+          "354, saving 531. This is what the record already did in PointValid. With ~350 live certificates it is the "
+          "largest systematic lever left, and it carries NO soundness obligation (the folded certificate proves more, "
+          "not less). Audit each site by asking: does anything read this remainder, or does it only need to vanish?"),
+  ("~531 each","KEEP SWEEPING MulModSub2 — PARTLY LANDED, MORE REMAINS. Already converted: PointValid (-871 across more than one site) and the terminal glvStepLastSlope (-519). SWEEP EVERY REMAINING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE. MulModSub2 witnesses the canonical "
           "remainder and pays ValidP (260/267) plus four limb witnesses = 440/445 = 885. If NO CONSUMER READS THE "
           "REMAINDER — it only has to be zero — replace it with MulModEqFold: one MulModFold certificate, 176/178 = "
           "354, saving 531. This is what the record already did in PointValid. With ~350 live certificates it is the "
