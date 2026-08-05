@@ -21,42 +21,29 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (52430, 49536, [
-  ("246","RE-APPLY GROUND LOST BY THE CURRENT SEED — FREE SCORE, NO NEW IDEAS NEEDED. The 52256 record was built from "
-          "the 52676 tree, NOT from the 52430 record that preceded it, so it silently dropped 52430's improvements. "
-          "Proof, three atoms: implicitScreenedCost is 1640/1649 here where 52430 had 1634/1643; the folded-quotient "
-          "RangeCheck widths are 68/70/68 here where 52430 had 67/69/67 (ChainFold.lean:36, :160, :299); and "
-          "combCost delta from 52676 is exactly 21 x the selectCost change. Re-apply both — the per-ext-step term goes "
-          "1160/1165 -> 1154/1159 and implicitScreened -6/-6 — for about 246, landing near 52010. Do this BEFORE the "
-          "range-check derivation below, which then starts from 67/69/67 rather than 68/70/68."),
-  ("42","FREE, TWO LINES, DO IT FIRST. SelectCost.lean:311-317 witnesses `bits : fields 3` plus 3 booleanity rows plus "
-        "one linking row selectedE = b0 + 2*b1 + 4*b2 = 3 alloc / 4 rows, where `RangeCheck.circuit 3` applied to "
-        "selectedE is 2 alloc / 3 rows — RangeCheck n is (n-1, n) on an EXPRESSION. The standing "
-        "do-not-allocate-the-top-bit rule simply is not applied at this site. 2 score x 21 windows."),
-  ("2700","THE FOLDED-QUOTIENT RANGE CHECKS ARE STILL 34-36 BITS TOO WIDE. A previous job shaved exactly ONE bit off "
-          "each and banked only 246 — it treated the width as something to NUDGE. DERIVE IT INSTEAD. THE TRUE BOUND IS "
-          "q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. TARGET VALUES: "
-          "ChainFold.lean:36 stageO2 67 -> 33, ChainFold.lean:160 stageC1 69 -> 36, ChainFold.lean:299 stageX 67 -> 33. "
+ "secp256k1-fixed-base-scalar-mul": (50825, 49536, [
+  ("42","FREE, TWO LINES, DO IT FIRST. SelectCost.lean witnesses `bits : fields 3` plus 3 booleanity rows plus one "
+        "linking row selectedE = b0 + 2*b1 + 4*b2 = 3 alloc / 4 rows, where `RangeCheck.circuit 3` applied to selectedE "
+        "is 2 alloc / 3 rows — RangeCheck n is (n-1, n) on an EXPRESSION. The do-not-allocate-the-top-bit rule is "
+        "simply not applied at this site. 2 score x 21 windows."),
+  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL ESSENTIALLY UNTOUCHED. The folded-quotient range checks sit at "
+          "67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. Two "
+          "separate jobs have now shaved ONE bit each instead of deriving the value — do not do that again. THE TRUE "
+          "BOUND IS q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. "
           "RangeCheck n costs (n-1, n), so ~2700 across 19 + 19 + 2 sites. FoldQuad and hgvFold are UNTOUCHED because "
           "q < 2^33 implies q < 2^67 — a numeral change plus ONE completeness bound per stage, no soundness obligation."),
-  ("1470","CARRY THE TABLE POINT'S y AS TWO WIRES, NOT FOUR — the consumer-functional law applied. The selected y is "
-          "consumed at three sites and every one is an AFFINE ADDEND of a folded certificate, never a multiplicand: "
-          "ChainFold.stageC1 via foldRhsY (ChainFold.lean:169), ChainFinishFold.stageYF via FoldQuadC1.rhsVec "
-          "(ChainFinishFold.lean:44), and stageO2. THE COMB HAS NO DOUBLING AND NO TANGENT, so y never enters a "
-          "denominator or interpolatedMul. GroupedFlex emits one carry over positions {0,1} plus one final polyEval "
-          "row, so the certificate reads only Y_lo = y0 + 2^64 y1 and Y_hi = y2 + 2^64 y3. LEDGER: y side is currently "
-          "82/83 (yNegProd 60/60 + eProd 15/15 + bits 3/3 + link 0/1 + y 4/4); proposed 47/48 (yNegProd 2 wires x 15 = "
-          "30/30, eProd 15/15 now holding ONE borrow bit since merging limbs 2,3 and 0,1 cancels the internal borrows "
-          "and only the 128-bit boundary borrow survives, that bit as RangeCheck 1 on the selected expression = 0/1, "
-          "y 2/2). -70 per window x 21, plus ~12 from the shrunken FinalAdd routing. BOUND OBLIGATION, FITS WITH ROOM: "
-          "position 0 reaches ~1.25*2^131 against nfFoldR 0 = 2^132, carry width +2 against wfFold ~ 100 — RE-DERIVE "
-          "hgvFold, do not assume. NOTE it also drops N in the factored-one-hot formula from 9 to 7, so re-cost the "
-          "one-hot and w=13 items AFTER this lands."),
-  ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. THE BASE HAS MOVED TWICE: SelectCost.lean:106 "
-         "already derives TWO cells affinely (v=15 and v=14) so inner4/outer4 are `fields 14`, and the y-as-two-wires "
-         "item above changes N from 9 to 7. RE-DERIVE from the current tree; do not use any older cell recipe."),
-  ("~667","Fold stageY. RE-COUNT THE SITES FIRST: as of the 52430 seed ChainFinish appears EXACTLY ONCE, inside "
-          "FinalAdd.implicitMain. Fold parameters: C = 8*2^128 via val_convLX_lt, W0 = 100, quotient 36 bits."),
+  ("1470","CARRY THE TABLE POINT'S y AS TWO WIRES, NOT FOUR — the consumer-functional law. The selected y is consumed at "
+          "three sites and every one is an AFFINE ADDEND of a folded certificate, never a multiplicand: stageC1 via "
+          "foldRhsY, stageYF via FoldQuadC1.rhsVec, and stageO2. THE COMB HAS NO DOUBLING AND NO TANGENT, so y never "
+          "enters a denominator or interpolatedMul. GroupedFlex emits one carry over positions {0,1} plus one final "
+          "polyEval row, so the certificate reads only Y_lo = y0 + 2^64 y1 and Y_hi = y2 + 2^64 y3. Current y side is "
+          "82/83 (yNegProd 60/60 + eProd 15/15 + bits 3/3 + link 0/1 + y 4/4); proposed 47/48 (yNegProd 2 wires x 15, "
+          "eProd holding ONE borrow bit since merging limbs 2,3 and 0,1 cancels the internal borrows, that bit as "
+          "RangeCheck 1 on the selected expression = 0/1, y 2/2). -70 per window x 21, plus ~12 from shrunken FinalAdd "
+          "routing. RE-DERIVE hgvFold: position 0 reaches ~1.25*2^131 against nfFoldR 0 = 2^132, carry width +2."),
+  ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. RE-DERIVE FROM THE CURRENT TREE — the base "
+         "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
+         "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
  "secp256k1-scalar-mul": (345643, None, [
   ("~531 each","KEEP SWEEPING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE — PARTLY LANDED, MORE REMAINS, AND IT IS "
