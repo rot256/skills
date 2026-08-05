@@ -45,7 +45,16 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (342427, None, [
+ "secp256k1-scalar-mul": (342300, None, [
+  ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE — the newest landed mechanism and "
+          "the same error class as the fixed-base 67-bits-against-33 item. MulModLooseQ.lean shows the pattern: "
+          "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
+          "scalar-side GLV call site multiplies by a value below 2^limbBits so the honest q < 2^65 — low limb full "
+          "check, second limb BOOLEAN, top two ASSERTED ZERO, giving 63/64 + 0/1 + 0/1 + 0/1 = 63/67 and -189 per site "
+          "with NO change to the certificate or the Spec. SWEEP EVERY REMAINING Normalize / NormalizeTight / "
+          "full-width quotient check in this tree and ask: what is the largest value this witness can honestly take "
+          "GIVEN THE OPERANDS AT THIS SITE? Anything bounded well below its declared width is paying for bits it can "
+          "never use."),
   ("~531 each","KEEP SWEEPING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE — PARTLY LANDED, MORE REMAINS, AND IT IS "
           "THE LARGEST SYSTEMATIC LEVER LEFT. MulModSub2 witnesses the canonical remainder and pays ValidP (260/267) plus "
           "four limb witnesses = 440/445 = 885. Where NO CONSUMER READS THE REMAINDER — it only has to be zero — replace "
