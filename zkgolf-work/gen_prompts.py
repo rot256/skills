@@ -45,7 +45,14 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (322973, None, [
+ "secp256k1-scalar-mul": (322543, None, [
+  ("430","MERGE ValidP's FOUR FINAL QUADRATIC ASSERTIONS INTO ONE, WITH NO NEW WITNESSES. tekkac's 322543 record does "
+         "exactly this: ValidP.main 260/267 -> 260/265, ALLOCATIONS UNCHANGED, and it propagates to -2 per mulModSub2, "
+         "-4 per completeAdd/finishXY/phiPairAdd, -6 per fusedStep and -372 across the 62 loop steps = -430 total. NOTE "
+         "OUR OWN EARLIER ENTRY CALLED THIS TRICK SCORE-NEUTRAL — that was an artefact of our formulation, which paid "
+         "two auxiliary witnesses for the nesting. THE WITNESSES ARE OPTIONAL: keep the nesting inside the existing "
+         "affine forms and the row saving is pure. If the current seed already contains it, skip; if a job is working "
+         "from a tree at 322973 or earlier, this is free score on top of whatever else it finds."),
   ("~13000","FINISH THE 8x32 RE-LIMB — 19,327 BANKED ACROSS TWO RECORDS, THE REST IS MECHANICAL. The mechanism: "
             "Limbs32.lean is the 32-bit limb VIEW, a FREE AFFINE recombination x_k = v_{2k} + 2^32*v_{2k+1}, and "
             "DivOrZeroS32.lean applies it to a certificate. THE Normalize IS COST-NEUTRAL between views (8 + 8*31 = 256 "
