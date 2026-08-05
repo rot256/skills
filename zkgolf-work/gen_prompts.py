@@ -44,13 +44,13 @@ WORKQUEUE={
           "val_conv_lam_dtil_le, W0 = 100, quotient 34 bits, 725/729 -> 396/398."),
  ]),
  "secp256k1-scalar-mul": (350148, None, [
-  ("2584","SHIP THIS FIRST — MEASURED, and the rival tree is a complete worked blueprint. Replace ValidP.circuit lam "
-          "(260/267) with a NormalizeFe = four ToBitsAffine.toBitsAffine 63 and nothing else (252/256) at every "
-          "DivOrZeroF3 site: -19 score x 136 sites (134 divOrZeroF3 + 2 divUncheckedD3), counts read off our own cost "
-          "proofs. Canonicality is NOT needed on a witnessed slope: MulModFold.Assumptions bounds only the TARGET and "
-          "MulModFoldT.Assumptions is purely limbwise, so limb < 2^64 is exactly Ca and the cap 24*2^128 still holds. "
-          "Copy the Spec propagation from reference/rival-RajeshRk18-561573/ValidP.lean.txt:455-470 and "
-          "DivOrZeroF3.lean.txt:203. 350148 -> 347564."),
+  ("38","MOSTLY LANDED — ONLY THE REMAINDER IS LEFT. The NormalizeFe weakening (drop ValidP's canonicality tail on a "
+         "witnessed slope) shipped in the 347071 record at exactly -19 per site across 134 sites. The TWO "
+         "divUncheckedD3 inside PhiPairAdd were NOT converted and are still worth -19 each. DO NOT REDO THE 134."),
+  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED. The 347071 record deleted one whole "
+          "redundant ValidP (260/267) plus 4 allocations from the output-point validation, worth -531, and it was found "
+          "by asking of each call: does any consumer need UNIQUENESS, or only the congruence class / a range bound? "
+          "Re-ask that at every surviving ValidP site — canonicality is uniqueness, and most consumers need neither."),
   ("108","Put SlopeXS's 2-row opposite-y detector into CompleteAdd. CompleteAdd.lean:585 still pays OppY 7/7 plus "
          "`cancel <== sameX * oppY` 1/1 = 8/8 in all 9 table additions; SlopeXS.lean:55-57 does the same job in 2/2 and "
          "its flag is ALREADY the AND, so cancel becomes a free wire. The soundness obligation is the one "
