@@ -22,6 +22,13 @@ IDEAS={
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (52430, 49536, [
+  ("246","RE-APPLY GROUND LOST BY THE CURRENT SEED — FREE SCORE, NO NEW IDEAS NEEDED. The 52256 record was built from "
+          "the 52676 tree, NOT from the 52430 record that preceded it, so it silently dropped 52430's improvements. "
+          "Proof, three atoms: implicitScreenedCost is 1640/1649 here where 52430 had 1634/1643; the folded-quotient "
+          "RangeCheck widths are 68/70/68 here where 52430 had 67/69/67 (ChainFold.lean:36, :160, :299); and "
+          "combCost delta from 52676 is exactly 21 x the selectCost change. Re-apply both — the per-ext-step term goes "
+          "1160/1165 -> 1154/1159 and implicitScreened -6/-6 — for about 246, landing near 52010. Do this BEFORE the "
+          "range-check derivation below, which then starts from 67/69/67 rather than 68/70/68."),
   ("42","FREE, TWO LINES, DO IT FIRST. SelectCost.lean:311-317 witnesses `bits : fields 3` plus 3 booleanity rows plus "
         "one linking row selectedE = b0 + 2*b1 + 4*b2 = 3 alloc / 4 rows, where `RangeCheck.circuit 3` applied to "
         "selectedE is 2 alloc / 3 rows — RangeCheck n is (n-1, n) on an EXPRESSION. The standing "
