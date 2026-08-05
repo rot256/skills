@@ -45,17 +45,19 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (331777, None, [
-  ("~20000","FINISH THE 8x32 RE-LIMB — A THIRD OF IT LANDED, THE REST IS MECHANICAL. The 331777 record added "
-            "Limbs32.lean (the 32-bit limb VIEW, a FREE AFFINE recombination x_k = v_{2k} + 2^32*v_{2k+1}) and "
-            "DivOrZeroS32.lean (that view applied to the conditional slope certificate), worth -150 per slopeXS site "
-            "= -10,523. THE Normalize IS COST-NEUTRAL between the views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, "
-            "identical to 4 + 4*63 and 4*64), so nothing is lost; the whole gain is that the fold constant 2^32 + 977 "
-            "is TWO TINY LIMBS in base 2^32 against ONE 33-BIT limb in base 2^64, and that width enters the carry "
-            "LINEARLY. BECAUSE THE VIEW IS AFFINE IT CAN BE ADOPTED PER CERTIFICATE — no whole-tree rewrite. STILL ON "
-            "THE 64-BIT VIEW: slope2, slopeLam, finishXY, mulModSub2, and the PointValid certificates. Port "
-            "DivOrZeroS32's shape to each; the only obligation is the per-site carry bound, since the Spec is "
-            "unchanged."),
+ "secp256k1-scalar-mul": (322973, None, [
+  ("~13000","FINISH THE 8x32 RE-LIMB — 19,327 BANKED ACROSS TWO RECORDS, THE REST IS MECHANICAL. The mechanism: "
+            "Limbs32.lean is the 32-bit limb VIEW, a FREE AFFINE recombination x_k = v_{2k} + 2^32*v_{2k+1}, and "
+            "DivOrZeroS32.lean applies it to a certificate. THE Normalize IS COST-NEUTRAL between views (8 + 8*31 = 256 "
+            "alloc, 8*32 = 256 constr, identical to 4 + 4*63 and 4*64), so nothing is lost; the whole gain is that the "
+            "fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE 33-BIT limb in base 2^64, and that "
+            "width enters the carry LINEARLY. BECAUSE THE VIEW IS AFFINE IT IS ADOPTED PER CERTIFICATE — no whole-tree "
+            "rewrite. LANDED SO FAR, DO NOT REDO: slopeXS (-150/site, -10,523) and finishXY (-150/site, -8,804, with "
+            "slope2 traded +8 for a net -142 per loop step). STILL ON THE 64-BIT VIEW AND STILL WORTH ~150 EACH: "
+            "mulModSub2 outside finishXY, the PointValid certificates, and the NINE table-side completeAdd sites — both "
+            "records touched the LOOP ONLY and glvBuildTable has not moved at all. A Limbs33.lean has appeared in the "
+            "latest tree, so limb widths other than 32 are worth sweeping too. The only obligation per site is the "
+            "carry bound; the Spec is unchanged."),
   ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE — the newest landed mechanism and "
           "the same error class as the fixed-base 67-bits-against-33 item. MulModLooseQ.lean shows the pattern: "
           "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
