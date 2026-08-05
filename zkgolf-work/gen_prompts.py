@@ -45,14 +45,18 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (345643, None, [
+ "secp256k1-scalar-mul": (342427, None, [
   ("~531 each","KEEP SWEEPING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE — PARTLY LANDED, MORE REMAINS, AND IT IS "
           "THE LARGEST SYSTEMATIC LEVER LEFT. MulModSub2 witnesses the canonical remainder and pays ValidP (260/267) plus "
           "four limb witnesses = 440/445 = 885. Where NO CONSUMER READS THE REMAINDER — it only has to be zero — replace "
           "it with MulModEqFold: one MulModFold certificate run directly against target 0 + s1 + s2, 176/178 = 354, "
           "saving 531. ALREADY CONVERTED, DO NOT REDO: PointValid (1576/1604 -> 1143/1166, -871, more than one site) and "
-          "the terminal glvStepLastSlope (1046/1058 -> 790/795, -519, via SlopeLam + MulModEqFold). With ~350 live "
-          "certificates the rest of the tree is unswept. NO soundness obligation — the folded certificate proves more, "
+          "the terminal glvStepLastSlope. THE ATOM HAS MOVED AGAIN since those notes: divOrZeroF3 is now 448/450 (it was "
+          "460/462, and 468/473 before that), after a SECOND assertion-not-value pass at the same 134 sites worth "
+          "-24 each, plus SqEqGated (a GATED congruence folded with no materialised remainder: mux BOTH the factor "
+          "and the target against zero so the gated branch degenerates to 0 = 0, 184/186 against 440/445) and "
+          "denSafeVec (a zero-guard as an affine addend on limb 0 instead of a 4/4 Mux). RE-MEASURE THE ATOM BEFORE "
+          "COSTING; with ~350 live certificates the rest of the tree is unswept. NO soundness obligation — the folded certificate proves more, "
           "not less. Audit each site by asking: does anything READ this remainder, or does it only need to VANISH?"),
   ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED, with the same question in its other form: "
           "does any consumer need UNIQUENESS, or only the congruence class / a range bound? Canonicality is uniqueness, "
