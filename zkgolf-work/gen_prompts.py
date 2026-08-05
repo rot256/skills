@@ -43,48 +43,34 @@ WORKQUEUE={
           "extFold + finish instead — so the second stageA site is probably gone. Fold parameters: C = 12*2^128 via "
           "val_conv_lam_dtil_le, W0 = 100, quotient 34 bits, 725/729 -> 396/398."),
  ]),
- "secp256k1-scalar-mul": (350148, None, [
-  ("~531 each","KEEP SWEEPING MulModSub2 — PARTLY LANDED, MORE REMAINS. Already converted: PointValid (-871 across more than one site) and the terminal glvStepLastSlope (-519). SWEEP EVERY REMAINING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE. MulModSub2 witnesses the canonical "
-          "remainder and pays ValidP (260/267) plus four limb witnesses = 440/445 = 885. If NO CONSUMER READS THE "
-          "REMAINDER — it only has to be zero — replace it with MulModEqFold: one MulModFold certificate, 176/178 = "
-          "354, saving 531. This is what the record already did in PointValid. With ~350 live certificates it is the "
-          "largest systematic lever left, and it carries NO soundness obligation (the folded certificate proves more, "
-          "not less). Audit each site by asking: does anything read this remainder, or does it only need to vanish?"),
-  ("~531 each","KEEP SWEEPING MulModSub2 — PARTLY LANDED, MORE REMAINS. Already converted: PointValid (-871 across more than one site) and the terminal glvStepLastSlope (-519). SWEEP EVERY REMAINING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE. MulModSub2 witnesses the canonical "
-          "remainder and pays ValidP (260/267) plus four limb witnesses = 440/445 = 885. If NO CONSUMER READS THE "
-          "REMAINDER — it only has to be zero — replace it with MulModEqFold: one MulModFold certificate, 176/178 = "
-          "354, saving 531. This is what the record already did in PointValid. With ~350 live certificates it is the "
-          "largest systematic lever left, and it carries NO soundness obligation (the folded certificate proves more, "
-          "not less). Audit each site by asking: does anything read this remainder, or does it only need to vanish?"),
-  ("38","MOSTLY LANDED — ONLY THE REMAINDER IS LEFT. The NormalizeFe weakening (drop ValidP's canonicality tail on a "
-         "witnessed slope) shipped in the 347071 record at exactly -19 per site across 134 sites. The TWO "
-         "divUncheckedD3 inside PhiPairAdd were NOT converted and are still worth -19 each. DO NOT REDO THE 134."),
-  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED. The 347071 record deleted one whole "
-          "redundant ValidP (260/267) plus 4 allocations from the output-point validation, worth -531, and it was found "
-          "by asking of each call: does any consumer need UNIQUENESS, or only the congruence class / a range bound? "
-          "Re-ask that at every surviving ValidP site — canonicality is uniqueness, and most consumers need neither."),
-  ("108","Put SlopeXS's 2-row opposite-y detector into CompleteAdd. CompleteAdd.lean:585 still pays OppY 7/7 plus "
-         "`cancel <== sameX * oppY` 1/1 = 8/8 in all 9 table additions; SlopeXS.lean:55-57 does the same job in 2/2 and "
-         "its flag is ALREADY the AND, so cancel becomes a free wire. The soundness obligation is the one "
-         "CompleteAddIsInf already discharges."),
-  ("32400","RE-LIMB 4x64 -> 8x32, AND SHIP IT ALONE — the old instruction to ship it with the all-odd recode is "
-           "RETRACTED, they are INDEPENDENT. The fold constant c = 2^32 + 977 is ONE 33-bit limb in base 2^64 (f = 32) "
-           "but two tiny limbs (977, 1) in base 2^32 (f ~ 10), and f enters the carry width LINEARLY. CERT(4x64) = "
-           "176/178 = 354 measured; CERT(8x32) ~ 205, delta 150 +- 6. Then 350 certificates x 150 = -52,500, against "
-           "64 lookups x +240 = +15,360, 62 steps x +72 mux widening = +4,464, and ~300 table muxes: NET -32,376. "
-           "FRESH is unchanged, so the 512-per-element floor is untouched. IGNORE any older entry quoting CERT "
-           "365 -> 214 or -26,600 — it is internally inconsistent, though its bottom line is close."),
-  ("6600","Drop the sparse x<p canonicality tail (8/11 each) on every value that is NOT a circuit output and is only "
-          "consumed as a certificate target — canonicality is uniqueness, not soundness. Audit each ValidP call against "
-          "'does any consumer need uniqueness, or only the congruence class?'. NOTE this overlaps the NormalizeFe item "
-          "above; do that one first and re-count what is left."),
+ "secp256k1-scalar-mul": (345643, None, [
+  ("~531 each","KEEP SWEEPING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE — PARTLY LANDED, MORE REMAINS, AND IT IS "
+          "THE LARGEST SYSTEMATIC LEVER LEFT. MulModSub2 witnesses the canonical remainder and pays ValidP (260/267) plus "
+          "four limb witnesses = 440/445 = 885. Where NO CONSUMER READS THE REMAINDER — it only has to be zero — replace "
+          "it with MulModEqFold: one MulModFold certificate run directly against target 0 + s1 + s2, 176/178 = 354, "
+          "saving 531. ALREADY CONVERTED, DO NOT REDO: PointValid (1576/1604 -> 1143/1166, -871, more than one site) and "
+          "the terminal glvStepLastSlope (1046/1058 -> 790/795, -519, via SlopeLam + MulModEqFold). With ~350 live "
+          "certificates the rest of the tree is unswept. NO soundness obligation — the folded certificate proves more, "
+          "not less. Audit each site by asking: does anything READ this remainder, or does it only need to VANISH?"),
+  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED, with the same question in its other form: "
+          "does any consumer need UNIQUENESS, or only the congruence class / a range bound? Canonicality is uniqueness, "
+          "and most consumers need neither. The NormalizeFe weakening has already landed at 134 divOrZeroF3 sites and at "
+          "both divUncheckedD3 sites in PhiPairAdd — do not redo those."),
+  ("32400","RE-LIMB 4x64 -> 8x32, AND SHIP IT ALONE — the old instruction to ship it with the all-odd recode is RETRACTED, "
+           "they are INDEPENDENT. The fold constant c = 2^32 + 977 is ONE 33-bit limb in base 2^64 (f = 32) but two tiny "
+           "limbs (977, 1) in base 2^32 (f ~ 10), and f enters the carry width LINEARLY. CERT(4x64) = 176/178 = 354 "
+           "measured; CERT(8x32) ~ 205, delta 150 +- 6. Then 350 certificates x 150 = -52,500, against 64 lookups x +240 "
+           "= +15,360, 62 steps x +72 mux widening = +4,464, and ~300 table muxes: NET -32,376. FRESH is unchanged, so "
+           "the 512-per-element floor is untouched. IGNORE any older entry quoting CERT 365 -> 214 or -26,600 — it is "
+           "internally inconsistent, though its bottom line is close. NOTE: re-measure CERT against the CURRENT tree "
+           "first; MulModEqFold has already changed which certificates are live."),
   ("~2500","MARGINAL, DO LAST, AND ONLY AFTER 8x32: the all-odd signed-digit recode (digits d_i = 2b_i - 1 in {+-1}, a "
            "pure wire permutation at 0/0). Its ledger is NOT the -22k an older entry claims: lookups -9,600, but only "
            "about half the exception apparatus is deletable (-3,100) because R = O and x_S = x are NOT excludable, the "
            "parity obligation costs ONE OR TWO extra glvStep at 4,907 each, and the 8-entry +- table needs 12 additions "
-           "against today's 11 (+2,781). NET -5,012 TO -112. The recode also does NOT make the table identity-free — "
-           "six values of q still select O. Lean will need a COSET Minkowski (the short all-odd representative lives in "
-           "a coset of 2L, covolume 16n, bound 2^65.6), not the existing pigeonhole."),
+           "against today's 11 (+2,781). NET -5,012 TO -112. The recode also does NOT make the table identity-free — six "
+           "values of q still select O. Lean will need a COSET Minkowski (the short all-odd representative lives in a "
+           "coset of 2L, covolume 16n, bound 2^65.6), not the existing pigeonhole."),
  ]),
  "keccak-f1600": (307200, 184320, [
   ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
