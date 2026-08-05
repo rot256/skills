@@ -21,11 +21,7 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (50733, 49536, [
-  ("42","FREE, TWO LINES, DO IT FIRST. SelectCost.lean witnesses `bits : fields 3` plus 3 booleanity rows plus one "
-        "linking row selectedE = b0 + 2*b1 + 4*b2 = 3 alloc / 4 rows, where `RangeCheck.circuit 3` applied to selectedE "
-        "is 2 alloc / 3 rows — RangeCheck n is (n-1, n) on an EXPRESSION. The do-not-allocate-the-top-bit rule is "
-        "simply not applied at this site. 2 score x 21 windows."),
+ "secp256k1-fixed-base-scalar-mul": (50691, 49536, [
   ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL ESSENTIALLY UNTOUCHED. The folded-quotient range checks sit at "
           "67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. Two "
           "separate jobs have now shaved ONE bit each instead of deriving the value — do not do that again. THE TRUE "
