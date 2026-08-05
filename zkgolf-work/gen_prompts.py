@@ -45,8 +45,8 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (322543, None, [
-  ("430","MERGE ValidP's FOUR FINAL QUADRATIC ASSERTIONS INTO ONE, WITH NO NEW WITNESSES. tekkac's 322543 record does "
+ "secp256k1-scalar-mul": (321839, None, [
+  ("430","DO THIS FIRST — CONFIRMED ABSENT FROM THE CURRENT SEED, MEASURED, AND ALLOCATION-FREE. The 321839 seed still has ValidP.main at 260/267 with the docstring 'four final quadratic assertions'; tekkac's 322543 record does "
          "exactly this: ValidP.main 260/267 -> 260/265, ALLOCATIONS UNCHANGED, and it propagates to -2 per mulModSub2, "
          "-4 per completeAdd/finishXY/phiPairAdd, -6 per fusedStep and -372 across the 62 loop steps = -430 total. NOTE "
          "OUR OWN EARLIER ENTRY CALLED THIS TRICK SCORE-NEUTRAL — that was an artefact of our formulation, which paid "
