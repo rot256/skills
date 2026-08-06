@@ -43,7 +43,12 @@ WORKQUEUE={
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. RE-DERIVE FROM THE CURRENT TREE — the base "
          "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (320942, None, [
+ "secp256k1-scalar-mul": (319001, None, [
+  ("167","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE. The 319001 record was built from a tree predating 320942 and "
+         "REVERTED its PointValid port: pointValidCount is back to 1143/1160 where 320942 had 1060/1076. The port is "
+         "one mulModSub2 inside PointValid going 440/443 -> 357/359 via MulModSqN32Cost (the 32-bit limb view on a "
+         "squaring certificate). Re-applying gives about 318,834. While there, do the OTHER TWO PointValid "
+         "certificates as well — it certifies x^2, x^3 and y^2 - x^3 - 7 — at about -167 each."),
   ("~9000","FINISH THE 8x32 RE-LIMB. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE recombination "
            "x_k = v_{2k} + 2^32*v_{2k+1}; DivOrZeroS32.lean and MulModSqN32Cost.lean show it applied to a certificate. "
            "The Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 "
