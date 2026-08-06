@@ -40,8 +40,7 @@ WORKQUEUE={
          "has moved repeatedly (selectCost is now 283/284, below every earlier record) and the two-wire-y item changes "
          "N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (317180, None, [
-  ("744","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE AND IT IS A COPY-PASTE. The 317180 record was built from a checkout predating 317790 and REVERTED its denSafeVec change while adding its own (real) relationCost win. Measured: slope2Cost is back to 451/453 where 317790 had 445/447, and divOrZeroN32Cost back to 434/436 where 317790 had 432/434, so fusedStep is 2103/2116 against 2097/2110 and glvMSMAssert is +744 exactly. THE FIX: in Slope2.lean, the stage-2 denominator must NOT be a Mux against 2*R.y (4 witnesses + 4 rows); it must be `DivOrZeroS32.denSafeVec den2U tsel`, which folds the tangent selector into LIMB 0 as a free affine addend. This is legal because a denominator only has to be NON-ZERO mod p and nothing reads its exact value. The numerator then stops being a conditional square, so DivOrZeroN32 needs neither a convolution nor a 2m-1-cell target mux, which is the remaining -2/-2. Working version in the VERIFIED 317790 tree at /api/submissions/2c36304b-7681-4567-9ebf-0211052833e0/download — diff its Slope2.lean against yours. KEEP 317180's relationCost 1692/1706, which is a genuine -1354 and must not be lost in turn. Target 316,436."),
+ "secp256k1-scalar-mul": (316436, None, [
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
           "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
           "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
