@@ -44,6 +44,12 @@ WORKQUEUE={
          "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
  ]),
  "secp256k1-scalar-mul": (319001, None, [
+  ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
+          "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
+          "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
+          "divTargetS32Cost. finishXY sits inside fusedStep once per loop step, so at 62 steps this is worth up to "
+          "~496. VERIFY THE SITE COUNT: the delta must propagate into fusedStep, glvStep and glvMSMAssert, or the count "
+          "is wrong. Download the tree from /api/submissions/e0e8dc40-b896-40e8-a26e-7e770208be74/download."),
   ("167","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE. The 319001 record was built from a tree predating 320942 and "
          "REVERTED its PointValid port: pointValidCount is back to 1143/1160 where 320942 had 1060/1076. The port is "
          "one mulModSub2 inside PointValid going 440/443 -> 357/359 via MulModSqN32Cost (the 32-bit limb view on a "
