@@ -39,30 +39,30 @@ WORKQUEUE={
          "has moved repeatedly (selectCost is now 283/284, below every earlier record) and the two-wire-y item changes "
          "N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (319001, None, [
+ "secp256k1-scalar-mul": (318534, None, [
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
           "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
           "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
           "divTargetS32Cost. finishXY sits inside fusedStep once per loop step, so at 62 steps this is worth up to "
           "~496. VERIFY THE SITE COUNT: the delta must propagate into fusedStep, glvStep and glvMSMAssert, or the count "
           "is wrong. Download the tree from /api/submissions/e0e8dc40-b896-40e8-a26e-7e770208be74/download."),
-  ("167","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE. The 319001 record was built from a tree predating 320942 and "
-         "REVERTED its PointValid port: pointValidCount is back to 1143/1160 where 320942 had 1060/1076. The port is "
-         "one mulModSub2 inside PointValid going 440/443 -> 357/359 via MulModSqN32Cost (the 32-bit limb view on a "
-         "squaring certificate). Re-applying gives about 318,834. While there, do the OTHER TWO PointValid "
-         "certificates as well — it certifies x^2, x^3 and y^2 - x^3 - 7 — at about -167 each."),
   ("~9000","FINISH THE 8x32 RE-LIMB. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE recombination "
            "x_k = v_{2k} + 2^32*v_{2k+1}; DivOrZeroS32.lean and MulModSqN32Cost.lean show it applied to a certificate. "
            "The Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 "
            "and 4*64); the entire gain is that the fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE "
            "33-BIT limb in base 2^64, and that width enters the carry LINEARLY. IT IS ADOPTED PER CERTIFICATE — no "
            "whole-tree rewrite, and the Spec never changes. LANDED, DO NOT REDO: slopeXS, finishXY, phiPairAdd, the "
-           "nine table-side completeAdd sites, and ONE of PointValid's three certificates (mulModSub2 440/443 -> "
-           "357/359 via MulModSqN32Cost, -167). WHAT IS LEFT, IN ORDER: (a) the OTHER TWO PointValid certificates — it "
-           "certifies x^2, x^3 and y^2 - x^3 - 7, and only one is converted — at about -167 each; (b) every remaining "
-           "mulModSub2 OUTSIDE finishXY, still at 440 allocations. THE PORT SHOWS AS AN ALLOCATION DROP (slopeXS went "
-           "899 -> 824, mulModSub2 440 -> 357), so read ALLOCATIONS to tell ported from unported at a glance. A "
-           "Limbs33.lean exists in an earlier tree, so widths other than 32 are worth a sweep once these land."),
+           "nine table-side completeAdd sites, PointValid's squaring certificate, and both GLVBuildTable.Prepare sites "
+           "(MulModBeta32). PointValid IS FINISHED — its cube is an interpolatedMul at 7/7 and its curve equation is a "
+           "fold, so the squaring was the only convertible certificate; do NOT go looking for 'the other two'. WHAT IS "
+           "LEFT: every remaining mulModSub2 OUTSIDE finishXY, still at 440 allocations. WHEN THE OPERAND ARRIVES IN "
+           "BASE 2^64 AND RE-LIMBING IT WOULD COST A Normalize, USE THE CERTIFICATE-INVERSION MOVE (see the common "
+           "playbook): if the other multiplicand is a compile-time constant c, certify c^-1*r = a instead of r = c*a, "
+           "which puts the awkward value in the TARGET slot where 64-bit limbs suffice. THE PORT SHOWS AS AN "
+           "ALLOCATION DROP (slopeXS 899 -> 824, mulModSub2 440 -> 357), so read ALLOCATIONS to tell ported from "
+           "unported at a glance. NOTE MulModNorm (432/434) and MulModNorm32 (357/359) are in the tree but WIRED TO "
+           "NOTHING — attractive numbers, zero of the integration work done. A Limbs33.lean exists in an earlier tree, "
+           "so widths other than 32 are worth a sweep once these land."),
   ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE. MulModLooseQ.lean shows the pattern: "
           "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
           "scalar-side GLV call site multiplies by a value below 2^limbBits so the honest q < 2^65 — low limb full "
