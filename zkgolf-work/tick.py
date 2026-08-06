@@ -261,6 +261,13 @@ async def process_jobs():
             if sid:
                 subs = load("state_subs.json", {}); subs[sid] = {"slug": slug, "score": score, "status": "pending", "ts": NOW}
                 save("state_subs.json", subs); audit("submissions.jsonl", subs[sid] | {"submission_id": sid}); j["zk_id"] = sid
+                # Preserve the exact tree we submitted. out/<slug>/solution.tar.gz is overwritten by the
+                # NEXT job for this slug, so a verifier timeout — which is infrastructure, not a bad
+                # solution — otherwise loses a valid improvement permanently. Measured: fixed-base 50379
+                # timed out and its tree was already gone by the time we went looking. Pruned below once
+                # the submission reaches a terminal state that is not a timeout, so disk stays bounded.
+                try: shutil.copyfile(tarp, os.path.join(outdir, f"submitted-{sid}.tar.gz"))
+                except Exception as e: print(f"STATUS: {slug} could not preserve submitted tree: {e}")
                 sal = load("state_salvage.json", {})  # a beating submission landed → stop salvaging this slug
                 if slug in sal and score <= sal[slug].get("score", 1 << 62): del sal[slug]; save("state_salvage.json", sal)
             j["processed"] = True
@@ -417,6 +424,12 @@ def process_subs():
             s["status"] = final; s["is_record"] = r.get("is_record"); subs[sid] = s
             tag = "RECORD! " if r.get("is_record") else ""
             print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} -> {final} score={score} {tag}(claimed {s.get('score')})")
+            # Terminal and not a timeout, so the preserved tree has served its purpose — drop it.
+            # Timed-out submissions keep theirs; that copy is the only way to resubmit them.
+            keep = os.path.join("out", s["slug"], f"submitted-{sid}.tar.gz")
+            try:
+                if os.path.exists(keep): os.remove(keep)
+            except Exception as e: print(f"STATUS: sub {sid[:8]} prune-error {e}")
     save("state_subs.json", subs)
 async def main():
     st0 = load("state_jobs.json", {}); await reconcile_orphans(st0); save("state_jobs.json", st0)
