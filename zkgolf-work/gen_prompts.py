@@ -44,29 +44,29 @@ WORKQUEUE={
          "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
  ]),
  "secp256k1-scalar-mul": (320942, None, [
-  ("~10000","FINISH THE 8x32 RE-LIMB — ONLY TWO FAMILIES ARE LEFT. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE "
-            "recombination x_k = v_{2k} + 2^32*v_{2k+1}, and DivOrZeroS32.lean shows it applied to a certificate. The "
-            "Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 and "
-            "4*64); the whole gain is that the fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE "
-            "33-BIT limb in base 2^64, and that width enters the carry LINEARLY. IT IS ADOPTED PER CERTIFICATE — no "
-            "whole-tree rewrite. LANDED, DO NOT REDO: slopeXS (-150/site), finishXY (-150/site), phiPairAdd (-154) and "
-            "the NINE TABLE-SIDE completeAdd sites (glvBuildTable 15730/15890 -> 15580/15688). PointValid HAS STARTED: one of its three certificates (x^2, x^3, y^2 - x^3 - 7) is converted via MulModSqN32Cost, mulModSub2 440/443 -> 357/359, worth -167; TWO REMAIN THERE at about -167 each. THE OTHER FAMILY LEFT "
-            "ARE mulModSub2 OUTSIDE finishXY and the PointValid CERTIFICATES — both still show 440 and their original "
-            "allocation counts in every tree, and THE PORT SHOWS AS AN ALLOCATION DROP (slopeXS went 899 -> 824), so "
-            "check ALLOCATIONS to tell ported from unported at a glance. A Limbs33.lean exists in an earlier tree, so "
-            "widths other than 32 are worth a sweep once these land. Per site the only obligation is the carry bound; "
-            "the Spec is unchanged."),
+  ("~9000","FINISH THE 8x32 RE-LIMB. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE recombination "
+           "x_k = v_{2k} + 2^32*v_{2k+1}; DivOrZeroS32.lean and MulModSqN32Cost.lean show it applied to a certificate. "
+           "The Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 "
+           "and 4*64); the entire gain is that the fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE "
+           "33-BIT limb in base 2^64, and that width enters the carry LINEARLY. IT IS ADOPTED PER CERTIFICATE — no "
+           "whole-tree rewrite, and the Spec never changes. LANDED, DO NOT REDO: slopeXS, finishXY, phiPairAdd, the "
+           "nine table-side completeAdd sites, and ONE of PointValid's three certificates (mulModSub2 440/443 -> "
+           "357/359 via MulModSqN32Cost, -167). WHAT IS LEFT, IN ORDER: (a) the OTHER TWO PointValid certificates — it "
+           "certifies x^2, x^3 and y^2 - x^3 - 7, and only one is converted — at about -167 each; (b) every remaining "
+           "mulModSub2 OUTSIDE finishXY, still at 440 allocations. THE PORT SHOWS AS AN ALLOCATION DROP (slopeXS went "
+           "899 -> 824, mulModSub2 440 -> 357), so read ALLOCATIONS to tell ported from unported at a glance. A "
+           "Limbs33.lean exists in an earlier tree, so widths other than 32 are worth a sweep once these land."),
   ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE. MulModLooseQ.lean shows the pattern: "
           "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
           "scalar-side GLV call site multiplies by a value below 2^limbBits so the honest q < 2^65 — low limb full "
           "check, second limb BOOLEAN, top two ASSERTED ZERO, giving 63/67 and -189 per site with NO change to the "
           "certificate or the Spec. SWEEP EVERY REMAINING Normalize / NormalizeTight / full-width quotient check and "
           "ask: what is the largest value this witness can honestly take GIVEN THE OPERANDS AT THIS SITE?"),
-  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED: does any consumer need UNIQUENESS, or only "
-          "the congruence class / a range bound? Canonicality is uniqueness, and most consumers need neither. The "
-          "NormalizeFe weakening has already landed at 134 divOrZeroF3 sites and both divUncheckedD3 sites — do not "
-          "redo those. NOTE the ValidP ASSERTION MERGE (260/267 -> 260/265, four final quadratic assertions into one "
-          "with NO new witnesses) has ALSO landed; it is in the current seed."),
+  ("~500","AUDIT EVERY REMAINING ValidP CALL: does any consumer need UNIQUENESS, or only the congruence class / a range "
+          "bound? Canonicality is uniqueness, and most consumers need neither. ALREADY LANDED, DO NOT REDO: the "
+          "NormalizeFe weakening at 134 divOrZeroF3 sites and both divUncheckedD3 sites, and the ValidP ASSERTION "
+          "MERGE (260/267 -> 260/265, four final quadratic assertions into one with NO new witnesses) which is in the "
+          "current seed."),
  ]),
  "keccak-f1600": (307200, 184320, [
   ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
