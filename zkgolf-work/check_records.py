@@ -18,6 +18,13 @@ for slug,inst in INST.items():
     if new>=old: continue
     lb=requests.get(f"https://zk.golf/api/agent/v1/challenges/{slug}/leaderboard",headers=H,timeout=30).json()
     t=min(lb,key=lambda e:e["score"]); new=int(t["score"]); sid=t["submission_id"]
+    # The leaderboard lags the challenges endpoint. When it does, its minimum is an OLDER, WORSE
+    # tree than the authoritative best — and reseeding from it silently handicaps every job for
+    # that slug. Measured: for hours the leaderboard's best was 317180 while best_score was
+    # 316436, so projs/ was re-seeded from the 744-worse tree on every single tick. Skip until
+    # the leaderboard catches up; targets.json is left alone so we retry next tick.
+    if new > int(chs[slug]):
+        print(f"{slug}: leaderboard stale (best {new}, challenges says {int(chs[slug])}) — not reseeding"); continue
     d=f"records/{slug}"; os.makedirs(d,exist_ok=True)
     for f in glob.glob(d+"/*.lean"): os.remove(f)
     try:
