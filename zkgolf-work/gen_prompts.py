@@ -39,7 +39,7 @@ WORKQUEUE={
          "has moved repeatedly (selectCost is now 283/284, below every earlier record) and the two-wire-y item changes "
          "N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (318534, None, [
+ "secp256k1-scalar-mul": (317790, None, [
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
           "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
           "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
@@ -63,6 +63,7 @@ WORKQUEUE={
            "unported at a glance. NOTE MulModNorm (432/434) and MulModNorm32 (357/359) are in the tree but WIRED TO "
            "NOTHING — attractive numbers, zero of the integration work done. A Limbs33.lean exists in an earlier tree, "
            "so widths other than 32 are worth a sweep once these land."),
+  ("~700 each","SWEEP EVERY REMAINING Mux WHOSE CONSUMER READS ONLY A PREDICATE, NOT THE VALUE. The 317790 record took -744 by deleting ONE Emu-wide Mux: Slope2's stage-2 denominator was a Mux against 2*R.y (4 witnesses + 4 rows) and became `DivOrZeroS32.denSafeVec den2U tsel`, folding the tangent selector into LIMB 0 as a free affine addend, because a denominator only has to be NON-ZERO mod p and nothing reads its exact value. A further -2/-2 followed because the numerator stopped being a conditional square, so the divider needed neither a convolution nor a 2m-1-cell target mux. denSafeVec was already in the playbook and had already landed once — that says nothing about whether every SITE is swept, and this one was worth 744. GO FIND THE REST: any Mux feeding a denominator, a zero-guard, or a consumer that reads only a PREDICATE (non-zero, in-range, congruent) rather than the value. Price each deleted Emu-wide Mux at 4 allocations + 4 rows, times its site count."),
   ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE. MulModLooseQ.lean shows the pattern: "
           "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
           "scalar-side GLV call site multiplies by a value below 2^limbBits so the honest q < 2^65 — low limb full "
