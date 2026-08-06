@@ -21,13 +21,21 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (50605, 49536, [
-  ("42","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE. The 50605 record was built from a tree predating the 50691 record "
-        "and REVERTED its top-bit fix: selectCost is back to 288/289 where 50691 had 287/288, i.e. +1 alloc +1 constr "
-        "per window x 21 windows. Re-applying gives about 50563. The fix is simply not allocating a bit that is "
-        "derivable from the others in the `bits : fields 3` group — state the COST SHAPE, 2 score per window, rather "
-        "than prescribing a gadget, since the last job that landed it used its own formulation."),
-  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL UNTOUCHED AFTER FOUR RECORDS. The folded-quotient range checks "
+ "secp256k1-fixed-base-scalar-mul": (50523, 49536, [
+  ("128","LOST GROUND — RE-APPLY IT FIRST, IT IS A FOUR-LINE DELETION AND IT IS FREE. The 50523 record reverted the "
+         "50605 record's Canonicalize byte passthrough: canonicalizeCost went 267/273 -> 299/305, exactly +32 alloc "
+         "+32 constr = coordBytes, at both call sites (Comb.lean:442-443) = +128. ValidPBytes returns the bytes as "
+         "AFFINE EXPRESSIONS over bits it has already allocated for the canonicality proof, so the byte stage can end "
+         "with `return validBytes`. 50523 instead witnesses a COPY — `let bytes <- ProvableType.witness (fields "
+         "coordBytes) fun env => Vector.map (Expression.eval env.toEnvironment) validBytes` — links it with "
+         "`Circuit.forEach (Vector.zip bytes validBytes) fun p => assertZero (p.1 - p.2)`, and returns that. Delete "
+         "those four lines, return validBytes, and drop `Circuit.forEach_structuralComputableWitnesses_iff` from the "
+         "computable-witness simp set. The working version is in the VERIFIED 50605 tree, downloadable at "
+         "/api/submissions/cdcb9f52-d9f1-456a-b097-5fc506d0faec/download. KEEP EVERYTHING ELSE IN 50523 — its comb "
+         "(25202/25321) and select (283/284) both beat 50605. Target 50395. WHILE YOU ARE THERE, SWEEP FOR THE SAME "
+         "SHAPE: any `forEach`/`Vector.zip` whose body is a bare `assertZero (a - b)` between two wires is n free "
+         "score unless one side is genuinely unconstrained."),
+  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL UNTOUCHED AFTER FIVE RECORDS. The folded-quotient range checks "
           "sit at 67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. "
           "Successive jobs have shaved ONE bit or sidestepped it — DERIVE THE BOUND INSTEAD. It is q <= cFold*H/p + 1 + "
           "bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. RangeCheck n costs (n-1, n), so "
@@ -41,7 +49,8 @@ WORKQUEUE={
           "21, plus ~12 from shrunken FinalAdd routing. RE-DERIVE hgvFold: position 0 reaches ~1.25*2^131 against "
           "nfFoldR 0 = 2^132, carry width +2."),
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. RE-DERIVE FROM THE CURRENT TREE — the base "
-         "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
+         "has moved repeatedly (selectCost is now 283/284, below every earlier record) and the two-wire-y item changes "
+         "N from 9 to 7."),
  ]),
  "secp256k1-scalar-mul": (319001, None, [
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
