@@ -21,25 +21,27 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (50691, 49536, [
-  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL ESSENTIALLY UNTOUCHED. The folded-quotient range checks sit at "
-          "67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. Two "
-          "separate jobs have now shaved ONE bit each instead of deriving the value — do not do that again. THE TRUE "
-          "BOUND IS q <= cFold*H/p + 1 + bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. "
-          "RangeCheck n costs (n-1, n), so ~2700 across 19 + 19 + 2 sites. FoldQuad and hgvFold are UNTOUCHED because "
-          "q < 2^33 implies q < 2^67 — a numeral change plus ONE completeness bound per stage, no soundness obligation."),
+ "secp256k1-fixed-base-scalar-mul": (50605, 49536, [
+  ("42","LOST GROUND — RE-APPLY IT FIRST, IT IS FREE. The 50605 record was built from a tree predating the 50691 record "
+        "and REVERTED its top-bit fix: selectCost is back to 288/289 where 50691 had 287/288, i.e. +1 alloc +1 constr "
+        "per window x 21 windows. Re-applying gives about 50563. The fix is simply not allocating a bit that is "
+        "derivable from the others in the `bits : fields 3` group — state the COST SHAPE, 2 score per window, rather "
+        "than prescribing a gadget, since the last job that landed it used its own formulation."),
+  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL UNTOUCHED AFTER FOUR RECORDS. The folded-quotient range checks "
+          "sit at 67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. "
+          "Successive jobs have shaved ONE bit or sidestepped it — DERIVE THE BOUND INSTEAD. It is q <= cFold*H/p + 1 + "
+          "bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. RangeCheck n costs (n-1, n), so "
+          "~2700 across 19 + 19 + 2 sites. FoldQuad and hgvFold are UNTOUCHED because q < 2^33 implies q < 2^67 — a "
+          "numeral change plus ONE completeness bound per stage, and no soundness obligation."),
   ("1470","CARRY THE TABLE POINT'S y AS TWO WIRES, NOT FOUR — the consumer-functional law. The selected y is consumed at "
           "three sites and every one is an AFFINE ADDEND of a folded certificate, never a multiplicand: stageC1 via "
           "foldRhsY, stageYF via FoldQuadC1.rhsVec, and stageO2. THE COMB HAS NO DOUBLING AND NO TANGENT, so y never "
           "enters a denominator or interpolatedMul. GroupedFlex emits one carry over positions {0,1} plus one final "
-          "polyEval row, so the certificate reads only Y_lo = y0 + 2^64 y1 and Y_hi = y2 + 2^64 y3. Current y side is "
-          "82/83 (yNegProd 60/60 + eProd 15/15 + bits 3/3 + link 0/1 + y 4/4); proposed 47/48 (yNegProd 2 wires x 15, "
-          "eProd holding ONE borrow bit since merging limbs 2,3 and 0,1 cancels the internal borrows, that bit as "
-          "RangeCheck 1 on the selected expression = 0/1, y 2/2). -70 per window x 21, plus ~12 from shrunken FinalAdd "
-          "routing. RE-DERIVE hgvFold: position 0 reaches ~1.25*2^131 against nfFoldR 0 = 2^132, carry width +2."),
+          "polyEval row, so the certificate reads only Y_lo = y0 + 2^64 y1 and Y_hi = y2 + 2^64 y3. -70 per window x "
+          "21, plus ~12 from shrunken FinalAdd routing. RE-DERIVE hgvFold: position 0 reaches ~1.25*2^131 against "
+          "nfFoldR 0 = 2^132, carry width +2."),
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. RE-DERIVE FROM THE CURRENT TREE — the base "
-         "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
-         "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
+         "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
  ]),
  "secp256k1-scalar-mul": (321109, None, [
   ("~10000","FINISH THE 8x32 RE-LIMB — ONLY TWO FAMILIES ARE LEFT. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE "
