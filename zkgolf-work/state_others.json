@@ -7,5 +7,6 @@
   "secp256k1-fixed-base-scalar-mul/yelhousni": "015ae218-495f-42b0-baa7-c3bdde7d7ed2",
   "secp256k1-fixed-base-scalar-mul/csko": "214f1330-6133-4756-a562-eaf8da89148a",
   "secp256k1-scalar-mul/yelhousni": "ac1b9991-ee51-4974-9dd8-c5ef306398cf",
-  "secp256k1-scalar-mul/tekkac": "afc529ed-d9f4-4478-b0bb-163555232cbd"
+  "secp256k1-scalar-mul/tekkac": "afc529ed-d9f4-4478-b0bb-163555232cbd",
+  "sha256-hash/tekkac": "45a17f46-550d-44cb-a6c5-1717347c91bb"
 }
