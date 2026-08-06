@@ -21,21 +21,8 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (50523, 49536, [
-  ("128","LOST GROUND — RE-APPLY IT FIRST, IT IS A FOUR-LINE DELETION AND IT IS FREE. The 50523 record reverted the "
-         "50605 record's Canonicalize byte passthrough: canonicalizeCost went 267/273 -> 299/305, exactly +32 alloc "
-         "+32 constr = coordBytes, at both call sites (Comb.lean:442-443) = +128. ValidPBytes returns the bytes as "
-         "AFFINE EXPRESSIONS over bits it has already allocated for the canonicality proof, so the byte stage can end "
-         "with `return validBytes`. 50523 instead witnesses a COPY — `let bytes <- ProvableType.witness (fields "
-         "coordBytes) fun env => Vector.map (Expression.eval env.toEnvironment) validBytes` — links it with "
-         "`Circuit.forEach (Vector.zip bytes validBytes) fun p => assertZero (p.1 - p.2)`, and returns that. Delete "
-         "those four lines, return validBytes, and drop `Circuit.forEach_structuralComputableWitnesses_iff` from the "
-         "computable-witness simp set. The working version is in the VERIFIED 50605 tree, downloadable at "
-         "/api/submissions/cdcb9f52-d9f1-456a-b097-5fc506d0faec/download. KEEP EVERYTHING ELSE IN 50523 — its comb "
-         "(25202/25321) and select (283/284) both beat 50605. Target 50395. WHILE YOU ARE THERE, SWEEP FOR THE SAME "
-         "SHAPE: any `forEach`/`Vector.zip` whose body is a bare `assertZero (a - b)` between two wires is n free "
-         "score unless one side is genuinely unconstrained."),
-  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL UNTOUCHED AFTER FIVE RECORDS. The folded-quotient range checks "
+ "secp256k1-fixed-base-scalar-mul": (50395, 49536, [
+  ("2700","LARGEST LEVER, PURE NUMERAL WORK, AND STILL UNTOUCHED AFTER SIX RECORDS. The folded-quotient range checks "
           "sit at 67/69/67 (ChainFold.lean:36 stageO2, :160 stageC1, :299 stageX) against DERIVED bounds of 33/36/33. "
           "Successive jobs have shaved ONE bit or sidestepped it — DERIVE THE BOUND INSTEAD. It is q <= cFold*H/p + 1 + "
           "bias_mult = 2^32 + 982 = 33 BITS for a 4p-biased fold; stageC1's is 36. RangeCheck n costs (n-1, n), so "
