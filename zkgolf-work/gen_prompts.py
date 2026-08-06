@@ -79,6 +79,31 @@ WORKQUEUE={
           "MERGE (260/267 -> 260/265, four final quadratic assertions into one with NO new witnesses) which is in the "
           "current seed."),
  ]),
+ "sha256-hash": (145470, None, [
+  ("~2062 is the only slack","THE WHOLE TREE IS AT THE r = m FLOOR EXCEPT THE PADDING CHECK — GO THERE FIRST AND DO "
+        "NOT RE-DERIVE THE GADGETS. I ranked every `def X : Count := <a, c>` in Solution/SHA256 by c - a. "
+        "checkPad7SparseUnchecked is <0, 2062> — ZERO ALLOCATIONS, 2062 ROWS — and THE NEXT LARGEST GAP IN THE ENTIRE "
+        "TREE IS 88. Every compress block, both message schedules and every per-lane gadget sits within 88 of rows = "
+        "allocations, which is the structural floor since each row introduces at most one witness. So the only part of "
+        "this circuit whose row count is NOT explained by witness-pinning is a single pure-assertion padding predicate "
+        "worth 1.4% of the score. BE HONEST ABOUT WHAT THAT DOES AND DOES NOT PROVE: an assertion block pins no "
+        "witnesses, so this is not a proof that 2062 is above its own floor — it is the observation that this is the "
+        "one place a redundancy argument could bite. USE THE ROW-DELETION CRITERION, which is exactly built for this: "
+        "expand each row into its quadratic-monomial coefficient vector plus linear part, solve sum_k lambda_k "
+        "Q_k[i,j] = 0 by PLAIN GAUSSIAN ELIMINATION (no Groebner basis), then either delete any row with lambda_k != 0 "
+        "or use the resulting free linear constraint to eliminate a wire. Yield is ~0% on hand-tight circuits and 20%+ "
+        "on mechanically generated ones, and a 2062-row all-assertion predicate is far more likely to be the latter. "
+        "ALREADY LANDED, DO NOT REDO: the one-row gadgets are in this tree — ch32Cost, and32Cost and lowerSigma0Cost "
+        "are all <32, 32>, one row and one allocation per bit."),
+  ("blocked, do not try","XOR4 AND XOR5 CANNOT BE DONE IN ONE ROW — THIS IS PROVED, NOT A SEARCH FAILURE, so the "
+        "message-schedule sigmas cannot be widened past three inputs. Exactly 192 of the 256 three-input boolean "
+        "functions are one-row pinnable; f is BLOCKED iff c_{123} != 0 and (c_{23}, c_{13}, c_{12}) all lie in {0, "
+        "-c_{123}}, which covers the 8 point-indicators and complements, AND3/OR3/NAND3/NOR3, and the weight-{1,3,5,7} "
+        "functions with |c_{123}| = 1. For parity specifically, dim{A affine : deg(A * parity_n) <= 2} = 0 for n = "
+        "4,5,6,7 computed EXACTLY OVER Q, so it holds over every field, and the two-row/one-witness case-split variant "
+        "dies too. XOR5 as two chained XOR3 rows at 2 allocations + 2 rows is OPTIMAL. Spend the slot on the padding "
+        "block instead."),
+ ]),
  "keccak-f1600": (307200, 184320, [
   ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
             "Solution/KeccakF1600/ is the 307200 BASELINE, not the record: it has no Xor3Lane.lean and its allocations "
