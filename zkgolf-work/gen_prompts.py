@@ -43,14 +43,14 @@ WORKQUEUE={
   ("588","Select12's inner one-hot still misses the proved 2^w-w-1 minimum. RE-DERIVE FROM THE CURRENT TREE — the base "
          "has moved repeatedly across records and the two-wire-y item changes N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (321109, None, [
+ "secp256k1-scalar-mul": (320942, None, [
   ("~10000","FINISH THE 8x32 RE-LIMB — ONLY TWO FAMILIES ARE LEFT. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE "
             "recombination x_k = v_{2k} + 2^32*v_{2k+1}, and DivOrZeroS32.lean shows it applied to a certificate. The "
             "Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 and "
             "4*64); the whole gain is that the fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE "
             "33-BIT limb in base 2^64, and that width enters the carry LINEARLY. IT IS ADOPTED PER CERTIFICATE — no "
             "whole-tree rewrite. LANDED, DO NOT REDO: slopeXS (-150/site), finishXY (-150/site), phiPairAdd (-154) and "
-            "the NINE TABLE-SIDE completeAdd sites (glvBuildTable 15730/15890 -> 15580/15688). THE ONLY FAMILIES LEFT "
+            "the NINE TABLE-SIDE completeAdd sites (glvBuildTable 15730/15890 -> 15580/15688). PointValid HAS STARTED: one of its three certificates (x^2, x^3, y^2 - x^3 - 7) is converted via MulModSqN32Cost, mulModSub2 440/443 -> 357/359, worth -167; TWO REMAIN THERE at about -167 each. THE OTHER FAMILY LEFT "
             "ARE mulModSub2 OUTSIDE finishXY and the PointValid CERTIFICATES — both still show 440 and their original "
             "allocation counts in every tree, and THE PORT SHOWS AS AN ALLOCATION DROP (slopeXS went 899 -> 824), so "
             "check ALLOCATIONS to tell ported from unported at a glance. A Limbs33.lean exists in an earlier tree, so "
