@@ -41,66 +41,30 @@ WORKQUEUE={
          "has moved repeatedly (hot4 has been seen at both `fields 14` and `fields 15` across records) and the "
          "two-wire-y item above changes N from 9 to 7. Do not use any older cell recipe."),
  ]),
- "secp256k1-scalar-mul": (321839, None, [
-  ("430","DO THIS FIRST — CONFIRMED ABSENT FROM THE CURRENT SEED, MEASURED, AND ALLOCATION-FREE. The 321839 seed still has ValidP.main at 260/267 with the docstring 'four final quadratic assertions'; tekkac's 322543 record does "
-         "exactly this: ValidP.main 260/267 -> 260/265, ALLOCATIONS UNCHANGED, and it propagates to -2 per mulModSub2, "
-         "-4 per completeAdd/finishXY/phiPairAdd, -6 per fusedStep and -372 across the 62 loop steps = -430 total. NOTE "
-         "OUR OWN EARLIER ENTRY CALLED THIS TRICK SCORE-NEUTRAL — that was an artefact of our formulation, which paid "
-         "two auxiliary witnesses for the nesting. THE WITNESSES ARE OPTIONAL: keep the nesting inside the existing "
-         "affine forms and the row saving is pure. If the current seed already contains it, skip; if a job is working "
-         "from a tree at 322973 or earlier, this is free score on top of whatever else it finds."),
-  ("~13000","FINISH THE 8x32 RE-LIMB — 19,327 BANKED ACROSS TWO RECORDS, THE REST IS MECHANICAL. The mechanism: "
-            "Limbs32.lean is the 32-bit limb VIEW, a FREE AFFINE recombination x_k = v_{2k} + 2^32*v_{2k+1}, and "
-            "DivOrZeroS32.lean applies it to a certificate. THE Normalize IS COST-NEUTRAL between views (8 + 8*31 = 256 "
-            "alloc, 8*32 = 256 constr, identical to 4 + 4*63 and 4*64), so nothing is lost; the whole gain is that the "
-            "fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE 33-BIT limb in base 2^64, and that "
-            "width enters the carry LINEARLY. BECAUSE THE VIEW IS AFFINE IT IS ADOPTED PER CERTIFICATE — no whole-tree "
-            "rewrite. LANDED SO FAR, DO NOT REDO: slopeXS (-150/site, -10,523) and finishXY (-150/site, -8,804, with "
-            "slope2 traded +8 for a net -142 per loop step). STILL ON THE 64-BIT VIEW AND STILL WORTH ~150 EACH: "
-            "mulModSub2 outside finishXY, the PointValid certificates, and the NINE table-side completeAdd sites — both "
-            "records touched the LOOP ONLY and glvBuildTable has not moved at all. A Limbs33.lean has appeared in the "
-            "latest tree, so limb widths other than 32 are worth sweeping too. The only obligation per site is the "
-            "carry bound; the Spec is unchanged."),
-  ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE — the newest landed mechanism and "
-          "the same error class as the fixed-base 67-bits-against-33 item. MulModLooseQ.lean shows the pattern: "
+ "secp256k1-scalar-mul": (321109, None, [
+  ("~10000","FINISH THE 8x32 RE-LIMB — ONLY TWO FAMILIES ARE LEFT. The 32-bit limb VIEW (Limbs32.lean) is a FREE AFFINE "
+            "recombination x_k = v_{2k} + 2^32*v_{2k+1}, and DivOrZeroS32.lean shows it applied to a certificate. The "
+            "Normalize is COST-NEUTRAL between views (8 + 8*31 = 256 alloc, 8*32 = 256 constr, identical to 4 + 4*63 and "
+            "4*64); the whole gain is that the fold constant 2^32 + 977 is TWO TINY LIMBS in base 2^32 against ONE "
+            "33-BIT limb in base 2^64, and that width enters the carry LINEARLY. IT IS ADOPTED PER CERTIFICATE — no "
+            "whole-tree rewrite. LANDED, DO NOT REDO: slopeXS (-150/site), finishXY (-150/site), phiPairAdd (-154) and "
+            "the NINE TABLE-SIDE completeAdd sites (glvBuildTable 15730/15890 -> 15580/15688). THE ONLY FAMILIES LEFT "
+            "ARE mulModSub2 OUTSIDE finishXY and the PointValid CERTIFICATES — both still show 440 and their original "
+            "allocation counts in every tree, and THE PORT SHOWS AS AN ALLOCATION DROP (slopeXS went 899 -> 824), so "
+            "check ALLOCATIONS to tell ported from unported at a glance. A Limbs33.lean exists in an earlier tree, so "
+            "widths other than 32 are worth a sweep once these land. Per site the only obligation is the carry bound; "
+            "the Spec is unchanged."),
+  ("~189 each","SIZE EVERY QUOTIENT RANGE CHECK TO ITS CALL SITE, NOT TO ITS TYPE. MulModLooseQ.lean shows the pattern: "
           "MulModLoose witnesses q = a*b/n as a full 4-limb BigInt and range-checks all four limbs at 252/256, but every "
           "scalar-side GLV call site multiplies by a value below 2^limbBits so the honest q < 2^65 — low limb full "
-          "check, second limb BOOLEAN, top two ASSERTED ZERO, giving 63/64 + 0/1 + 0/1 + 0/1 = 63/67 and -189 per site "
-          "with NO change to the certificate or the Spec. SWEEP EVERY REMAINING Normalize / NormalizeTight / "
-          "full-width quotient check in this tree and ask: what is the largest value this witness can honestly take "
-          "GIVEN THE OPERANDS AT THIS SITE? Anything bounded well below its declared width is paying for bits it can "
-          "never use."),
-  ("~531 each","KEEP SWEEPING MulModSub2 FOR THE 'ASSERTION, NOT VALUE' REWRITE — PARTLY LANDED, MORE REMAINS, AND IT IS "
-          "THE LARGEST SYSTEMATIC LEVER LEFT. MulModSub2 witnesses the canonical remainder and pays ValidP (260/267) plus "
-          "four limb witnesses = 440/445 = 885. Where NO CONSUMER READS THE REMAINDER — it only has to be zero — replace "
-          "it with MulModEqFold: one MulModFold certificate run directly against target 0 + s1 + s2, 176/178 = 354, "
-          "saving 531. ALREADY CONVERTED, DO NOT REDO: PointValid (1576/1604 -> 1143/1166, -871, more than one site) and "
-          "the terminal glvStepLastSlope. THE ATOM HAS MOVED AGAIN since those notes: divOrZeroF3 is now 448/450 (it was "
-          "460/462, and 468/473 before that), after a SECOND assertion-not-value pass at the same 134 sites worth "
-          "-24 each, plus SqEqGated (a GATED congruence folded with no materialised remainder: mux BOTH the factor "
-          "and the target against zero so the gated branch degenerates to 0 = 0, 184/186 against 440/445) and "
-          "denSafeVec (a zero-guard as an affine addend on limb 0 instead of a 4/4 Mux). RE-MEASURE THE ATOM BEFORE "
-          "COSTING; with ~350 live certificates the rest of the tree is unswept. NO soundness obligation — the folded certificate proves more, "
-          "not less. Audit each site by asking: does anything READ this remainder, or does it only need to VANISH?"),
-  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED, with the same question in its other form: "
-          "does any consumer need UNIQUENESS, or only the congruence class / a range bound? Canonicality is uniqueness, "
-          "and most consumers need neither. The NormalizeFe weakening has already landed at 134 divOrZeroF3 sites and at "
-          "both divUncheckedD3 sites in PhiPairAdd — do not redo those."),
-  ("32400","RE-LIMB 4x64 -> 8x32, AND SHIP IT ALONE — the old instruction to ship it with the all-odd recode is RETRACTED, "
-           "they are INDEPENDENT. The fold constant c = 2^32 + 977 is ONE 33-bit limb in base 2^64 (f = 32) but two tiny "
-           "limbs (977, 1) in base 2^32 (f ~ 10), and f enters the carry width LINEARLY. CERT(4x64) = 176/178 = 354 "
-           "measured; CERT(8x32) ~ 205, delta 150 +- 6. Then 350 certificates x 150 = -52,500, against 64 lookups x +240 "
-           "= +15,360, 62 steps x +72 mux widening = +4,464, and ~300 table muxes: NET -32,376. FRESH is unchanged, so "
-           "the 512-per-element floor is untouched. IGNORE any older entry quoting CERT 365 -> 214 or -26,600 — it is "
-           "internally inconsistent, though its bottom line is close. NOTE: re-measure CERT against the CURRENT tree "
-           "first; MulModEqFold has already changed which certificates are live."),
-  ("~2500","MARGINAL, DO LAST, AND ONLY AFTER 8x32: the all-odd signed-digit recode (digits d_i = 2b_i - 1 in {+-1}, a "
-           "pure wire permutation at 0/0). Its ledger is NOT the -22k an older entry claims: lookups -9,600, but only "
-           "about half the exception apparatus is deletable (-3,100) because R = O and x_S = x are NOT excludable, the "
-           "parity obligation costs ONE OR TWO extra glvStep at 4,907 each, and the 8-entry +- table needs 12 additions "
-           "against today's 11 (+2,781). NET -5,012 TO -112. The recode also does NOT make the table identity-free — six "
-           "values of q still select O. Lean will need a COSET Minkowski (the short all-odd representative lives in a "
-           "coset of 2L, covolume 16n, bound 2^65.6), not the existing pigeonhole."),
+          "check, second limb BOOLEAN, top two ASSERTED ZERO, giving 63/67 and -189 per site with NO change to the "
+          "certificate or the Spec. SWEEP EVERY REMAINING Normalize / NormalizeTight / full-width quotient check and "
+          "ask: what is the largest value this witness can honestly take GIVEN THE OPERANDS AT THIS SITE?"),
+  ("~500","AUDIT EVERY REMAINING ValidP CALL THE WAY PointValid WAS AUDITED: does any consumer need UNIQUENESS, or only "
+          "the congruence class / a range bound? Canonicality is uniqueness, and most consumers need neither. The "
+          "NormalizeFe weakening has already landed at 134 divOrZeroF3 sites and both divUncheckedD3 sites — do not "
+          "redo those. NOTE the ValidP ASSERTION MERGE (260/267 -> 260/265, four final quadratic assertions into one "
+          "with NO new witnesses) has ALSO landed; it is in the current seed."),
  ]),
  "keccak-f1600": (307200, 184320, [
   ("122880","PORT THE 184320 RECORD AND PROVE computableWitness — THIS IS THE WHOLE JOB ON THIS SLUG. Your seed "
