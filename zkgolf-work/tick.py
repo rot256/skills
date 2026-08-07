@@ -452,12 +452,18 @@ def process_subs():
             s["status"] = final; s["is_record"] = r.get("is_record"); subs[sid] = s
             tag = "RECORD! " if r.get("is_record") else ""
             print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} -> {final} score={score} {tag}(claimed {s.get('score')})")
-            # Terminal and not a timeout, so the preserved tree has served its purpose — drop it.
-            # Timed-out submissions keep theirs; that copy is the only way to resubmit them.
-            keep = os.path.join("out", s["slug"], f"submitted-{sid}.tar.gz")
-            try:
-                if os.path.exists(keep): os.remove(keep)
-            except Exception as e: print(f"STATUS: sub {sid[:8]} prune-error {e}")
+            # Drop the preserved tree ONLY on success. A `failed` submission is precisely the case
+            # where the tree is needed: out/<slug> is wiped and re-extracted by the very next job for
+            # that slug, so by the time the failure lands the evidence is usually already gone.
+            # Measured: sha256 8f3181d0 submitted 11:23, was overwritten 11:31, reported failed 11:36 —
+            # undiagnosable. Timeouts keep theirs too; that copy is the only way to resubmit them.
+            if final == "verified":
+                keep = os.path.join("out", s["slug"], f"submitted-{sid}.tar.gz")
+                try:
+                    if os.path.exists(keep): os.remove(keep)
+                except Exception as e: print(f"STATUS: sub {sid[:8]} prune-error {e}")
+            else:
+                print(f"STATUS: {s['slug']} kept submitted-{sid[:8]}.tar.gz for diagnosis")
     save("state_subs.json", subs)
 async def main():
     st0 = load("state_jobs.json", {}); await reconcile_orphans(st0); save("state_jobs.json", st0)
