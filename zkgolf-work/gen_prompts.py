@@ -205,7 +205,32 @@ WORKQUEUE={
    "SLOT ON WINDOW WIDTH ALONE — the one time to revisit it is INSIDE a job that also collapses the per-addition "
    "cost, since the optimum trades select cost against ADDITION cost."),
  ]),
- "secp256k1-scalar-mul": (315768, None, [
+ "secp256k1-scalar-mul": (315676, None, [
+  ("60 — LOST GROUND, RE-APPLY IT FIRST","THE 315676 RECORD REVERTED THREE LEAF GADGETS THAT 315768 HAD "
+   "IMPROVED. Verified across all three trees rather than against the immediate predecessor alone: "
+   "mulModSub2Cost went 440/443 -> 436/439 -> 440/443, divUncheckedD3Cost 432/434 -> 430/432 -> 432/434, and "
+   "mulModSub2D3Cost 440/443 -> 438/441 -> 440/443. IN EACH CASE THE CURRENT VALUE IS EXACTLY THE 315828 VALUE, "
+   "which is the signature of a job dispatched from a checkout predating 315768 — not a new regression and not a "
+   "cost of the win. Download 315768 at /api/submissions/f51e71ac-f67e-4b8d-8864-3bf5cbded5b5/download and diff "
+   "its Cost.lean. TARGET 315,616. KEEP the ParamsFold32T exact-bound change that 315676 introduced (wfFold32T "
+   "45, and the four exact constants) — that is what bought this record. The containers that also read worse "
+   "(doubleCost, glvStepLastLowCost, glvStepLastSlopeCost) are downstream of those three leaves and need no "
+   "separate fix; completeAddCost, phiPairAddCost, glvBuildTableCost and glvSubsetCost land BETWEEN the two "
+   "predecessors and are containers whose children moved both ways, so do not treat them as independent "
+   "regressions."),
+  ("~92 per shared instance — SWEEP THE OTHER PARAMS FILES","EXACT BOUNDS BEAT ROUNDED POWERS OF TWO, AND THIS "
+   "IS THE LEVER THAT JUST TOOK THE RECORD. ParamsFold32T.lean went from nfFold32TL = 2^77, nfFold32TR = 2^70, "
+   "offFold32TL = 2^45 + 2^14, offFold32TR = 2^39 to the EXACT nfFold32TL = 979*2^67 + 3*2^32, nfFold32TR = 2^69 "
+   "+ 3*2^64, offFold32TL = 979*2^35 + 8192, offFold32TR = 2^37 + 3*2^32 + 256, and wfFold32T fell 46 -> 45 for "
+   "-92. A bound written as 2^a or 2^a + 2^b OVER-ESTIMATES a quantity whose true value is a small integer "
+   "multiple of a power of two (979 is the Solinas constant 977 plus 2; 3 is the borrow-free digit cap), and "
+   "since the carry width is ceil(log2(OFF_L + OFF_R)), rounding each addend up can push the ceiling across an "
+   "integer boundary. NOW DO THE SAME SWEEP ON EVERY OTHER PARAMS FILE IN THIS TREE: for each Nf and OFF "
+   "constant, write the true bound as an exact integer expression, recompute ceil(log2(...)), and see whether "
+   "the width falls. Any entry that is a bare power of two or a sum of two powers of two is a candidate. The "
+   "payoff is 2 score per bit TIMES THE NUMBER OF SITES SHARING THE INSTANCE, so start with the most widely "
+   "reused params. THIS IS A DIFFERENT LEVER FROM per-site specialisation of a shared instance — that one "
+   "narrows the CONSUMER, this one sharpens the CONSTANT, and they compose."),
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
           "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
           "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
