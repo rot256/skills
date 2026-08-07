@@ -64,14 +64,28 @@ def missing_required(soldir):
         blob += open(f, errors="ignore").read()
     return [r for r in req if (f"theorem {r}" not in blob and f"{r} :" not in blob)]
 def parse_cost(soldir):
-    files = sorted(glob.glob(os.path.join(soldir, "*.lean")), key=lambda f: (0 if f.endswith("Main.lean") else 1, f))
-    a = c = None
-    for f in files:
-        t = open(f, errors="ignore").read()
-        if a is None:
-            m = re.search(r"def\s+allocations\s*:?\s*(?:Nat)?\s*:=\s*(\d+)", t); a = int(m.group(1)) if m else a
-        if c is None:
-            m = re.search(r"def\s+constraints\s*:?\s*(?:Nat)?\s*:=\s*(\d+)", t); c = int(m.group(1)) if m else c
+    # Read the EXPORTED cost only. This used to glob every .lean and take the first hit, which meant an
+    # `allocations` in some auxiliary or candidate cost file could be reported as the circuit's score.
+    # Measured: eleven sha256 jobs all "found" 72207/72789 because a leftover CostSparseMain.lean was
+    # being read instead of their own tree, whose honest score equalled the record. The submission guard
+    # `score >= best` therefore never fired. Main.lean is the single source of truth; follow one level of
+    # re-export (Main.lean is often just `import Solution.X.MainSparse`) but never fall back to a glob.
+    def grab(t):
+        ma = re.search(r"def\s+allocations\s*:?\s*(?:Nat)?\s*:=\s*(\d+)", t)
+        mc = re.search(r"def\s+constraints\s*:?\s*(?:Nat)?\s*:=\s*(\d+)", t)
+        return (int(ma.group(1)) if ma else None), (int(mc.group(1)) if mc else None)
+    main = os.path.join(soldir, "Main.lean")
+    if not os.path.exists(main): return None, None
+    txt = open(main, errors="ignore").read()
+    a, c = grab(txt)
+    if a is None or c is None:
+        for imp in re.findall(r"^import\s+[A-Za-z0-9_.]*\.([A-Za-z0-9_]+)\s*$", txt, re.M):
+            f = os.path.join(soldir, imp + ".lean")
+            if not os.path.exists(f): continue
+            a2, c2 = grab(open(f, errors="ignore").read())
+            a = a if a is not None else a2
+            c = c if c is not None else c2
+            if a is not None and c is not None: break
     return a, c
 XPOLL_MARK = {  # if the seed's cross-pollinated gadget appears, credit the technique
     "rsa-pkcs1v15-sha256-4096-65537": ("EqViaCarriesFlex", "flexible-limb equality/carry (ported from secp)"),
@@ -221,10 +235,24 @@ async def process_jobs():
             print(f"STATUS: {slug} {pid[:8]} refresh-error {e}"); continue
         status = getattr(p.status, "name", str(p.status)); j["status"] = status
         if status == "IDLE":
-            outdir = os.path.join("out", slug); os.makedirs(outdir, exist_ok=True); tarp = os.path.join(outdir, "solution.tar.gz")
+            outdir = os.path.join("out", slug); tarp = os.path.join(outdir, "solution.tar.gz")
             try:
                 if not getattr(p, "has_files", True):
                     print(f"NOTIFY: aristotle {slug} produced no files"); j["processed"]=True; st[pid]=j; continue
+                # WIPE FIRST. This directory used to be reused across jobs, so extractall() UNIONED every
+                # job's tree with every previous job's leftovers, and the submission shipped the union.
+                # Measured on sha256-hash: 203 files in the job's own tarball, 246 on disk, 43 stale — and
+                # 119 duplicate fully-qualified declarations, which is a hard Lean build error. That is why
+                # nineteen consecutive sha256 submissions failed. The leftover count tracked the failure
+                # rate exactly across slugs: fixed-base 1 leftover (verifies), scalar-mul 6 (verifies),
+                # sha256 43 (never verified). Preserved submitted-*.tar.gz files are kept deliberately.
+                keep = {os.path.basename(f) for f in glob.glob(os.path.join(outdir, "submitted-*.tar.gz"))}
+                if os.path.isdir(outdir):
+                    for e in os.listdir(outdir):
+                        if e in keep: continue
+                        pth = os.path.join(outdir, e)
+                        shutil.rmtree(pth) if os.path.isdir(pth) else os.remove(pth)
+                os.makedirs(outdir, exist_ok=True)
                 await p.get_files(destination=tarp)
                 with tarfile.open(tarp) as tf: tf.extractall(outdir)
             except Exception as e:
