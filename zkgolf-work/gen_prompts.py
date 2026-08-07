@@ -62,8 +62,11 @@ WORKQUEUE={
    "(injectivity of the four literals is `by decide`), since F - F_true has degree <= 3 and four roots; F_true_k = "
    "z_k + cF*z_{k+4} < 2^162 < circomPrime so the .val bounds transfer and foldLhs_lt REPROVES VERBATIM. "
    "Completeness: the prover sets F_k := z_k + cF*z_{k+4}. Cost via CostIs.provableWitness + CostIs.forEach; "
-   "IsR1CSCirc via isR1CSRow_mul_sub exactly as isR1CS_interpolatedMul. IGNORE ANY CLAIM THAT <7,7> IS A PROVED "
-   "FLOOR — that bound (Fiduccia-Zalcstein) is about the FULL product, and we do not need the full product."),
+   "IsR1CSCirc via isR1CSRow_mul_sub exactly as isR1CS_interpolatedMul. <4,4> IS NOT MERELY BEST-KNOWN, IT IS PROVED OPTIMAL: Winograd's theorem gives a floor of 2N - k "
+   "products for F[X]/(f) with k DISTINCT IRREDUCIBLE FACTORS, so N=4 splitting completely means 2(4) - 4 = 4 "
+   "EXACTLY, and the bound is tight over any field large enough for evaluation-interpolation — BN254 always is. "
+   "IGNORE ANY CLAIM THAT <7,7> IS A FLOOR: that bound (Fiduccia-Zalcstein) is about the FULL product, and we "
+   "do not need the full product."),
   ("22 — FOUR CONFIRMED PARAMETER HITS, ALL MECHANICAL","SHARED FoldParams INSTANCES ARE SIZED FOR THEIR WIDEST "
    "CONSUMER AND FOUR SITES ARE OVERPAYING BY CONSTRUCTION. (a) -8: Canonicalize's carry width is sized to a TYPE, "
    "not the site. GroupedFlexInstances.lean:57-70 sets vCanonicalL/vCanonicalR at OFFf = 3/4 and Wf = fun _ => 3, but "
