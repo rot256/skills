@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 """Generate prompts/ (big-win) and prompts_small/ (small-win) from targets.json."""
 import json, os, glob
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
@@ -393,15 +394,42 @@ WORKQUEUE={
           "compile-time evaluation point, so it stays one product row. 1.32 bits x 2 x 37 carries x 15 squarings."),
  ]),
 }
-def workqueue_block(slug):
+BIG_MIN = 500   # a big-win slot spent below this is a wasted slot: the small-win fleet already covers it
+def _gain(label):
+    m = re.match(r"\s*~?(\d+)", label)
+    return int(m.group(1)) if m else None
+def workqueue_block(slug, big):
     wq=WORKQUEUE.get(slug)
     if not wq: return ""
     derived,pred,items=wq
     now=tg[slug]["target"]           # live, so the header cannot go stale as records land
-    head=(f"\n\nPRIORITY WORK QUEUE — DERIVED FROM THIS SOLUTION'S OWN SOURCE AND COST PROOFS, NOT SPECULATION.\n"
-          f"Each item was worked out against the {derived} solution, with the saving predicted from its own measured\n"
-          f"primitive costs. These are NOT literature candidates to evaluate — they are work items. They are ordered\n"
-          f"CHEAPEST-AND-SAFEST FIRST, so if you can only land one, take the first one you can fully prove.\n")
+    # Split the queue by purpose. Handing the SAME cheapest-first list to both fleets is what made the
+    # ambitious fleet spend every slot on 8- and 22-point parameter tweaks while the structural items
+    # sat untouched. Items with no leading number (discipline notes, null results) go to BOTH.
+    sized  = [(g,t2,t) for (t2,t) in items for g in [_gain(t2)]]
+    if big:
+        keep = [(g,t2,t) for (g,t2,t) in sized if g is None or g >= BIG_MIN]
+        keep.sort(key=lambda x: -(x[0] or 10**9))          # largest first; unnumbered notes lead
+        head=(f"\n\nPRIORITY WORK QUEUE — DERIVED FROM THIS SOLUTION'S OWN SOURCE AND COST PROOFS, NOT SPECULATION.\n"
+              f"Each item was worked out against the {derived} solution, with the saving predicted from its own measured\n"
+              f"primitive costs. These are NOT literature candidates to evaluate — they are work items. They are ordered\n"
+              f"LARGEST FIRST, and that is the order you should attempt them.\n"
+              f"*** THIS IS A BIG-WIN SLOT. DO NOT SPEND IT ON ANYTHING WORTH LESS THAN {BIG_MIN} — a separate fleet is\n"
+              f"already working the small mechanical items, so landing one here is pure duplication and the slot is\n"
+              f"wasted. Items below {BIG_MIN} have been REMOVED from this list on purpose; if you find yourself with\n"
+              f"time left over, go DEEPER on the largest item rather than sideways onto a cheap one. A partial but\n"
+              f"compiling step toward the largest item is worth more than a complete small one. ***\n")
+    else:
+        keep = [(g,t2,t) for (g,t2,t) in sized if g is None or g < BIG_MIN]
+        keep.sort(key=lambda x: (x[0] if x[0] is not None else -1))
+        head=(f"\n\nPRIORITY WORK QUEUE — DERIVED FROM THIS SOLUTION'S OWN SOURCE AND COST PROOFS, NOT SPECULATION.\n"
+              f"Each item was worked out against the {derived} solution, with the saving predicted from its own measured\n"
+              f"primitive costs. These are NOT literature candidates to evaluate — they are work items. They are ordered\n"
+              f"CHEAPEST-AND-SAFEST FIRST, so if you can only land one, take the first one you can fully prove.\n"
+              f"*** THIS IS A SMALL-WIN SLOT. The large structural items are deliberately NOT listed here — another\n"
+              f"fleet is working them. Your job is a CERTAIN, VERIFIED reduction, however small. ***\n")
+    if not keep:   # never emit an empty queue — fall back to the whole list rather than no guidance
+        keep = sorted(sized, key=lambda x: -(x[0] or 10**9)) if big else sorted(sized, key=lambda x: (x[0] if x[0] is not None else -1))
     if now!=derived:
         head+=(f"*** THE SEED HAS MOVED ON TO {now} SINCE THESE WERE DERIVED, SO SOME MAY ALREADY BE DONE. ***\n"
                f"CHECK THE SEED BEFORE IMPLEMENTING ANY ITEM — re-deriving work already in the tree wastes the whole job.\n"
@@ -410,9 +438,9 @@ def workqueue_block(slug):
                f"UNFOLDED: an unfolded site uses the `gfQuad`/`gfWideFat` grouped-carry path and witnesses a full 4-limb\n"
                f"quotient with a ~252/256 NormalizeImplicit on it; a folded one uses `gfFold` with ONE carry and a single\n"
                f"quotient wire. Grep for those and work the sites that are still on the unfolded path.\n")
-    elif pred:
+    elif pred and big:
         head+=f"Implementing all of them is predicted to reach about {pred}.\n"
-    return head+"\n".join(f"  [~{s} score] {t}" for s,t in items)
+    return head+"\n".join(f"  [~{t2} score] {t}" for (g,t2,t) in keep)
 os.makedirs("prompts",exist_ok=True); os.makedirs("prompts_small",exist_ok=True)
 def tmpl(inst,t,framing,ideas,show_target=True,wq=""):
     if show_target:
@@ -455,8 +483,8 @@ OPTIMIZATION IDEAS (verify before use): {ideas}{wq}
 Return the complete updated `Solution/{inst}/` files, fully compiling."""
 for slug,inst in INST.items():
     t=tg[slug]["target"]
-    open(f"prompts/{slug}.md","w").write(tmpl(inst,t,"Be ambitious — aim for a large structural reduction.",IDEAS[slug],wq=workqueue_block(slug)))
-    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug],show_target=False,wq=workqueue_block(slug)))
+    open(f"prompts/{slug}.md","w").write(tmpl(inst,t,"Be ambitious — aim for a large structural reduction.",IDEAS[slug],wq=workqueue_block(slug,True)))
+    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug],show_target=False,wq=workqueue_block(slug,False)))
 kref="\n\nREFERENCE: `reference/*.lean.txt` is the record which hits the target cost but OMITS `computableWitness` (now invalid). Reproduce its circuit optimization on the valid baseline AND add a fully-proved `computableWitness` (adapt the baseline's). Reference files are context only, not compiled."
 for f in ("prompts/keccak-f1600.md","prompts_small/keccak-f1600.md"):
     if os.path.exists(f): open(f,"a").write(kref)
