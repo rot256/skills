@@ -21,8 +21,7 @@ IDEAS={
 # record's measured primitive costs. Ordered by (confidence / effort), cheapest-and-safest first, so a
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
- "secp256k1-fixed-base-scalar-mul": (49620, 49536, [
-  ("24 — LOST GROUND, RE-APPLY IT FIRST","THE 49620 RECORD REVERTED THE 50331 CANONICALIZE WIN. Measured: canonicalizeCost is back to 267/273 where 50331 had 263/265, i.e. +12 per call at 2 call sites = +24. The job was dispatched from a checkout predating 50331 so it never saw the change; it still netted -711 and took the record. Restore 263/265 — that exact value is already proved reachable by the 50331 tree, downloadable at /api/submissions/f2044e66-73a2-4570-81c2-d45a0259f92f/download; diff its CanonicalizeCost.lean against yours. KEEP the selectCost 266/266 borrow-free negation that this record introduced. Target 49,596. THIS ATOM KEEPS OSCILLATING — 299/305 -> 267/273 -> 263/265 -> 267/273 — so check it on EVERY record move here."),
+ "secp256k1-fixed-base-scalar-mul": (49596, 49536, [
   ("~672 after the above","PACK y AS TWO 128-BIT HALVES. PackedY.lean and PackEmu.lean already exist with NormalizedP, Fe.ValidW and packEmuOfNat but are UNREACHABLE FROM Main — scaffolded, never landed. After borrow-free negation, yProd selects two 129-bit halves instead of four limbs: 60 products -> 30, y becomes 2 wires, another <-32,-32> per select. HEADROOM EXISTS WITH NO NUMERAL CHANGES — RHS position 0 of the wide fold is q*p_0 + yT2[0] + yA[0] + c976*lam1[0] < 2^133 + 2^130 + 2^97 < 2^135 = nfFoldWR. Cost is weakening Normalized 65 to 129 on y across ~12 files (FoldWide, FoldWideC1, FoldQuadC1, FoldQuadY, ChainFinishFold): pure hypothesis-weakening."),
   ("1470","CARRY THE TABLE POINT'S y AS TWO WIRES, NOT FOUR — the consumer-functional law. The selected y is consumed at "
           "three sites and every one is an AFFINE ADDEND of a folded certificate, never a multiplicand: stageC1 via "
