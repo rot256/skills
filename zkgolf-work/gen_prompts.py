@@ -34,7 +34,7 @@ WORKQUEUE={
          "has moved repeatedly (selectCost is now 283/284, below every earlier record) and the two-wire-y item changes "
          "N from 9 to 7."),
  ]),
- "secp256k1-scalar-mul": (315828, None, [
+ "secp256k1-scalar-mul": (315768, None, [
   ("~496","PORT finishXY FROM OUR OWN LOSING SUBMISSION e0e8dc40 (score 319301, VERIFIED). It ran from the same seed as "
           "the 319001 record and lost by 300, but it is CHEAPER on finishXYCost — 805/811 against the record's 809/815, "
           "-8 per site — and on mulModSub2F32Cost (365/368 against 365/370), and it carries a file the record lacks, "
