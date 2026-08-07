@@ -22,6 +22,16 @@ IDEAS={
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (49218, 49536, [
+  ("ALWAYS DO THIS LAST — IT HAS COST US A RECORD TWICE","RE-DERIVE Main.lean's allocations AND constraints "
+   "FROM THE INTERNAL COST CONSTANT, NEVER BY HAND. mainCost is `fun input => Comb.costIs_main input`, so the "
+   "literal pair in Main.lean must be DEFINITIONALLY EQUAL to combCost. If you shrink the circuit, update "
+   "combCost, and forget Main, the term no longer has the ascribed type and the WHOLE SUBMISSION FAILS TO "
+   "BUILD — while also claiming the wrong score. MEASURED: submission e8070daa shipped a complete CRT fold "
+   "multiply with combCost correctly at <24377,24467>, left Main.lean at 24560/24650, and came back `failed` "
+   "claiming -8 instead of -374. CHECK EVERY CONSTANT ON THE PATH from the gadget you changed up to Main: "
+   "extCost, startCost, implicitScreenedCost, canonicalizeCost, combCost, then Main. Before you finish, diff "
+   "every `def X : Count := <a, c>` in your tree against the seed and confirm Main's pair equals the "
+   "top-level container's pair."),
   ("90 — CONFIRMED, MECHANICAL, NO PARAMETER FILES. DO THIS FIRST","INVERT THE FOLD QUOTIENT, THEN DELETE THE "
    "GroupedFlex NATIVE ROW. All 45 certificates have the shape SUM_k lhs_k 2^(64k) = q*P256 + SUM_k tail_k 2^(64k) "
    "with P256 a COMPILE-TIME CONSTANT, and q is currently ProvableType.witness (alpha := field) at <1,0>. The honest "
