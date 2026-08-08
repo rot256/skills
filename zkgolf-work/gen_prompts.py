@@ -234,6 +234,20 @@ WORKQUEUE={
    "cost, since the optimum trades select cost against ADDITION cost."),
  ]),
  "secp256k1-scalar-mul": (315676, None, [
+  ("~200 — FIRST THING ON THE NEW SEED","THE COMPETITOR'S NEW FOLD PARAMETERS ARE ROUNDED TO POWERS OF TWO — "
+   "MAKE THEM EXACT. The 313,980 seed introduces ParamsFold32M with nfFold32ML = 2^112, nfFold32MR = 2^105, "
+   "offFold32ML = 2^80 + 2^48 + 2^16, offFold32MR = 2^73 + 2^41 + 2^9 and wfFold32M = 81. EVERY ONE IS A BARE "
+   "POWER OF TWO OR A SUM OF POWERS OF TWO, which is exactly the shape that wasted a full bit in ParamsFold32T "
+   "and that we recovered for -92 by rewriting the bounds as EXACT INTEGER EXPRESSIONS — 979*2^67 + 3*2^32, "
+   "2^69 + 3*2^64, 979*2^35 + 8192, 2^37 + 3*2^32 + 256 — which took wfFold32T from 46 to 45. A bound written "
+   "as 2^a or 2^a + 2^b OVER-ESTIMATES a quantity whose true value is a small integer multiple of a power of "
+   "two (979 is the Solinas constant 977 plus 2; 3 is the borrow-free digit cap), and since the carry width is "
+   "ceil(log2(OFF_L + OFF_R)), rounding each addend up can push the ceiling across an integer boundary. "
+   "RE-DERIVE ALL FOUR ParamsFold32M CONSTANTS FROM THE TRUE PER-POSITION TERM COUNTS AND OPERAND CAPS, then "
+   "recompute ceil(log2(...)) and see whether W = 81 falls. It is billed at 2 score per bit at EVERY site "
+   "sharing the instance, and mulModFold32M is used by mulModSub2W32M and through it by the fused step. Then "
+   "run the same sweep on every other params file in the tree — any Nf or OFF entry that is a bare power of "
+   "two or a sum of two powers of two is a candidate."),
   ("60 — LOST GROUND, RE-APPLY IT FIRST","THE 315676 RECORD REVERTED THREE LEAF GADGETS THAT 315768 HAD "
    "IMPROVED. Verified across all three trees rather than against the immediate predecessor alone: "
    "mulModSub2Cost went 440/443 -> 436/439 -> 440/443, divUncheckedD3Cost 432/434 -> 430/432 -> 432/434, and "
