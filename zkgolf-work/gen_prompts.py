@@ -334,6 +334,24 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (145470, None, [
+  ("448 — A NEW LEVER, AND THE SHAPE IT ATTACKS IS SITTING IN Cost.lean RIGHT NOW","TRUNCATE THE SIGMA CARRY WORD "
+   "MOD 2^32 AND ONE LANE DISAPPEARS. Cost.lean:50-53 declares sigmaCost = <32,32>, lowerSigma0Cost = <32,32> and "
+   "lowerSigma1Cost = <32,32>, each 32 XOR3 lanes at <1,1> (Cost.lean:170 proves CostIs (subcircuit Xor3.circuit b) "
+   "sigmaCost). THE IDENTITY, VERIFIED OVER 20,000 RANDOM WORDS FOR ALL FOUR MAPS: Sigma0(a) = rotr2 + rotr13 + "
+   "rotr22 - 2*SUM_{j=0}^{30} 2^j maj(a_{j+2}, a_{j+13}, a_{j+22}) (mod 2^32). The exact-over-Z identity runs j to "
+   "31, but that top carry term enters with a factor of 2, so its weight is 2^32 AND IT VANISHES MOD 2^32. EXACTLY "
+   "ONE LANE IS DROPPABLE — j=30 has weight 2^31 and is live, so do not try for two. MAJ3 is single-row native with "
+   "implied booleanity ((2s-3)(4o-s) = s), so each surviving lane is still <1,1> and sigmaCost goes <32,32> -> "
+   "<31,31>: -2 PER SIGMA INSTANCE. IT IS SOUND HERE BECAUSE EVERY CONSUMER TAKES THE WORD, NOT THE BITS — "
+   "ComputablePairB1.lean:113 reads (newE + sigma + Maj a b c + (2^32-1-d) + 1), a mod-2^32 sum — and a's bits are "
+   "already decomposed for Ch and Maj, so the rotations stay free affine reads. SITES: roundCost (Cost.lean:63) "
+   "charges 2 * sigmaCost per round and each schedule step charges 2 lower sigmas, so 64 rounds and 48 steps is 224 "
+   "instances = -448 per block. COUNT THE ACTUAL INSTANCES, DO NOT TRUST THAT ARITHMETIC. THE CHECK THAT COULD "
+   "HALVE IT, TEN MINUTES, DO IT FIRST: the addend handed to each reduction becomes Sigma0 + 2^32*maj_31 in [0, "
+   "2^33), so every fused reduction's carry range grows by one — T1 has <=5 addends (carry [0,4] -> [0,5]) and the "
+   "a' adder has 3 (carry [0,2] -> [0,3]). Both SHOULD fit their existing carry-bit widths, but if any carry sits "
+   "exactly on a power-of-two boundary, one extra witness there cancels a round's saving. THIS IS NOT THE REFUTED "
+   "IDEA: sigma-as-majority followed by 2:1 maj packing is dead; this is TRUNCATION, and nothing refutes it."),
   ("~474 — OPERATIONAL, THE MATH IS ALREADY DONE. DO THIS FIRST","WIRE THE DEFERRED-CHAIN CONFIGURATION INTO THE "
    "EXPORTED COST. Nineteen consecutive jobs proved a ~144,996 configuration in a side module and then submitted a "
    "tree whose Main-reachable cost still read 145,470, so every one of them scored NOTHING. Main.lean is a SINGLE "
@@ -433,7 +451,24 @@ WORKQUEUE={
         "input/output boundary is exactly 0. ALL remaining slack is THETA's 2240 per round — of which 320 are Xor5 "
         "INTERMEDIATES (the t = a^b^c of each 5-input column parity) and 320 the C bits, with D already fused away."),
  ]),
- "rsa-pkcs1v15-sha256-4096-65537": (321889, None, [
+ "rsa-pkcs1v15-sha256-4096-65537": (321769, None, [
+  ("218 — ONE PARAMS FILE, AND THE CORPUS ENTRY SAYING THIS WAS ALREADY HALF-TAKEN IS WRONG","BALANCE THE q AND n "
+   "LIMBS. Params24.lean's live cap functions nfBalMiddleN24 and nfBalFirstN24 use WindowCaps.limbCap — the "
+   "UNSIGNED 2^B - 1 — for BOTH operands. Balancing (q' = q - 2^23, n' = n - 2^23) is affine, and the cross terms "
+   "are affine too because the evaluation point is a compile-time constant, so the q*n coefficient cap drops by "
+   "log2(4/3). PRICED AGAINST A CAP MODEL THAT REPRODUCES wtableBalMiddle24 ENTRY FOR ENTRY (sum 1152, cost 2,267): "
+   "balancing both operands gives 2,255, i.e. -12 PER MIDDLE SQUARING. The first square additionally uses limbCap "
+   "on the a^2 side (nfBalFirstP24 uses limbCap where nfBalMiddleP24 uses fixedBalCap), and balancing the signature "
+   "is free since the shift is affine in the input bytes and the cross term 2S*s' is a constant-vector convolution "
+   "— first-square carries 2,303 -> ~2,255. TOTAL 14*12 + 48 + 2 = 218. DO NOT BELIEVE THE 'PARTIALLY TAKEN, ~98 "
+   "REMAINING' CLAIM: the -120 that took 321,889 -> 321,769 was -8 per squaring and lived ENTIRELY in the "
+   "WindowSquare term (380 -> 372 via 10*(m/gw)-4); the live carry cost is STILL 2,267, which is exactly what the "
+   "unsigned caps give. OBLIGATION: re-prove the signed q*n coefficient bound — the Nf monotonicity chain in "
+   "Params24.lean and the GVXHyps no-wrap condition with the new OFF constants. THIS IS A CAP-FUNCTION AND "
+   "REGENERATED-TABLE CHANGE IN ONE FILE, the same shape as the -92 that landed on secp256k1. EVERYTHING ELSE HERE "
+   "IS EXHAUSTED: every charged carry cell in all three tables already sits at ceil(log2(OFF_P + OFF_N)) with ZERO "
+   "slack, the term counts are exact per-position, and the final-block grouping is PROVED OPTIMAL by a DP over all "
+   "consecutive-group partitions. Do not sweep those again."),
   ("8540 — SETTLE THE ADDITION CHAIN; THE PROOF THAT BLOCKS IT IS MISSING","THE ONLY STRUCTURAL LEVER LEFT ON "
    "THIS CHALLENGE. The chain is 1 first squaring + 14 middle squarings + 1 fused ternary final = 16 reductions "
    "to reach 65537 = 2^16 + 1, and 79.7% of the whole circuit is range checks at 2 score per certified bit "
