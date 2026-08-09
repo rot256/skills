@@ -227,11 +227,11 @@ WORKQUEUE={
    "SLOT ON WINDOW WIDTH ALONE — the one time to revisit it is INSIDE a job that also collapses the per-addition "
    "cost, since the optimum trades select cost against ADDITION cost."),
  ]),
- "secp256k1-scalar-mul": (308278, None, [
+ "secp256k1-scalar-mul": (307228, None, [
   ("33000 to 49000 — THE ONLY ITEM AIMED AT WHERE THE SCORE ACTUALLY IS","REWRITE THE EXCEPTION DETECTOR SO THE STEP "
-   "STOPS MATERIALISING 256-BIT VALUES. MEASURE FIRST, THEN BELIEVE THIS: one glvStep costs 4,377, of which FIVE "
+   "STOPS MATERIALISING 256-BIT VALUES. MEASURE FIRST, THEN BELIEVE THIS: one glvStep costs 4,369 (<2178,2191>, GLVStepCostCW.lean:18), of which FIVE "
    "256-BIT RANGE CHECKS (Normalize32 504, ValidP 525, Normalize32 504, ValidP 525, ValidP 525) are 2,583 — 59% of "
-   "the step, 160,146 across the 62 steps, AND 52% OF THE WHOLE 308,278 TREE. Folds are 1,394 per step (31.8%), "
+   "the step, 160,146 across the 62 steps, AND 52% OF THE WHOLE 307,228 TREE. Folds are about 1,386 per step, "
    "VarLookup 244 (5.6%), muxes and flags 156 (3.6%). EVERY OTHER ITEM IN THIS QUEUE IS ROUNDING BY COMPARISON. "
    "Materialisation is 512 each and NOBODY HAS BEATEN THAT, but do not call it PROVED — the Bezout argument is "
    "valid only for an acceptor in A^1 and this one lives in F_r^8, so the honest proved floor is ~127. DO NOT "
@@ -285,15 +285,13 @@ WORKQUEUE={
    "PARAGRAPHS: MulModNorm and MulModNorm32 DO NOT EXIST anywhere in this tree, and 'every remaining mulModSub2 "
    "still at 440 allocations' is false — mulModSub2Cost is <438,441> and its only wiring site is off the live "
    "path."),
-  ("1488 — SAFEST WORK ON THE BOARD, AND IT REPLACES THREE DELETED ITEMS","TWO BOUND PATTERNS ON THE FOLDS. (a) "
-   "POSITION-DEPENDENT Nf PLUS A LATER CARRY GROUP, -1,240. Every Nf is declared as a CONSTANT function of position "
+  ("744 — SAFEST WORK ON THE BOARD, AND HALF OF IT HAS NOW LANDED SO READ THE TREE BEFORE YOU START","TWO BOUND PATTERNS ON THE FOLDS. (a) "
+   "POSITION-DEPENDENT Nf PLUS A LATER CARRY GROUP, -496 LEFT OF THE ORIGINAL -1,240. VERIFIED LANDED, DO NOT REDO: ParamsFold32 is now gfFold32 = [6,1,1..] with wfFold32 = 45 and qBitsFold32 = 38 (ParamsFold32.lean:47/72/75), and ParamsFold32T is gf [6,1,1..] with wfFold32T = 43, qBitsFold32T = 36 (ParamsFold32T.lean:52/74/77). The Fold32 regrouping IS THE -248 THAT SET THE 307,228 RECORD. STILL OPEN AND STILL WORTH -496: ParamsFold32M and ParamsFold32N are BOTH still gf = [3,1,4,4..], posOf = [0,3,4,8,12..], with wfFold32M = 79 and wfFold32N = 78 (ParamsFold32M.lean:32/35/47, ParamsFold32N.lean:32/35/47). Regrouping each to [5,1,2] should take 79 -> 77 and 78 -> 76, i.e. -248 apiece over 62 instances. THE QUOTIENTS ARE ALREADY EXACT — qBitsFold32M = 69 and qBitsFold32N = 68 are triangular, so DO NOT touch them; the win is in Wf only. Every Nf is declared as a CONSTANT function of position "
    "at the maximum cell count, while the true folded-digit profile decays steeply: Fold32 and Fold32T give d = "
    "[6840, 5871, 4894, 3917, 2940, 1963, 986, 9] x Ca*Cb, and Fold32M and Fold32N give d = [2932, 2935, 1959, 1958, "
    "982, 981, 5, 4] x Ca*Cb. Since OFF_L(0) ~ Nf(gf_0 - 1)/2^B and only Wf(0) is charged, you must make Nf "
    "POSITION-DEPENDENT **and** push the single materialised carry to a later group — NEITHER LEVER WORKS ALONE, "
-   "since with constant Nf the regrouping changes nothing. DERIVED: ParamsFold32T [2,1,5] -> [6,1,1] takes Wf 45 -> "
-   "43 over 76 instances = -304; ParamsFold32 [2,1,5] -> [6,1,1] takes 47 -> 45 over 62 = -248; ParamsFold32M "
-   "[3,1,4] -> [5,1,2] takes 79 -> 77 over 62 = -248; ParamsFold32N likewise 78 -> 76 = -248; qBitsFoldT 69 -> 68 "
+   "since with constant Nf the regrouping changes nothing. ALSO STILL OPEN ON THE 64-BIT SIDE: qBitsFoldT 69 -> 68 "
    "over 73 = -146; and wfFold 100 -> 99 over 23 = -46 (ParamsFold at B=64 is FIXED at [2,1,1] — gf_0 > 2 breaks "
    "2^Wf * 2^192 < p). *** THIS HAS BEEN ATTEMPTED ONCE AND THE SUBMISSION FAILED. The arithmetic was RIGHT — that "
    "attempt reached mulModFold32TCost <95,97> -> <93,95>, exactly the two bits derived above — so the defect is "
