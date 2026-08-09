@@ -228,16 +228,16 @@ WORKQUEUE={
    "cost, since the optimum trades select cost against ADDITION cost."),
  ]),
  "secp256k1-scalar-mul": (315676, None, [
-  ("152 — LOST GROUND, RE-APPLY IT FIRST","THE 308,610 RECORD REVERTED THE QUOTIENT WIN. It arrived from a "
-   "checkout predating it, so mulModFold32TCost is back at <96,98> where the 311,456 tree had <95,97>, and the "
-   "same +1/+1 reappears at mulModSub2F32Cost, mulModBeta32Cost, mulModSqN32Cost, pointValidCount, "
-   "completeAddCost, phiPairAddCost, slopeXSCost and glvSubsetCost. RESTORE qBitsFold32T = 36 (from 37). THE "
-   "ARGUMENT, which is already proved in the 311,456 tree and can be lifted verbatim: the top convolution cell "
-   "c_14 = a_7 * b_7 is a SINGLE product, so it is bounded by Ca*Cb = 2^64 rather than the generic 8*Ca*Cb, "
-   "which brings the folded integer below 2^291 + 2^288 + 2^270 <= 2^36 * p. KEEP the relationCost <874,880> "
-   "that this record introduced. TARGET 308,458. GENERAL: a convolution term count is triangular (1,2,...,n,"
-   "...,2,1), so any bound using the maximum count at every position over-counts the extremes — and the TOP "
-   "cell, which has exactly one term, is where the quotient width is decided."),
+  ("~250 — SWEEP THE REMAINING FOLD INSTANCES","APPLY THE TRIANGULAR-TERM-COUNT QUOTIENT ARGUMENT TO EVERY "
+   "FOLD INSTANCE. It has now paid twice: qBitsFold32T 37 -> 36 (-152) and then the base mulModFold32Cost "
+   "<100,102> -> <99,101> (-124). THE ARGUMENT, which is instance-independent: a convolution term count is "
+   "triangular (1, 2, ..., n, ..., 2, 1), so the TOP cell is a SINGLE product bounded by Ca*Cb rather than the "
+   "generic n*Ca*Cb, and since the quotient width is decided by the top of the folded integer, a uniform bound "
+   "over-counts exactly where it matters — for Fold32T this brought the folded integer below 2^291 + 2^288 + "
+   "2^270 <= 2^36 * p. ParamsFold32M and ParamsFold32N HAVE NOT BEEN RE-DERIVED UNDER IT; their qBits are still "
+   "set from the uniform bound. Do them next. NOTE THE CARRY AND THE QUOTIENT ARE SEPARATE 2-SCORE-PER-BIT "
+   "CHARGES: these instances have had their CARRY widths tightened (wfFold32M 81 -> 80 -> 79, wfFold32N 78) but "
+   "not their QUOTIENTS, so being tight on one says nothing about the other."),
   ("~200 — FIRST THING ON THE NEW SEED","THE COMPETITOR'S NEW FOLD PARAMETERS ARE ROUNDED TO POWERS OF TWO — "
    "MAKE THEM EXACT. The 313,980 seed introduces ParamsFold32M with nfFold32ML = 2^112, nfFold32MR = 2^105, "
    "offFold32ML = 2^80 + 2^48 + 2^16, offFold32MR = 2^73 + 2^41 + 2^9 and wfFold32M = 81. EVERY ONE IS A BARE "
