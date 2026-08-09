@@ -3,7 +3,8 @@
     "purpose": "The durable list of OPEN leads. A lead recorded only in a chat transcript is lost at the next compaction, and a lead recorded only in gen_prompts.py cannot be checked -- nothing in the fleet reports which queue item a job took, so a lead that was tried and failed looks identical to one nobody ever attempted. Each entry below carries a WITNESS: a grep against the live seed tree that matches WHILE THE LEAD IS STILL OPEN. Run check_leads.py to turn 'do we remember this?' into 'is it still in the tree?'.",
     "usage": "python3 check_leads.py            # status of every lead\npython3 check_leads.py --open     # only the ones still open",
     "status_values": "open = witness still matches, nobody has landed it. landed = witness gone, RE-PRICE THE SIBLINGS. unverifiable = no mechanical witness exists; must be checked by hand.",
-    "rule": "When a lead flips to landed, do not just delete it -- the pattern that paid once is a reason to CHECK the next instance, never a reason to assume it. Re-derive the siblings against the new tree before requeueing them."
+    "rule": "When a lead flips to landed, do not just delete it -- the pattern that paid once is a reason to CHECK the next instance, never a reason to assume it. Re-derive the siblings against the new tree before requeueing them.",
+    "trees": "THREE tree locations, NOT interchangeable. records/<slug>/ is the LEADER's tree, reseeded from whoever holds the record -- this is what jobs are seeded from and therefore what a lead must beat. projs/<slug>/Solution/ is OUR working tree; it equals records/ only on slugs where we lead (on keccak-f1600 ours is theta 3200 against the record's 2240, so reading the wrong one INVERTS the answer). out/<slug>/ is per-job scratch, wiped and re-extracted for the very next job -- a constant read there belongs to whichever job landed last. check_leads.py resolves records/ then projs/ then out/, in that order."
   },
   "leads": [
     {
@@ -17,8 +18,7 @@
         "pattern": "wfFold32M .* := 79"
       },
       "note": "qBitsFold32M = 69 is ALREADY exactly triangular. Move Wf only.",
-      "status": "landed",
-      "landed_note": "LANDED in submission 79ff527d (306,972). Verified directly: wfFold32M = 77 (ParamsFold32M.lean:54) and wfFold32N = 76 (ParamsFold32N.lean:67), glvStepCost 4,369 -> 4,365. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved 307,228 -> 306,972 = -256, so the per-instance prediction was about 2x optimistic -- not all 62 nominal instances were live. Apply that discount to the remaining Wf items (qBitsFoldT -146, wfFold -46)."
+      "landed_note": "LANDED IN A SUBMISSION BUT NOT YET IN THE RECORD TREE -- both statements are true at different layers and the checker reports the record tree, which is the one that matters. Submission 79ff527d (306,972) carries wfFold32M = 77 and wfFold32N = 76; the record tree is still 79/78 at 307,228, so the checker correctly says OPEN until check_records reseeds. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved -256, so per-instance predictions were about 2x optimistic -- not all 62 nominal call sites are live. Discount future Wf-shaving estimates accordingly."
     },
     {
       "id": "vb-fold32n-wf",
@@ -31,8 +31,7 @@
         "pattern": "wfFold32N .* := 78"
       },
       "note": "qBitsFold32N = 68 is ALREADY exactly triangular. Move Wf only.",
-      "status": "landed",
-      "landed_note": "LANDED in submission 79ff527d (306,972). Verified directly: wfFold32M = 77 (ParamsFold32M.lean:54) and wfFold32N = 76 (ParamsFold32N.lean:67), glvStepCost 4,369 -> 4,365. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved 307,228 -> 306,972 = -256, so the per-instance prediction was about 2x optimistic -- not all 62 nominal instances were live. Apply that discount to the remaining Wf items (qBitsFoldT -146, wfFold -46)."
+      "landed_note": "LANDED IN A SUBMISSION BUT NOT YET IN THE RECORD TREE -- both statements are true at different layers and the checker reports the record tree, which is the one that matters. Submission 79ff527d (306,972) carries wfFold32M = 77 and wfFold32N = 76; the record tree is still 79/78 at 307,228, so the checker correctly says OPEN until check_records reseeds. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved -256, so per-instance predictions were about 2x optimistic -- not all 62 nominal call sites are live. Discount future Wf-shaving estimates accordingly."
     },
     {
       "id": "vb-x4-telescope",
