@@ -466,7 +466,13 @@ def workqueue_block(slug, big):
     if not keep:   # never emit an empty queue — fall back to the whole list rather than no guidance
         keep = sorted(sized, key=lambda x: -(x[0] or 10**9)) if big else sorted(sized, key=lambda x: (x[0] if x[0] is not None else -1))
     if now!=derived:
-        head+=(f"*** THE SEED HAS MOVED ON TO {now} SINCE THESE WERE DERIVED, SO SOME MAY ALREADY BE DONE. ***\n"
+        head+=(f"*** THE SEED HAS MOVED ON FROM {derived} TO {now} SINCE THESE WERE DERIVED — A GAP OF "
+               f"{derived-now}. TREAT EVERY FIGURE BELOW AS STALE UNTIL YOU CHECK IT. ***\n"
+               f"MANY OF THESE ITEMS QUOTE LEDGERS THAT NO LONGER MATCH THE TREE, and an item whose premise has\n"
+               f"moved is usually PARTLY OR WHOLLY DONE. BEFORE IMPLEMENTING ANY ITEM, GREP THE SEED FOR THE\n"
+               f"CONSTANT IT QUOTES: if the item says a gadget costs X and the tree says Y, the item is out of\n"
+               f"date and its predicted saving is NOT what you will get. Re-derive the saving from the CURRENT\n"
+               f"constants before committing to the work, and say in your summary which figure you used.\n"
                f"CHECK THE SEED BEFORE IMPLEMENTING ANY ITEM — re-deriving work already in the tree wastes the whole job.\n"
                f"The mechanisms and bound arithmetic below remain valid regardless of which have landed; only the\n"
                f"predicted savings are relative to {derived}. A quick way to tell which non-native sites are still\n"
