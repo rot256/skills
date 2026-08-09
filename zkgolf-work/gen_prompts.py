@@ -412,6 +412,26 @@ WORKQUEUE={
         "INTERMEDIATES (the t = a^b^c of each 5-input column parity) and 320 the C bits, with D already fused away."),
  ]),
  "rsa-pkcs1v15-sha256-4096-65537": (321889, None, [
+  ("8540 — SETTLE THE ADDITION CHAIN; THE PROOF THAT BLOCKS IT IS MISSING","THE ONLY STRUCTURAL LEVER LEFT ON "
+   "THIS CHALLENGE. The chain is 1 first squaring + 14 middle squarings + 1 fused ternary final = 16 reductions "
+   "to reach 65537 = 2^16 + 1, and 79.7% of the whole circuit is range checks at 2 score per certified bit "
+   "across those 16 steps, so the ONLY way down is FEWER REDUCTIONS. A mid-chain TERNARY step (a*a*b, residue "
+   "unknown so it pays its own 4,096-bit range check) models at about 30,900 at B=24 from sqMulModBalToCount, "
+   "against 39,404 for two binary steps. A chain with b = 13 squarings and t = 2 ternary steps has exponent "
+   "bound 2^13 * 3^2 = 73,728 >= 65537 and would cost about 313,227 — ABOUT -8,540. Optimality.lean:52 asserts "
+   "this is the only cheaper configuration AND that Chain.not_reachable_of_prod_73728 proves 65537 is "
+   "UNREACHABLE in it — BUT THAT PROOF IS NOT IN THE TREE. Optimality.lean is now entirely a comment, its "
+   "Optimality/ subdirectory has been removed, and its numerals refer to a superseded 326,297 design. SO SETTLE "
+   "IT: either exhibit a length-15 chain reaching 65537 with 13 squarings and 2 ternary steps, in which case "
+   "build it, or PROVE 65537 unreachable there and say so, which retires the lever permanently and is worth "
+   "recording either way. THE -8,540 IS MODELLED, NOT MEASURED: the ternary-step cost assumed about 58 groups "
+   "and W about 34 for a 3m-1 = 512-position equality check, and the gadget was not built. DO NOT BOTHER "
+   "RETUNING THE CARRY TABLES — all three (wtableBalMiddle24, wtableFbal, wfFinal16Table) were checked element "
+   "by element and every entry already equals the pointwise minimum, group width is maximal at gf = 9 (gf = 10 "
+   "gives 2^268 > p), group placement is optimal, and the triangular-term-count pattern is already banked in "
+   "wconv. Those sweeps are worth ZERO here. NOTE ALSO that CostFloor.lean:45 asserts 326,297 and "
+   "Optimality.lean quotes 321,889 while Main.lean sums to 321,769; those files are in a dead import subtree, "
+   "and rec.tar.gz in that directory is STALE."),
   ("1450","The q*n limb caps are UNSIGNED (limbCap = 2^B - 1) while the a^2 caps are balanced (fixedBalCap ~ 2^(B-1)), and "
           "q*n DOMINATES the coefficient cap: peak 2^55.74 against 2^54.42 balanced. Witness q's limbs offset "
           "(q_i = q_i' + 2^23) and offset n's limbs affinely (free — n's limbs are already affine in the input bytes). The "
