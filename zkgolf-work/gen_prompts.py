@@ -311,7 +311,7 @@ WORKQUEUE={
    "x 62 = -496; the xSe Mux at Slope2.lean:71 is 8 per step x 62 = -496; and DivOrZeroS32's isZeroFeSum <2,2> is 4 "
    "per step x 62 = -248. The rest already landed — DivOrZeroN32 moved to Fold32N (FusedCost.lean:407-413), "
    "FinishXY.lean:47/60 is done, and the VarLookup win arrived by a different route (135 -> 122). One sub-item is "
-   "genuinely cost-neutral; do not spend time on it."),
+   "genuinely cost-neutral; do not spend time on it. *** RE-VERIFIED AGAINST THE 306,406 RECORD TREE: ALL THREE SUB-ITEMS ARE STILL OPEN. The bMul Mux is still at FinishXY.lean:58, Slope2 still imports Mux, and DivOrZeroS32 still calls IsZeroFeSum at :273. The -274 that set 306,406 was -4 per step over 62 steps plus -26 outside the loop, and it was NOT any of these -- do not assume it was. ***"),
   ("24 — VERBATIM, STILL THERE","TWO TABLE MICRO-WINS. (i) -16: delete the t4x and t8x canon-x muxes in "
    "Subset.main, still at GLVBuildTable.lean:620-623 as 2 x <4,4>. (ii) -8: sign0 is still a live selector at "
    "GLVBuildTable.lean:352-353. NOTE THE OLD VERSION OF THIS ITEM ENDED WITH 'DO NOT HUNT FOR THOUSANDS HERE' AND "
