@@ -29,6 +29,46 @@ CHALLENGES5 = list(SLUG2INST)
 # is provably inapplicable because every materialised value there is an OPERAND, not a target.
 NO_DISPATCH = {"gf2-k12-compress-canonical", "rsa-pkcs1v15-sha256-4096-65537"}
 DISPATCH = [s for s in CHALLENGES5 if s not in NO_DISPATCH]
+# Slots per (slug, purpose), before the x2 for the dual-account fleet. Total = 20, unchanged.
+# WEIGHTED BY MEASURED YIELD, not by impression. Verified submissions per 100 processed jobs,
+# read from state_subs.json against state_jobs.json:
+#     secp256k1-fixed-base   151 jobs  21 verified   13.9%
+#     secp256k1-scalar-mul   211 jobs  27 verified   12.8%   (and only ONE failure in 28)
+#     rsa                    192 jobs   2 verified    1.0%   already NO_DISPATCH
+#     gf2-k12                165 jobs   1 verified    0.6%   already NO_DISPATCH
+#     sha256-hash            240 jobs   0 verified   20 FAILED
+#     keccak-f1600           414 jobs   ZERO SUBMISSIONS EVER
+#     gf2-sha256             234 jobs   ZERO SUBMISSIONS EVER
+# The two secp slugs are the only ones converting jobs into records, so they take 60% of the fleet.
+# THREE JUDGEMENT CALLS THAT ARE NOT IN THE RAW NUMBERS, recorded so they can be revisited:
+# (1) sha256-hash's 0-for-20 is CONTAMINATED. Those failures were the reused-out-dir harness bug in
+#     our own loop, since fixed -- not evidence about the challenge. We hold its record, and it has
+#     two live leads (the sigma mod-2^32 truncation and the unwired D compressors). Kept at a full
+#     pair rather than cut on a number that measures a bug we already repaired.
+# (2) keccak-f1600 is the worst sink on the board -- 414 jobs, not one submission -- but it was just
+#     handed a genuinely new problem statement (theta as a shortest-linear-program, worth up to
+#     15,360, where even one helper gate is a record). Cutting it the moment it gets a new idea would
+#     be the wrong time. It keeps ONE big-win slot and loses its small-win slot; if the SLP lead dies
+#     too, take the last slot as well.
+# (3) gf2-sha256 also has zero submissions, and unlike keccak its own analysis now says the whole
+#     remaining gap is at most 1,182 -- the 20,862 that justified funding it was a degree-bound error.
+#     One big-win slot, no small-win.
+SLOTS = {
+    "secp256k1-scalar-mul":          {"big-win": 2, "small-win": 1},
+    "secp256k1-fixed-base-scalar-mul": {"big-win": 2, "small-win": 1},
+    "sha256-hash":                   {"big-win": 1, "small-win": 1},
+    "keccak-f1600":                  {"big-win": 1, "small-win": 0},
+    "gf2-sha256-compress-canonical": {"big-win": 1, "small-win": 0},
+}
+def slot_plan(slug):
+    """(purpose, prompt_dir, replica_index) triples for one slug, in dispatch order."""
+    w = SLOTS.get(slug, {"big-win": 1, "small-win": 1})
+    out = []
+    for purpose, pdir in (("big-win", "prompts"), ("small-win", "prompts_small")):
+        for i in range(w.get(purpose, 1)):
+            out.append((purpose, pdir, i))
+    return out
+
 def load(p, d):
     try: return json.load(open(p))
     except Exception: return d
@@ -406,9 +446,11 @@ async def ensure_inflight(st):
     pcount = sum(1 for j in st.values()
                  if not j.get("processed") and j.get("key", "primary") == "primary")
     for slug in DISPATCH:
-        for purpose, pdir in (("big-win","prompts"), ("small-win","prompts_small")):
+        for purpose, pdir, rep in slot_plan(slug):
             for kname in KEYS_TO_USE:
-                if (slug, purpose, kname) in active: continue
+                # replica index keeps two slots of the same purpose from colliding in `active`
+                slot = purpose if rep == 0 else f"{purpose}#{rep}"
+                if (slug, slot, kname) in active: continue
                 if kname == "primary" and pcount >= pcap: continue
                 # big-win slot preferentially completes a pending near-miss's proof
                 do_salvage = purpose == "big-win" and slug in sal and sal[slug].get("attempts", 0) < SALVAGE_ATTEMPTS
@@ -422,12 +464,12 @@ async def ensure_inflight(st):
                             print(f"STATUS: {slug}/{purpose}/{kname} prompt EMPTY — skipping (run gen_prompts.py)")
                             continue
                     p = await aristotlelib.Project.create_from_directory(prompt=prompt, project_dir=proj_dir)
-                    st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": purpose, "key": kname, "ts": NOW, "salvage": do_salvage}
+                    st[p.project_id] = {"slug": slug, "status": "SUBMITTED", "processed": False, "purpose": slot, "key": kname, "ts": NOW, "salvage": do_salvage}
                     if do_salvage:
                         sal[slug]["attempts"] += 1; save("state_salvage.json", sal)
                         print(f"NOTIFY: auto-dispatched {slug} [SALVAGE proof-completion @{sal[slug]['score']}, attempt {sal[slug]['attempts']}/{SALVAGE_ATTEMPTS}] -> {p.project_id}")
                     else:
-                        print(f"NOTIFY: auto-dispatched {slug} [{purpose}/{kname}] -> {p.project_id}")
+                        print(f"NOTIFY: auto-dispatched {slug} [{slot}/{kname}] -> {p.project_id}")
                     if kname == "primary": pcount += 1
                 except Exception as e:
                     print(f"STATUS: refill {slug}/{purpose}/{kname} failed {e}")
