@@ -68,10 +68,10 @@
       "id": "fb-queue-stale",
       "slug": "secp256k1-fixed-base-scalar-mul",
       "price": 0,
-      "summary": "QUEUE HYGIENE, NOT A CIRCUIT LEAD. The fixed-base workqueue was derived against 49,218 and the live seed is 46,828 -- a gap of 2,390. The staleness banner fires correctly, but the items themselves are unrepriced.",
+      "summary": "QUEUE HYGIENE, NOT A CIRCUIT LEAD. The fixed-base workqueue was derived against 49,218 and the record is 47,437 -- a gap of 1,781. The staleness banner fires correctly, but the items themselves are unrepriced.",
       "source": "lead audit, 2026-08-09",
       "witness": null,
-      "note": "The variable-base queue had the same disease at a 7,398 gap and SIX items had re-derived to ZERO. Re-price this queue against the live tree at the next research refresh. Do NOT silence the banner by editing the derived number without redoing the arithmetic."
+      "note": "NUMBER CORRECTED: this entry previously said the gap was 2,390, against a 'live seed' of 46,828. That 46,828 was read from out/secp256k1-fixed-base-scalar-mul/, which is per-job scratch -- it was one job's candidate tree, not the record, and it is gone. The record is 47,437 (projs/.../Main.lean, combCost <23663,23774>). I made the exact mistake this ledger exists to prevent, in the ledger itself. THE UNDERLYING ITEM STANDS: the variable-base queue had the same disease at a 7,398 gap and SIX items had re-derived to zero. Re-price this queue against records/ or projs/ -- never out/ -- at the next research refresh, and do NOT silence the banner by editing the derived number without redoing the arithmetic."
     },
     {
       "id": "sha-d-compressors-unwired",
