@@ -8,32 +8,6 @@
   },
   "leads": [
     {
-      "id": "vb-fold32m-wf",
-      "slug": "secp256k1-scalar-mul",
-      "price": 248,
-      "summary": "ParamsFold32M regroup gf [3,1,4,4..] -> [5,1,2], wfFold32M 79 -> 77. Sibling of the regrouping that set the 307,228 record.",
-      "source": "fold bound-pattern item; ParamsFold32 half landed 2026-08-09",
-      "witness": {
-        "file": "Solution/*/ParamsFold32M.lean",
-        "pattern": "wfFold32M .* := 79"
-      },
-      "note": "qBitsFold32M = 69 is ALREADY exactly triangular. Move Wf only.",
-      "landed_note": "LANDED IN A SUBMISSION BUT NOT YET IN THE RECORD TREE -- both statements are true at different layers and the checker reports the record tree, which is the one that matters. Submission 79ff527d (306,972) carries wfFold32M = 77 and wfFold32N = 76; the record tree is still 79/78 at 307,228, so the checker correctly says OPEN until check_records reseeds. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved -256, so per-instance predictions were about 2x optimistic -- not all 62 nominal call sites are live. Discount future Wf-shaving estimates accordingly."
-    },
-    {
-      "id": "vb-fold32n-wf",
-      "slug": "secp256k1-scalar-mul",
-      "price": 248,
-      "summary": "ParamsFold32N regroup, wfFold32N 78 -> 76.",
-      "source": "same item",
-      "witness": {
-        "file": "Solution/*/ParamsFold32N.lean",
-        "pattern": "wfFold32N .* := 78"
-      },
-      "note": "qBitsFold32N = 68 is ALREADY exactly triangular. Move Wf only.",
-      "landed_note": "LANDED IN A SUBMISSION BUT NOT YET IN THE RECORD TREE -- both statements are true at different layers and the checker reports the record tree, which is the one that matters. Submission 79ff527d (306,972) carries wfFold32M = 77 and wfFold32N = 76; the record tree is still 79/78 at 307,228, so the checker correctly says OPEN until check_records reseeds. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved -256, so per-instance predictions were about 2x optimistic -- not all 62 nominal call sites are live. Discount future Wf-shaving estimates accordingly."
-    },
-    {
       "id": "vb-x4-telescope",
       "slug": "secp256k1-scalar-mul",
       "price": 18042,
@@ -110,6 +84,18 @@
         "pattern": "compressBlockWideSparseDCost"
       },
       "note": "TREE LAYER MATTERS HERE AND I GOT IT WRONG FIRST TIME. CostD.lean exists in NEITHER records/ nor projs/ -- it lives only in out/sha256-hash/, a job's scratch tree that the next job overwrites. So this is not 'unwired code sitting in the record'; it is FINISHED WORK A JOB DID NOT LAND, and it will be lost when that directory is re-extracted. RESCUE IT BEFORE PRICING IT: copy the D files out of out/sha256-hash/*/Solution/SHA256/ now. Measured constants from that tree: compressBlockWideSparseD <14931,15018> against the landed <14992,15079>; compressBlock1SparseD <14785,14873> against 14845; compressBlock5D <10627,10691> against 10689; offset by selectDigestD <76,110> against <8,40>. Net about -470 IF LANDABLE, plus about -1 per compressor because the D variants predate ScheduleLastPair and still call scheduleStepLastCost twice. UNVERIFIED: whether the D path elaborates and whether its soundness proofs are complete. A cost lemma in an unimported module is exactly what this corpus records as scoring nothing."
+    },
+    {
+      "id": "vb-fold64-residue",
+      "slug": "secp256k1-scalar-mul",
+      "price": 192,
+      "summary": "The last two un-swept fold bound constants, both still at B=64: wfFold = 100 (ParamsFold.lean) and qBitsFoldT = 69 (ParamsFoldT.lean). Sweeping to 99 and 68 is about -46 and -146.",
+      "source": "re-price after the 32-bit siblings landed in the 306,680 record",
+      "witness": {
+        "file": "ParamsFold.lean",
+        "pattern": "def wfFold .* := 100"
+      },
+      "note": "CHECK, DO NOT ASSUME -- this family has now paid four times (ParamsFold32T, ParamsFold32, ParamsFold32M, ParamsFold32N) and the last time I queued 'sweep the remaining instances' on that momentum the targets turned out to be already exact and the item was worth zero. ParamsFold at B=64 is FIXED at gf = [2,1,1] -- gf_0 > 2 breaks 2^Wf * 2^192 < p -- so the regrouping lever is unavailable here and only the exact-bounds lever (write the true bound as a small multiple of a power of two, recompute ceil(log2)) can move these. Verify the true bounds before spending the slot."
     }
   ]
 }
