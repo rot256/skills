@@ -1,3 +1,6 @@
 # third-party clones pulled by research subagents (each has its own .git; not our code)
 agmpc/
 jigg/
+
+# transient SAT-search scratch output from research subagents
+r5_*.txt
