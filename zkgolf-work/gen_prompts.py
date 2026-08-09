@@ -23,6 +23,16 @@ IDEAS={
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (49218, 49536, [
+  ("survival, not score — read this before you optimise anything here","ELABORATION TIME IS A FIRST-CLASS COST ON "
+   "THIS SLUG AND YOU CAN LOSE A RECORD TO IT. All three verifier timeouts in the loop's entire history are on "
+   "THIS challenge — 50,379, then 49,620, then 47,417 — none on any other slug across 81 submissions. They are "
+   "getting WORSE as the score improves, which is exactly what you expect if the moves that shrink the circuit "
+   "(folded certificates, wider convolutions, position-dependent bound tables) are also the ones that make proofs "
+   "expensive to elaborate. `irreducible` is the defence and it is only HALF-DEPLOYED: 48 of 202 solution files "
+   "use it. IF YOUR TREE IS BIG OR YOUR PROOFS LEAN ON `decide` OVER LARGE LITERAL TABLES, MARK THE HEAVY "
+   "DEFINITIONS IRREDUCIBLE BEFORE SUBMITTING — cost constants, params tables, and any def whose body is a large "
+   "literal vector. A tree that scores 20 lower and times out is worth strictly less than one that scores 20 "
+   "higher and verifies."),
   ("1974 — NEW, AND THE FIRST SELECT-SIDE WIN IN MANY PASSES","RANK-2 PAIRING IN THE SELECT TOP MUX. An R1CS "
    "row can carry RANK 2, and the top stage is spending one product per RANK-1 term. It computes f_c = SUM_{i<16} "
    "u_i * leaf_{c,i} with u the one-hot on the top 4 bits and leaf_{c,i} = SUM_j T_c[i,j] e_j a FREE affine "
