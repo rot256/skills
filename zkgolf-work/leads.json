@@ -1,0 +1,104 @@
+{
+  "_meta": {
+    "purpose": "The durable list of OPEN leads. A lead recorded only in a chat transcript is lost at the next compaction, and a lead recorded only in gen_prompts.py cannot be checked -- nothing in the fleet reports which queue item a job took, so a lead that was tried and failed looks identical to one nobody ever attempted. Each entry below carries a WITNESS: a grep against the live seed tree that matches WHILE THE LEAD IS STILL OPEN. Run check_leads.py to turn 'do we remember this?' into 'is it still in the tree?'.",
+    "usage": "python3 check_leads.py            # status of every lead\npython3 check_leads.py --open     # only the ones still open",
+    "status_values": "open = witness still matches, nobody has landed it. landed = witness gone, RE-PRICE THE SIBLINGS. unverifiable = no mechanical witness exists; must be checked by hand.",
+    "rule": "When a lead flips to landed, do not just delete it -- the pattern that paid once is a reason to CHECK the next instance, never a reason to assume it. Re-derive the siblings against the new tree before requeueing them."
+  },
+  "leads": [
+    {
+      "id": "vb-fold32m-wf",
+      "slug": "secp256k1-scalar-mul",
+      "price": 248,
+      "summary": "ParamsFold32M regroup gf [3,1,4,4..] -> [5,1,2], wfFold32M 79 -> 77. Sibling of the regrouping that set the 307,228 record.",
+      "source": "fold bound-pattern item; ParamsFold32 half landed 2026-08-09",
+      "witness": {
+        "file": "Solution/*/ParamsFold32M.lean",
+        "pattern": "wfFold32M .* := 79"
+      },
+      "note": "qBitsFold32M = 69 is ALREADY exactly triangular. Move Wf only.",
+      "status": "landed",
+      "landed_note": "LANDED in submission 79ff527d (306,972). Verified directly: wfFold32M = 77 (ParamsFold32M.lean:54) and wfFold32N = 76 (ParamsFold32N.lean:67), glvStepCost 4,369 -> 4,365. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved 307,228 -> 306,972 = -256, so the per-instance prediction was about 2x optimistic -- not all 62 nominal instances were live. Apply that discount to the remaining Wf items (qBitsFoldT -146, wfFold -46)."
+    },
+    {
+      "id": "vb-fold32n-wf",
+      "slug": "secp256k1-scalar-mul",
+      "price": 248,
+      "summary": "ParamsFold32N regroup, wfFold32N 78 -> 76.",
+      "source": "same item",
+      "witness": {
+        "file": "Solution/*/ParamsFold32N.lean",
+        "pattern": "wfFold32N .* := 78"
+      },
+      "note": "qBitsFold32N = 68 is ALREADY exactly triangular. Move Wf only.",
+      "status": "landed",
+      "landed_note": "LANDED in submission 79ff527d (306,972). Verified directly: wfFold32M = 77 (ParamsFold32M.lean:54) and wfFold32N = 76 (ParamsFold32N.lean:67), glvStepCost 4,369 -> 4,365. CALIBRATION WORTH KEEPING: the two were predicted at -248 each = -496 and the tree actually moved 307,228 -> 306,972 = -256, so the per-instance prediction was about 2x optimistic -- not all 62 nominal instances were live. Apply that discount to the remaining Wf items (qBitsFoldT -146, wfFold -46)."
+    },
+    {
+      "id": "vb-x4-telescope",
+      "slug": "secp256k1-scalar-mul",
+      "price": 18042,
+      "summary": "Port the squares telescope from fixed-base: carry x4 = w(2*lambda1 + w) + tx unreduced. Only multiplicative consumer is the lambda1 certificate, degree 2 -> 3. -531 +240 = -291/step x 62.",
+      "source": "range-check floor analysis, 2026-08-09",
+      "witness": {
+        "file": "Solution/*/FinishXY.lean",
+        "pattern": "let x4 . subcircuit MulModSub2F32W2"
+      },
+      "note": "Witness is the x4 ALLOCATION SITE (FinishXY.lean:47), not the step cost. An earlier version of this lead used glvStepCost as a proxy and it produced a FALSE 'landed' the first time an unrelated fold change moved the step -- a proxy witness reports the tree moving, not the lead landing. xS and y4 are the same shape, ~63,000 more if this works."
+    },
+    {
+      "id": "vb-fold-audit-64",
+      "slug": "secp256k1-scalar-mul",
+      "price": 19840,
+      "summary": "Roughly two loop certificates per step may still be on the 4x64 fold (folds average 278 vs CERT32 194 / CERT64 354). -160 each x 2 x 62.",
+      "source": "range-check floor analysis, 2026-08-09",
+      "witness": null,
+      "note": "UNVERIFIABLE MECHANICALLY and it is an inference from an average, NOT a sighting. First action is to enumerate every fold instance on the live step path and record its cost; if all are 32-bit, close this lead."
+    },
+    {
+      "id": "sha-sigma-trunc",
+      "slug": "sha256-hash",
+      "price": 448,
+      "summary": "Work the sigma carry word mod 2^32: lane 31 enters with a factor of 2 so its weight is 2^32 and it vanishes. sigmaCost <32,32> -> <31,31>, -2 per instance.",
+      "source": "SHA-256 deep round, 2026-08-09",
+      "witness": {
+        "file": "Solution/SHA256/Cost.lean",
+        "pattern": "def sigmaCost : Count := .32, 32."
+      },
+      "note": "Check the fused-reduction carry widths FIRST -- the addend becomes [0, 2^33) and if any carry sits on a power-of-two boundary the saving is cancelled."
+    },
+    {
+      "id": "keccak-theta-slp",
+      "slug": "keccak-f1600",
+      "price": 15360,
+      "summary": "Re-wire theta as a shortest-linear-program in the 3-input-XOR basis. Score = 153,600 + 48h; standing record is h = 640, proved floor is h = 320. Even h = 639 is a record.",
+      "source": "Keccak deep round, 2026-08-09",
+      "witness": {
+        "file": "Solution/KeccakF1600/Cost.lean",
+        "pattern": "Theta.main state. .2240, 2240."
+      },
+      "note": "No new soundness obligation -- every gate stays Xor3Lane, only the wiring changes. Take the small version first; a tie does not leaderboard but -48 does."
+    },
+    {
+      "id": "rsa-limb-balance",
+      "slug": "rsa-pkcs1v15-sha256-4096-65537",
+      "price": 218,
+      "summary": "Balance q and n limbs: nfBalMiddleN24/nfBalFirstN24 still use the UNSIGNED limbCap for both operands. One params file.",
+      "source": "RSA deep round, 2026-08-09",
+      "witness": {
+        "file": "Solution/*/Params24.lean",
+        "pattern": "limbCap"
+      },
+      "note": "BLOCKED: the slug is on NO_DISPATCH in tick.py, so no job will ever take this. The de-funding comment says the lever was re-measured down to 218 with ~98 remaining -- the ~98 is WRONG, the full 218 is untaken (the -120 that set the last record lived entirely in the WindowSquare term)."
+    },
+    {
+      "id": "fb-queue-stale",
+      "slug": "secp256k1-fixed-base-scalar-mul",
+      "price": 0,
+      "summary": "QUEUE HYGIENE, NOT A CIRCUIT LEAD. The fixed-base workqueue was derived against 49,218 and the live seed is 46,828 -- a gap of 2,390. The staleness banner fires correctly, but the items themselves are unrepriced.",
+      "source": "lead audit, 2026-08-09",
+      "witness": null,
+      "note": "The variable-base queue had the same disease at a 7,398 gap and SIX items had re-derived to ZERO. Re-price this queue against the live tree at the next research refresh. Do NOT silence the banner by editing the derived number without redoing the arithmetic."
+    }
+  ]
+}
