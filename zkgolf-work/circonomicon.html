@@ -1,0 +1,959 @@
+<title>The Circonomicon</title>
+<style>
+:root{
+  --ground:#eef0f4;
+  --paper:#f8f9fb;
+  --raised:#ffffff;
+  --ink:#15171f;
+  --ink-2:#454a5a;
+  --ink-3:#6f7488;
+  --rule:#d3d7e0;
+  --rule-soft:#e2e5ec;
+  --brass:#9a6a1f;
+  --brass-soft:#f0e4cd;
+  --proved:#2c6350;
+  --proved-soft:#dcebe4;
+  --refuted:#8f342e;
+  --refuted-soft:#f4ddda;
+  --serif:ui-serif,"Iowan Old Style",Charter,"Bitstream Charter",Palatino,"Palatino Linotype",Georgia,serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --measure:66ch;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d0f15;
+    --paper:#13161e;
+    --raised:#181c25;
+    --ink:#e6e8f0;
+    --ink-2:#adb2c2;
+    --ink-3:#7d8296;
+    --rule:#2b303c;
+    --rule-soft:#222733;
+    --brass:#d3a054;
+    --brass-soft:#33270f;
+    --proved:#6fbb9a;
+    --proved-soft:#132a22;
+    --refuted:#d98079;
+    --refuted-soft:#2c1614;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d0f15;
+  --paper:#13161e;
+  --raised:#181c25;
+  --ink:#e6e8f0;
+  --ink-2:#adb2c2;
+  --ink-3:#7d8296;
+  --rule:#2b303c;
+  --rule-soft:#222733;
+  --brass:#d3a054;
+  --brass-soft:#33270f;
+  --proved:#6fbb9a;
+  --proved-soft:#132a22;
+  --refuted:#d98079;
+  --refuted-soft:#2c1614;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px 120px}
+
+/* ---------- masthead ---------- */
+.mast{
+  padding:72px 0 40px;
+  border-bottom:1px solid var(--rule);
+  margin-bottom:8px;
+}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  margin:0 0 20px;
+}
+h1{
+  font-family:var(--serif);
+  font-size:clamp(42px,7vw,76px);
+  line-height:1.02;
+  letter-spacing:-.022em;
+  font-weight:600;
+  margin:0 0 18px;
+  text-wrap:balance;
+}
+.standfirst{
+  max-width:var(--measure);
+  font-size:19px;
+  color:var(--ink-2);
+  margin:0 0 28px;
+}
+.rowform{
+  font-family:var(--mono);
+  font-size:15px;
+  color:var(--brass);
+  letter-spacing:.02em;
+  padding:14px 18px;
+  background:var(--paper);
+  border:1px solid var(--rule-soft);
+  border-left:2px solid var(--brass);
+  display:inline-block;
+  max-width:100%;
+  overflow-x:auto;
+}
+
+/* ---------- axioms ---------- */
+.axioms{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:1px;
+  background:var(--rule-soft);
+  border:1px solid var(--rule-soft);
+  margin:44px 0 8px;
+}
+.axiom{background:var(--paper);padding:20px 22px}
+.axiom h3{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--brass);
+  margin:0 0 8px;
+  font-weight:500;
+}
+.axiom p{margin:0;font-size:15px;color:var(--ink-2);line-height:1.5}
+.axiom code{font-family:var(--mono);font-size:13px;color:var(--ink)}
+
+/* ---------- contents ---------- */
+.toc{margin:56px 0 12px}
+.toc h2{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  font-weight:500;
+  margin:0 0 18px;
+}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2px 32px}
+.toc li{border-bottom:1px solid var(--rule-soft);padding:7px 0}
+.toc a{
+  color:var(--ink);
+  text-decoration:none;
+  display:flex;
+  gap:12px;
+  align-items:baseline;
+  font-size:15px;
+}
+.toc a:hover{color:var(--brass)}
+.toc .n{font-family:var(--mono);font-size:12px;color:var(--ink-3);flex:none;width:44px;font-variant-numeric:tabular-nums}
+
+/* ---------- parts ---------- */
+.part{margin:76px 0 0}
+.part-head{
+  border-top:2px solid var(--ink);
+  padding-top:14px;
+  margin-bottom:34px;
+  display:flex;
+  gap:18px;
+  align-items:baseline;
+  flex-wrap:wrap;
+}
+.part-num{
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:.16em;
+  color:var(--brass);
+  text-transform:uppercase;
+}
+.part-head h2{
+  font-size:clamp(26px,3.6vw,36px);
+  letter-spacing:-.015em;
+  font-weight:600;
+  margin:0;
+  flex:1 1 320px;
+  text-wrap:balance;
+}
+.part-head p{
+  margin:0;
+  flex:1 1 100%;
+  max-width:var(--measure);
+  color:var(--ink-2);
+  font-size:16px;
+}
+
+/* ---------- entries ---------- */
+.entry{
+  background:var(--raised);
+  border:1px solid var(--rule-soft);
+  margin-bottom:22px;
+  padding:26px 28px 24px;
+}
+.entry-head{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.sig{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--brass);
+  flex:none;
+  font-variant-numeric:tabular-nums;
+  padding-top:5px;
+}
+.entry h3{
+  font-size:21px;
+  line-height:1.28;
+  letter-spacing:-.01em;
+  font-weight:600;
+  margin:0;
+  flex:1 1 260px;
+  text-wrap:balance;
+}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 16px}
+.chip{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:3px 8px;
+  border:1px solid var(--rule);
+  color:var(--ink-3);
+  white-space:nowrap;
+}
+.chip.price{color:var(--brass);border-color:var(--brass);background:var(--brass-soft)}
+.chip.proved{color:var(--proved);border-color:var(--proved);background:var(--proved-soft)}
+.chip.refuted{color:var(--refuted);border-color:var(--refuted);background:var(--refuted-soft)}
+.entry p{margin:0 0 14px;max-width:var(--measure)}
+.entry p:last-child{margin-bottom:0}
+.lede{color:var(--ink)}
+.entry .label{
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  display:block;
+  margin-bottom:3px;
+}
+.math{
+  font-family:var(--mono);
+  font-size:13.5px;
+  line-height:1.7;
+  background:var(--paper);
+  border:1px solid var(--rule-soft);
+  padding:14px 16px;
+  margin:0 0 16px;
+  overflow-x:auto;
+  white-space:pre;
+  color:var(--ink);
+}
+.fails{
+  border-left:2px solid var(--refuted);
+  background:var(--refuted-soft);
+  padding:12px 16px;
+  margin:16px 0 0;
+  max-width:var(--measure);
+}
+.fails p{margin:0;font-size:15px;color:var(--ink-2)}
+.fails .label{color:var(--refuted)}
+code{font-family:var(--mono);font-size:.88em;color:var(--ink)}
+.cost{font-family:var(--mono);color:var(--brass);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ---------- colophon ---------- */
+.colophon{
+  margin-top:80px;
+  border-top:1px solid var(--rule);
+  padding-top:28px;
+  max-width:var(--measure);
+}
+.colophon p{color:var(--ink-2);font-size:15px;margin:0 0 12px}
+
+a:focus-visible,summary:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+@media (max-width:640px){
+  body{font-size:16px}
+  .entry{padding:20px 18px}
+  .mast{padding:48px 0 32px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">A field manual for rank-1 constraint systems</p>
+  <h1>The Circonomicon</h1>
+  <p class="standfirst">Non-obvious techniques for making arithmetic circuits smaller, collected from a competitive optimization loop against live opponents. Every entry carries the mechanism, the measured price, and the condition under which it stops working.</p>
+  <div class="rowform">(A·w)(B·w) = (C·w) &nbsp;·&nbsp; score = allocations + constraints</div>
+
+  <div class="axioms">
+    <div class="axiom">
+      <h3>One product per row</h3>
+      <p>Enforced <em>syntactically</em>, not semantically. A row has exactly one multiplication; the checker walks the expression tree.</p>
+    </div>
+    <div class="axiom">
+      <h3>Affine is free</h3>
+      <p>Additions, subtractions, and multiplication by any compile-time constant cost nothing. Not "cheap" — <em>zero</em>.</p>
+    </div>
+    <div class="axiom">
+      <h3>You pay twice</h3>
+      <p><code>witness</code> is ⟨1,0⟩, <code>assertZero</code> is ⟨0,1⟩. Score counts both, so a value pinned by its own row costs 2.</p>
+    </div>
+    <div class="axiom">
+      <h3>No escape hatches</h3>
+      <p>Lookups and interactions are counted at zero — and then make the R1CS obligation <em>unprovable</em>. There is no loophole, only a trap.</p>
+    </div>
+    <div class="axiom">
+      <h3>Shape, not rank</h3>
+      <p>The product counter looks through <em>constant</em> factors only, so <code>a·b + a·c</code> is rejected — rank 1, two syntactic products. Design to the literal shape.</p>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#i"><span class="n">I</span> What one row can do</a></li>
+    <li><a href="#ii"><span class="n">II</span> Don't materialise the value</a></li>
+    <li><a href="#iii"><span class="n">III</span> Free things engineers pay for</a></li>
+    <li><a href="#iv"><span class="n">IV</span> Bound arithmetic</a></li>
+    <li><a href="#v"><span class="n">V</span> Knowing when to stop</a></li>
+    <li><a href="#vi"><span class="n">VI</span> Traps</a></li>
+  </ol>
+</nav>
+
+<!-- =========================== PART I =========================== -->
+<section class="part" id="i">
+  <div class="part-head">
+    <span class="part-num">Part I</span>
+    <h2>What one row can do</h2>
+    <p>A rank-1 row looks like it can express exactly one multiplication. It can express considerably more, because the multiplier and the target are free to be any affine forms you like — and because a row that pins a value can also imply properties of it at no extra cost.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.1</span><h3>The single-row non-vanishing multiplier</h3></div>
+    <div class="chips"><span class="chip price">1 alloc + 1 constraint per output bit</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Encode the output <code>z</code> of a small boolean function in one row of the shape <code>L₁ − (z + L₂)·M = 0</code>, where <code>L₁</code>, <code>L₂</code>, <code>M</code> are affine in the boolean inputs and <strong>M never vanishes on the boolean cube</strong>. The row is linear in <code>z</code>, so <code>z</code> is uniquely pinned — and it inherits booleanity, so the usual <code>z(z−1)=0</code> row disappears.</p>
+    <span class="label">Two worked instances</span>
+    <div class="math">XOR3     (6a + 6b − 24c) − (z + 2a + 2b + 7c)·(a + b − 4c + 1) = 0      M ∈ ±1,±2,±3
+CHI      (4a + 2b)      − (z + 3a − b − c)·(4a + b + c − 3) = 0      M ∈ ±1,±2,±3
+MAJ3     12 + (z + a + b − 9c + 3)·(a + b + 6c − 4) = 0              M ∈ ±2,±3,±4
+CARRY    same row as MAJ3 — carry(a,b,c) = maj(a,b,c)</div>
+    <p>The multiplier must be affine <strong>in the inputs only</strong>; <code>z</code> must not appear in it. What makes the construction work is that <code>M·(f + A)</code> collapses to an affine <code>C</code> modulo the boolean ideal <code>x² = x</code>. Note that MAJ3 and the full-adder carry are <em>the same row</em> — one lemma serves both.</p>
+    <p>To apply it to a new function: pick an affine <code>M</code> that is nonzero everywhere on the cube, then solve for <code>L₁</code>, <code>L₂</code> so the row reproduces the truth table. Verifying that <code>M</code> never vanishes <em>is</em> the uniqueness proof.</p>
+    <p>An exhaustive SMT sweep over the field found that <strong>192 of the 256 three-input boolean functions</strong> admit this form. The native gate library is not {AND, XOR} — it is three-quarters of all ternary functions, each at one row.</p>
+    <div class="fails"><span class="label">Where it stops</span><p>The other 64 functions have no non-vanishing affine multiplier. For those, reach for the decoy-root form in I.4, which always exists.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.2</span><h3>λ-packed twin instances — half a row per bit</h3></div>
+    <div class="chips"><span class="chip price">0.5 + 0.5 per bit</span><span class="chip">Universal, where a gadget runs twice</span><span class="chip proved">Measured</span></div>
+    <p class="lede">One row per output bit looks like the floor. It is not, whenever you need the same function <em>twice</em>. A 32-bit value occupies 32 of the field's 254 bits, so pack two instances into one witness at a separating base λ = 2<sup>40</sup> — <code>z[j] = f(A)[j] + λ·f(B)[j]</code> — and pin both with a single rank-1 row.</p>
+    <div class="math">Packed CH (both rounds' Ch words, 64 bits, in 32 allocations + 32 constraints):
+
+(−3e + 2f + 4g + 2λu)·(e − 2f + 4g − 2λu)
+  + (3e + (8λ+4)f − 8g + 4λ²u − 8z) = 0
+
+Reduces to 8·(z − honest) = 0 modulo the input booleanity relations, and 8 is a unit.</div>
+    <p><strong>The design constraint is the whole technique:</strong> the two instances must <em>share most of their inputs</em>, so the row stays affine in a small input set. SHA-256 supplies this for free by pairing adjacent rounds — <code>Ch(e′,e,f)</code> reuses <code>e</code> and <code>f</code>. The packed word is then consumed additively downstream, which splits the two λ-slots apart at no cost.</p>
+    <p>Measured saving: 128 score per round pair, 4,096 per 512-bit block. Look for this anywhere a gadget is instantiated twice on overlapping inputs.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.3</span><h3>The packing constant is the ratio of the downstream weights</h3></div>
+    <div class="chips"><span class="chip price">unpacking costs zero</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">The part that is easy to miss about λ-packing (I.2): <strong>λ is not a free parameter you tune for separation — it is determined by the consumer.</strong> Choose λ = (weight of slot 2)/(weight of slot 1) <em>in the sum that consumes both</em>, and the packed value unpacks itself for nothing.</p>
+    <div class="math">Two lanes two bit-positions apart in the same downstream field sum   →  λ = 4
+Two lanes entering at the SAME weight (one from each of two maps)   →  λ = 1
+Two instances consumed by different rounds of a fused adder         →  λ = 2⁴⁰</div>
+    <p>The consumer then just adds <code>2²²·u₀</code> and the separation is structural. Where the two slots are genuinely independent, λ is instead set by a headroom argument: slots below 2³⁵ with λ = 2⁴⁰ leaves five bits of margin and needs a prime above 2⁷⁶.</p>
+    <p>A second identity worth having, because it avoids the cross term outright — <strong>difference of squares</strong> packs a pair of two-input XORs into one row with one witness:</p>
+    <div class="math">xor₂(a,b) + λ·xor₂(c,d)
+  = [2a − 2b + 2λ(c+d) − 1] − (r(c+d) − (1−a+b))·(r(c+d) + (1−a+b))     with λ = r²</div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.4</span><h3>The out-of-range decoy root</h3></div>
+    <div class="chips"><span class="chip price">1 row, no disambiguation</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A row <code>(z − r₁)(z − r₂) = 0</code> is one constraint but does not pin <code>z</code> — it admits two solutions, which is normally why the single-row form is preferred. The trick is to make the wrong solution <em>arithmetically unreachable</em> rather than excluding it with a second row.</p>
+    <p>Choose <code>r₁</code>, <code>r₂</code> so that on every input assignment exactly one root is the honest value and the other is displaced by a huge power of two Ω. The consuming addition already lives in a bounded window and rejects the decoy at zero cost.</p>
+    <div class="math">Packed MAJ, λ = 2⁴⁰, Ω = 2⁸⁰ — 32 allocations + 32 constraints for 64 Maj bits:
+
+(z − ((1+λ)a + Ω(a−b))) · (z − (c + λu + Ω(1−a−b))) = 0
+
+a = b  → first factor is honest, Ω(a−b) vanishes
+a ≠ b  → second factor is honest, Ω(1−a−b) vanishes
+Either way the decoy is 2⁸⁰ away, and a 35-bit packed addition cannot absorb it.</div>
+    <p>The two-root form <em>always</em> exists — interpolate through the two branch values — and is always one row. Its cost is not in rows but in proof: the soundness obligation moves into the adder, where you must show the operands are bounded.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.5</span><h3>Gated booleanity</h3></div>
+    <div class="chips"><span class="chip price">saves 1 row per gated bit</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">When a witness bit must be boolean <em>if</em> a region is active and zero otherwise, don't emit <code>b(b−1)=0</code> plus a masking row. Emit one row:</p>
+    <div class="math">b·(b − active) = 0     with `active` an affine boolean
+
+active = 1  →  exactly booleanity
+active = 0  →  forces b = 0</div>
+    <p>In a 255-byte variable-length padding check this covers all seven witnessed low bits of every byte at seven rows per byte with no masking rows at all — it is what makes "every byte past the message length is zero" free. Generalises to any conditionally-present witness.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.6</span><h3>The range check's top bit is derived, not witnessed — ⟨n−1, n⟩</h3></div>
+    <div class="chips"><span class="chip price">saves 2 at every quotient and carry</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">To prove <code>x &lt; 2ⁿ</code>: witness only <code>n−1</code> bits, assert booleanity on each, then form the top bit as the <em>affine</em> expression <code>top := (2ⁿ⁻¹)⁻¹·(x − Σ bᵢ2ⁱ)</code> and assert booleanity on that. <strong>The linking row <code>x = Σ bᵢ2ⁱ</code> never exists</strong> — it holds as a ring identity.</p>
+    <p>The reflex is n witnesses + n booleanity rows + 1 linking row. The saving looks like 2 units, but it multiplies: every quotient wire and every grouped carry in the circuit is a range check. A 256-bit normalisation is ⟨252,256⟩ rather than ⟨256,260⟩.</p>
+    <p>The same "define the last one affinely" move recurs whenever a small set of witnessed bits has a known sum: witness two of three borrow bits and <em>define</em> the third as <code>b₀ := s − 2b₁ − 4b₂</code>; the booleanity rows then pin all three, and both the linking row and one allocation vanish.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.7</span><h3>One-directional zero-implication in ⟨1,1⟩ — the weak inverse witness</h3></div>
+    <div class="chips"><span class="chip price">⟨1,1⟩ vs ⟨2,3⟩</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">To assert <code>d = 0 ⟹ t = 0</code>, witness one field element <code>u</code> and assert a single row:</p>
+    <div class="math">t − d·u = 0
+
+d = 0  →  the row forces t = 0
+d ≠ 0  →  the prover sets u = t/d and the row is vacuous</div>
+    <p>The reflex is to materialise <code>z = IsZero(d)</code> — an inverse witness plus a flag, ⟨2,2⟩ — and then assert <code>t·z = 0</code>, total ⟨2,3⟩. But <strong>most canonicality and comparison logic only ever needs the implication, never the biconditional.</strong> One canonicality gadget went from "three zero-test gadgets and two product witnesses, 8 allocations and 12 rows" to "four bare witnesses and four rows".</p>
+    <p>Probably the most portable single item here: audit every zero-test in a design and ask whether the converse direction is ever used.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.8</span><h3>A k-way disjunction is a product chain, not a selector tree</h3></div>
+    <div class="chips"><span class="chip price">~2× on any mux-shaped constraint</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">To assert "at least one of <code>l₀ … l_{k−1}</code> is zero", do not witness k selector bits, gate a row on each, and add a sum-to-one row. Just assert the product.</p>
+    <div class="math">l₀·l₁·l₂·l₃·l₄ = 0     encoded as 3 intermediate product cells + 1 terminal row
+
+  product chain:   k−2 cells + k−1 rows
+  selector tree:   k bits + k gated rows + one sum-to-one row</div>
+    <p>Roughly half the cost, and it removes the booleanity obligations entirely. It appears inside a 4096-bit comparison that comes to ⟨73,155⟩ = 228 total — a five-way "one of these radix-packed prefix differences equals δ" resolved by one product chain, replacing four selector cells and five selector-gated rows.</p>
+    <p>The disjunction shape is far more common than it looks: any "one of these cases holds" is one, and so is every multiplexer whose branches you were about to prove mutually exclusive.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.9</span><h3>A rank-r quadratic costs ⌈r/2⌉ rows, not r</h3></div>
+    <div class="chips"><span class="chip price">exact 2×</span><span class="chip">Universal</span><span class="chip proved">Proved, matching</span></div>
+    <p class="lede">The naive idiom accumulates <code>xᵢ·lᵢ(x)</code> at r rows and r−1 witnesses. Instead <strong>diagonalise the form at compile time</strong>. Over F<sub>p</sub>, Chevalley–Warning forces every form in ≥3 variables to be isotropic, so q splits into hyperbolic planes perpendicular to an anisotropic kernel of dimension ≤ 2 — and each hyperbolic plane is a product of two linear forms, hence one row.</p>
+    <p>The move that makes it tight: <strong>let the last row's C-slot absorb the running sum.</strong> <code>l₂ₜ₋₁·l₂ₜ = z − u₁ − … − u_{t−1}</code> is affine, hence free.</p>
+    <p>Cost ⌈r/2⌉ rows + ⌈r/2⌉−1 witnesses. Optimality is matching: rank is subadditive and each row contributes rank ≤ 2. A sum of eight squares is 7, against 15 naive.</p>
+    <div class="math">Over the BN254 scalar prime, one row each:   x²+y², x²−y², x²+2y², x²+3y², x²+6y², x²+13y²
+Not one row:                                 x²+5y², x²+7y², x²+11y², x²+17y²
+Criterion: (ab/r) = 1, using (−1/r) = 1.</div>
+    <div class="fails"><span class="label">Where it stops</span><p>Hunting for <em>free</em> low-rank combinations in an arbitrary constraint span does not pay: the rank-≤2 locus in symmetric N×N matrices has codimension (N−1)(N−2)/2, so generically there is nothing there, and finding one is MinRank.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.10</span><h3>Split algebras: rank collapses from 2n−1 to n</h3></div>
+    <div class="chips"><span class="chip price">n rows instead of 2n−1</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Proved (Winograd)</span></div>
+    <p class="lede">Multiplication in <code>F[u]/P</code> with <code>deg P = n</code> and k distinct irreducible factors needs 2n−k multiplications (Winograd 1977; Alder–Strassen 1981). Because the CRT change of basis is <em>linear</em>, hence free in R1CS, a fully split modulus gives n rows.</p>
+    <div class="math">Emulated F_p² / complex multiplication in 2 rows instead of 3:
+
+  row 1:  (a + i·b)(c + i·d) = p₁
+  row 2:  (a − i·b)(c − i·d) = p₂
+  then    e = (p₁+p₂)/2  and  f = (p₁−p₂)/(2i)   are both FREE.
+
+Score 4, against Karatsuba's 6. Literally Winograd's result that complex
+multiplication needs 3 real multiplications but only 2 over C.</div>
+    <p>BN254's scalar prime has r ≡ 1 mod 2<sup>28</sup>, so −1 is a square and n | r−1 for every n = 2<sup>k</sup>, k ≤ 28, plus many odd n. Cyclic convolution of length n likewise costs n rows whenever n | r−1, with both DFTs free.</p>
+    <div class="fails"><span class="label">Where it stops</span><p>Only for genuinely <em>wrapped</em> ring arithmetic. A full product still needs 2n−1 — the collapse is paid for by the wrap, not by the field.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">I.11</span><h3>The √N law — any function on N points costs ~2√N rows</h3></div>
+    <div class="chips"><span class="chip price">N=256: 75 vs 509</span><span class="chip">Universal</span><span class="chip proved">Measured schedule</span></div>
+    <p class="lede">Baby-step/giant-step (Paterson–Stockmeyer 1973). To evaluate a degree-N univariate P: compute <code>x²…x^k</code> in k−1 rows, then write <code>P = Σⱼ Bⱼ(x)·(x^k)ʲ</code> with <code>deg Bⱼ &lt; k</code>. <strong>Each Bⱼ is a free affine combination of powers you already have</strong>, so the Horner recursion in <code>y = x^k</code> costs one row per giant step. Optimum at k ≈ √N.</p>
+    <div class="math">Full gadget score, including the input range check:
+
+  N = 16    19   (naive 29)
+  N = 256   75   (naive 509)
+  N = 1024  143  (naive 2045)
+  N = 4096  271  (naive 8189)</div>
+    <p>This applies wherever a table, an S-box, a piecewise function, or "membership in an arbitrary set of N elements" appears. A matching lower bound survives nondeterminism — parameter counting gives s ≳ 0.58√N — so 2√N is within ~3.5× of optimal and <strong>you should stop there</strong>.</p>
+  </article>
+</section>
+
+<!-- =========================== PART II =========================== -->
+<section class="part" id="ii">
+  <div class="part-head">
+    <span class="part-num">Part II</span>
+    <h2>Don't materialise the value</h2>
+    <p>The deepest savings are not cheaper gadgets. They are values that never get written down. Every entry here is a way of noticing that something you are paying to construct is not actually needed in the form you are constructing it.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.1</span><h3>Assertion, not value — and the scope rule that decides whether it transfers</h3></div>
+    <div class="chips"><span class="chip price">−531 per site</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A value that is only ever the <strong>target</strong> of a certificate can be deleted outright: nothing reads it, it merely has to satisfy an equation, so run the certificate directly against the target expression and the witness disappears.</p>
+    <p>It <strong>cannot</strong> delete an operand. An operand of a non-native product must have limb-certified digits or its field convolution coefficients carry no integer meaning — confirmed by 200/200 successful forgeries at toy scale when the certification was removed.</p>
+    <p>So the audit question is not <em>"does anything read this value?"</em> but <em>"does anything read it as an operand of a product?"</em></p>
+    <span class="label">Classify every candidate before costing it</span>
+    <div class="math">TARGET              deletable          curve-equation residue, terminal slope residue  → −531 each
+OPERAND             irreducible        RSA chain residues r_i, each read by the next squaring
+CERTIFICATE-BY-RANGE  looks deletable, is not
+                    RSA quotients q_i are read by nobody, but removing their range
+                    checks is a forgery: the dimension count (171 free unknowns
+                    against 37 group equations) is what pins the reduction.</div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.2</span><h3>The consumer-functional law</h3></div>
+    <div class="chips"><span class="chip price">4 cells → 2</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Proved from source</span></div>
+    <p class="lede">The sharp, quantitative form of II.1. A multi-cell value costs in proportion to its number of cells in every gadget that builds it by selection — but each consumer reads only a set of <em>linear functionals</em> of the cell vector. <strong>The number of cells you must produce is dim span{all consumers' functionals}, not the arity of the type.</strong></p>
+    <p>Proved from source for the dominant consumer in both elliptic-curve trees: with a one-carry group schedule, a target vector enters through exactly two independent functionals, <code>T_lo = t₀ + 2⁶⁴t₁</code> and <code>T_hi = t₂ + 2⁶⁴t₃</code>. Positions 2 and 3 appear in no row but the single final polynomial-evaluation row.</p>
+    <span class="label">Rank ledger — apply mechanically</span>
+    <div class="math">convolution multiplicand                          → 4   (full rank; never reducible)
+certificate addend, one-carry group schedule      → 2
+value only tested for zero or equality            → 1
+circuit output                                    → whatever the interface declares</div>
+    <p>The audit rule: for every value produced by a selector, list its consumers, write down each consumer's functionals, and produce only a <em>basis</em> of their span.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.3</span><h3>State the spec as a congruence, not a canonical value</h3></div>
+    <div class="chips"><span class="chip price">~980 → 0</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A 256-bit scalar supplied as bits does not need a witnessed canonical remainder mod the group order. Packing the bits into limbs is a pure affine recombination, and the value it denotes is <em>already in the right congruence class</em>.</p>
+    <p>The record's scalar reduction is literally <code>pure (packBits input.bits)</code> with a proved cost of zero, and its spec is stated as <code>value % n = scalar % n</code> rather than as an equality. Avoided: a witnessed remainder plus quotient, with normalisation on both, plus a comparison — about 980 allocations and 989 constraints.</p>
+    <p><strong>The precondition is the whole trick.</strong> Audit every normalisation and every comparison in a design against the question "does any consumer need more than the congruence class?" Each one that turns out not to is worth hundreds of rows.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.4</span><h3>Field subtraction should cost exactly zero</h3></div>
+    <div class="chips"><span class="chip price">285/294 → 0/0</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Do not reduce <code>a − b</code> before feeding it to the next multiplication. Represent it limbwise as <code>a[k] + borrow[k] − b[k]</code>, where <code>borrow</code> is a <em>compile-time constant</em> limb vector encoding 2p, chosen so every limb stays non-negative and the total stays below 3p. That expression is affine, hence free.</p>
+    <div class="math">secp256k1:  borrow[0] = 2⁶⁵ − 2³³ − 1954,   borrow[k&gt;0] = 2⁶⁵ − 2
+
+Then instantiate the modmul certificate with input bounds Ca, Cb ≤ 4·2⁶⁴.
+The folded certificate's cost is INVARIANT in those bounds — still ⟨184,186⟩.
+Only the carry-width proof obligation moves.</div>
+    <p>Every difference in the affine chord/tangent/double formulas becomes free. The record contains <em>zero</em> explicit subtraction gadgets in its fused double-add. It composes with sum-of-products: the same slack lets a fused <code>r = a·b − s₁ − s₂</code> put both subtrahends straight into the certificate target unreduced, so a multiply-subtract-two costs the same as a plain multiply.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.5</span><h3>Keep it a polynomial — mux at the cell level, not the field level</h3></div>
+    <div class="chips"><span class="chip price">−1,050 per slope</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A Weierstrass slope must divide by either <code>x₂−x₁</code> (chord) or <code>2y</code> (tangent), with numerator either <code>y₂−y₁</code> or <code>3x²</code>. The naive route reduces <code>x²</code>, scales by 3, muxes against <code>dy</code>, then runs a division certificate — <em>two</em> reductions.</p>
+    <p>Instead: compute the square as a raw 7-cell convolution and <strong>never reduce it</strong>. Mux the 7-cell vector against the zero-padded alternative — one row per cell — and hand the resulting <em>polynomial</em> directly to a single certificate. The square never becomes a field element.</p>
+    <div class="math">fused select-and-divide   476/481
+  = zero-test 2/2 + three 4-limb muxes + interpolatedMul 7/7
+  + 7-cell mux 7/7 + 4 result witnesses + validator 260/267 + certificate 184/186
+
+reduce-then-divide        999/1008</div>
+    <p><strong>General rule:</strong> selection, scaling by small constants, and addition all work at the polynomial level for one row per cell. Only the final certificate pays for a reduction.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.6</span><h3>Defer every intermediate reduction into one integer identity</h3></div>
+    <div class="chips"><span class="chip price">−2,998 on one gadget</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Wherever a gadget performs several independent modular reductions only to combine the results into one final congruence, <strong>every reduction but the last is waste</strong>. Defer them into a single natural-number identity with one witnessed quotient and one carry chain.</p>
+    <p>Measured: a scalar relation that used to perform four separate reductions to build one congruence went from ⟨2365,2387⟩ to ⟨874,880⟩ — −1,491 allocations and −1,507 rows. The supporting work is three small files: a magnitude-parameter instance, the per-position cells, and a scaling vector. That is the usual shape — a deferred identity needs its own bound instance and nothing else.</p>
+    <p>The same law priced on a multiply chain: one reduction shared across M products costs 424 rows at M=1, 457 at M=2, 490 at M=4. Each extra product adds about 33.</p>
+    <p><strong>The grep signature:</strong> two or more mod-reduction subcircuits whose outputs feed a common assertion.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.7</span><h3>Score is 2 × bits of <em>advice</em>, not 2 × bits</h3></div>
+    <div class="chips"><span class="chip">Universal reframing</span><span class="chip proved">Derived</span></div>
+    <p class="lede">The 2-per-bit charge applies only to values pinned to a finite set <em>by rows</em>. It does not apply to values whose bounds are <strong>implied</strong>. Convolution cells of already-bounded operands cost zero — which is why a 2k−1-point multiply witnesses 15 cells with no range check at all.</p>
+    <p>So the invariant is: <strong>score ≈ 2 × (total bits of non-deterministic advice that is not polynomial in prior advice).</strong></p>
+    <p>This reframing is not cosmetic; it relocates most of the supposed floor. In one scalar-multiplication step the genuine advice is only the two division outputs. Three further 256-bit values are <em>polynomial</em> in that advice and are therefore materialised by choice, not necessity — 94,302 score of a 160,146 "floor" turned out to be a representation decision.</p>
+    <p>It also answers a question worth posing directly: is a value known to be a sum of products of bounded things cheaper to range-check? It is not merely cheaper. It is <em>free</em>.</p>
+  </article>
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.8</span><h3>Fuse a double-and-add so the intermediate never exists</h3></div>
+    <div class="chips"><span class="chip price">~826 per step</span><span class="chip">Short-Weierstrass curves</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Compute <code>2R + T</code> as <code>(R+T)+R</code> through a shared slope chain, so that the y-coordinate of the intermediate <code>S = R+T</code> is <em>never a wire</em> (Eisenträger–Lauter–Montgomery, read as a circuit optimization rather than a speedup).</p>
+    <div class="math">λ₁ = slope(R,T)
+x_S = λ₁² − R.x − T.x
+w   = 2R.y / (x_S − R.x)
+A   = λ₁ + w
+x₄  = A² − x_S − R.x
+y₄  = A(x₄ − R.x) − R.y            y_S never appears
+
+fused   ⟨2056,2069⟩
+unfused ⟨1627,1638⟩ + ⟨1255,1263⟩ = ⟨2882,2901⟩</div>
+    <p>A companion move makes the tangent-path sign free: write <code>2p</code> in a digit set where every digit exceeds the limb bound, so <code>digit_k − v_k</code> is a <em>borrow-free affine</em> encoding of <code>−v</code>. Since the square <code>A²</code> is sign-insensitive, the y-coordinate then needs no multiplier-operand mux at all.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.9</span><h3>Allocate n−1 of n tied values and derive the last affinely</h3></div>
+    <div class="chips"><span class="chip price">recurs everywhere</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Whenever n values are tied by one affine relation, allocate n−1 and <em>define</em> the last. The derived value still needs its own booleanity or range row, but the allocation and the linking row both vanish. This is the same move as I.6, and once you see it, it is everywhere.</p>
+    <div class="math">carry chain never witnessed at all:
+  c_{n+1} := 2⁻¹(a_n + b_n + c_n − z_n)        affine in the SUM bits
+
+Only the 32 sum bits are allocated, and each per-bit row does double duty —
+pinning z_i boolean AND the carry boolean.  ⟨32,32⟩ against ⟨32,33⟩.</div>
+    <p>The same shape appears in a fused adder's low carry (a pure affine expression of everything else, pinned by one booleanity row), in a byte range check that witnesses seven bits and derives the eighth, and in a borrow column that witnesses two of three bits.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.10</span><h3>Words consumed only as a field sum are never reduced at all</h3></div>
+    <div class="chips"><span class="chip price">−33 alloc per word</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">II.7 says the charge is on advice. Here is what that looks like in practice: <strong>a word whose only consumer is an addition never needs its mod-2ⁿ reduction performed.</strong> Not a cheaper reduction — none.</p>
+    <div class="math">last two message-schedule words:  ⟨58,58⟩   allocating no output bits and no carry
+full schedule step:               ⟨91,92⟩
+
+They are consumed only inside a fused tail adder's field sum, so the reduction
+that would produce their bits is simply never emitted.  −33 alloc, −34 rows each.</div>
+    <p>The chaining word between blocks gets the same treatment — carried as a raw field value with a bound loose enough to keep the next round's six-operand window in range, saving its 32 allocations and 32 booleanity rows. A "deferred add" gadget in that style costs <em>literally zero</em>: it is <code>pure (a + b)</code>, certified at <code>Count.zero</code>. It is free wiring wearing the shape of a gadget.</p>
+    <p>The same logic reshapes selection. Choosing among five candidate digests by witnessing <strong>8 field words</strong> and asserting <code>flagSum·(candidate − digest) = 0</code> is ⟨8,40⟩. The bit-level version would be 256 witnesses and 1,280 rows.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.11</span><h3>Never assert your last equation — solve it for one unknown</h3></div>
+    <div class="chips"><span class="chip price">−2 per reduction, composes</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A gadget that ends "…and therefore the accumulated identity holds" is asserting a row it could instead <em>make true by construction</em>. Solve the final equation for one coefficient and substitute the affine solution.</p>
+    <div class="math">final row would be:   polyEval(lhs, 2ᴮ) = polyEval(rhs, 2ᴮ)
+
+instead define:       top := (polyEval(lhs,2ᴮ) − polyEval(lowVec rhs, 2ᴮ)) / 2^{B(L−1)}
+
+affine, so free. The coefficient vector now witnesses 2m−2 cells instead of 2m−1,
+and the closing row disappears. The remaining interpolation rows still pin it soundly.</div>
+    <p>Worth −2 per reduction on its own, which is why one ledger closes at 9,870 rather than 9,871. Its real value is that it composes: once the top coefficient is an expression rather than a witness, it can be spliced into a multiply that accepts a supplied coefficient vector, and the two savings stack.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">II.12</span><h3>Cost a gadget against the rank of what its consumer reads</h3></div>
+    <div class="chips"><span class="chip price">372 vs 682 — 46% off</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Verified numerically</span></div>
+    <p class="lede">The sharpest instance of II.2 in the collection, and the one worth studying. A squaring produces 341 convolution coefficients — but the grouped carry check downstream reads only <strong>38 group sums</strong> of them. So the projection the consumer needs has rank 38, and the gadget should be priced against 38, not 341.</p>
+    <p>Writing the square in terms of that projection gives an identity whose high part is a quadratic form, and here the factor of two from I.9 appears in the wild:</p>
+    <div class="math">S(c) = β(c)² + (c − t⁹)·Hi(c)
+
+t⁹·Hi(c) = Σ_{i+j ≥ 9} hᵢhⱼ
+         = 2h₈(A₁−A₄) + 2h₇(A₂−A₄) + 2h₆(A₃−A₄) + A₅(2A₄−A₅)
+
+The 9×9 anti-triangular 0/1 matrix [i+j ≥ 9] has rank exactly 8, and it is SYMMETRIC
+with split signature (4,4) — so it decomposes into 4 hyperbolic pairs, i.e. 4 products
+where a general rank-8 bilinear form would need 8.
+
+THAT factor of two is precisely what "a square is cheaper than a product" means here.</div>
+    <p>One further saving falls out for free: <code>Hi</code> has degree 2K−2 in the evaluation variable, so <strong>its value at the last evaluation point is an affine combination of the others</strong> and costs nothing. Hence 4·(2K−1) cells and rows, not 4·2K.</p>
+    <p>Total ⟨186,186⟩ = 372, against 682 for the coefficient-wise multiply. And note the discipline this implies: the same tree uses the plain multiply in the one place where all coefficients <em>are</em> consumed, and the projected form everywhere else. The choice is made per call site, from the consumer.</p>
+  </article>
+
+</section>
+
+<!-- =========================== PART III =========================== -->
+<section class="part" id="iii">
+  <div class="part-head">
+    <span class="part-num">Part III</span>
+    <h2>Free things engineers pay for</h2>
+    <p>"Affine is free" is easy to say and hard to internalise. Each of these is a place where a standard gadget gets reached for and the answer was already sitting in the circuit as a linear combination.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.1</span><h3>The range check <em>is</em> the output encoding</h3></div>
+    <div class="chips"><span class="chip price">−1,032 for a two-coordinate point</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Any value that must be proved canonical is already bit-decomposed. If the interface wants it as bytes, build each byte as an affine combination <em>of the very bits the range check allocated</em>. A standalone serialiser for one 256-bit coordinate is 256 allocations and 260 constraints; folded into the validator it is 0/0.</p>
+    <p><strong>Generalises to every multi-consumer bit vector.</strong> Whenever two passes over the same value both need its bits — range check, comparison, serialisation, bit-selection, a boolean gate — allocate the bits once and make every other consumer an affine function of them. Audit the circuit for any value that is decomposed twice; each redundant decomposition is n allocations plus n+1 rows.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.2</span><h3>Comparing input bits against a constant costs zero allocations</h3></div>
+    <div class="chips"><span class="chip price">44 score for all exceptional-case handling</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Given boolean bits and a compile-time constant k, the <em>mismatch count</em></p>
+    <div class="math">Σᵢ (if bitᵢ(k) then 1 − bᵢ else bᵢ)</div>
+    <p>is a purely affine expression, lies in [0, 256] so it cannot wrap, and is zero exactly when the bits encode k. It costs nothing — no witness, no row. Only the zero <em>test</em> costs anything, and two tests can share one: materialise the product and run a single zero-check for ⟨3,3⟩.</p>
+    <p>Measured: the fixed-base record screens four exceptional scalars with two shared zero-tests and two affine muxes — 44 score, 0.06% of the circuit, for the entire exceptional-case handling of a scalar multiplication.</p>
+    <p><strong>General rule:</strong> any predicate that is an affine function of the input bits and cannot wrap is free. Push all constant-comparison logic into that form before reaching for a comparator.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.3</span><h3>Adding a constant makes the low bits affine — charge 32 − v₂(C)</h3></div>
+    <div class="chips"><span class="chip price">31/30/29 vs 32</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">In <code>z = b + C mod 2³²</code> with C constant there is no carry into bit 0, so <code>z[0] = b[0] ⊕ C[0]</code> — affine. If C ≡ 2 (mod 4) the low <em>two</em> bits are affine; if C ≡ 4 (mod 8), the low three. Witness only the remaining high bits and start the affine carry chain there.</p>
+    <div class="math">odd constant       31 alloc / 31 constr
+C ≡ 2 (mod 4)      30 / 30
+C ≡ 4 (mod 8)      29 / 29
+general 2-operand  32 / 32
+
+SHA-256 chaining add against the IV: H1,H6,H7 odd → 31 each;
+H2 = 0x3c6ef372 and H3 = 0xa54ff53a are 2 mod 4 → 30 each;
+H5 = 0x9b05688c is 4 mod 8 → 29.  182 instead of 192, free.</div>
+    <p>Check the 2-adic valuation of <em>every</em> constant addend in the circuit — round constants, length words, IVs.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.4</span><h3>One-hot from a witnessed field index, via binomial moments</h3></div>
+    <div class="chips"><span class="chip price">508 vs ~520+decomposition</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">To prove a length-n flag vector is the indicator of a witnessed index L, do not decompose L and do not emit n equality gadgets. The moments <code>M_d = Σ_k F[k]·C(k,d)</code> are <em>free affine combinations</em>, because the binomials are compile-time constants. Assert Pascal's recurrence:</p>
+    <div class="math">(L − d)·M_d − (d+1)·M_{d+1} = 0        for d = 1 … n−2
+
+with M₀ = ΣF = 1 and M₁ = Σ k·F[k] = L, this forces M_d = C(L,d) for every d,
+which forces F to be one-hot at L.</div>
+    <p>At n = 256 that is 254 rank-1 rows — and <strong>the two normalisation equations cost zero</strong>, because only 254 flags are witnessed and the last two are <em>defined</em> to make them hold identically. Total 508 for a 256-way one-hot pinned to a field element. The flags are then reusable as free affine selectors everywhere downstream.</p>
+    <div class="fails"><span class="label">Don't confuse this with the other one-hot bound</span><p>The proved 2<sup>w</sup> − w − 1 lower bound is for building a one-hot from w <em>boolean bits</em>. This is the different — and cheaper — problem of pinning a one-hot to a <em>field element</em>.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.5</span><h3>Constant tables: the payload is free, and the one-hot is sub-linear</h3></div>
+    <div class="chips"><span class="chip price">2048 entries × 2×256-bit payload = ⟨225,225⟩</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede"><strong>Part A — the payload costs nothing.</strong> If the table entries are compile-time constants and <code>e</code> is a one-hot vector of variables, then <code>out = Σᵢ eᵢ·cᵢ</code> is affine: ⟨0,0⟩ per output column, <em>independent of payload width</em>. Only building <code>e</code> costs anything. A 2048-entry table with a two-coordinate 256-bit payload is priced entirely by its selector.</p>
+    <p><strong>Part B — a k×k one-hot needs only (k−1)² products.</strong> Given two one-hot vectors of length 4, the 16 outer-product cells need only the 3×3 sub-grid witnessed. The last column follows from the row identity <code>Σ_c cell(a,c) = P_a</code>, the last row from the column identity, and the corner from either — all <em>polynomial</em> identities, so no booleanity of the underlying bits is needed to derive them.</p>
+    <div class="math">nested one-hot construction:   4-bit → 9 products    6-bit → 45    7-bit → 63
+
+Contrast the VARIABLE-table case, where none of this applies:
+16 entries × 9 fields as a mux tree = ⟨122,122⟩.</div>
+    <div class="fails"><span class="label">The boundary</span><p>All of this is for <em>constant</em> data. A mux over variable data is ⟨size, size⟩ — one row per element, genuinely not free. See VI.4.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.6</span><h3>Orthogonal idempotents make products of table reads affine</h3></div>
+    <div class="chips"><span class="chip price">⟨257,257⟩ → ⟨225,225⟩ per window</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">For a one-hot <code>e</code> (so <code>e_a e_b = δ_ab e_a</code>) and two constant tables,</p>
+    <div class="math">(Σ_a e_a u_a) · (Σ_a e_a v_a)  =  Σ_a e_a (u_a v_a)</div>
+    <p>— <strong>affine in <code>e</code>, with compile-time coefficients.</strong> A quadratic form in table lookups is therefore free. Exploit it with the identity <code>(P₀+V₁)(P₁+V₀) = P₀P₁ + P₀V₀ + P₁V₁ + V₀V₁</code>: because branch indicators of the same one-hot are orthogonal, <code>P₀P₁ = 0</code>, and <code>V₀V₁</code> is the free affine correction. <strong>One row therefore pins two of the four outer selector terms.</strong></p>
+    <p>Everyone knows the affine-remainder trick — a 4-way select of variable values costs 3 products because the one-hot sums to 1. Getting to 2 requires seeing that products of <em>constant-table reads</em> collapse. Worth 672 score across 21 windows in one tree.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.7</span><h3>Make the recoding a re-indexing, not a circuit</h3></div>
+    <div class="chips"><span class="chip price">⟨0,0⟩</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Booth and NAF recoding are normally implemented as arithmetic on the scalar, costing rows per digit. Instead, <strong>choose the digit convention so the recoded digit is literally a bit of the input.</strong> With w-bit windows and digits <code>2·window + 1 − 2ʷ</code> — always odd, always signed — the recoded bit vector is just <code>bits[254−c]</code>, with a constant at the top position.</p>
+    <p>The conditional complement that implements the sign is absorbed into the selector's first product layer as <code>w[i] = XNOR(sign, bᵢ)</code>, which you were paying for anyway. Total cost of the recoding: zero.</p>
+    <p>Generalises to any windowed or signed decomposition of a witnessed integer. The move is to let the <em>convention</em> absorb the work rather than the circuit.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.8</span><h3>Prove a fact about your constant data to delete circuit logic</h3></div>
+    <div class="chips"><span class="chip price">deletes a whole borrow column</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Before adding witnesses, ask whether a compile-time invariant of your <em>precomputed tables</em> makes them unnecessary.</p>
+    <p>Worked instance: every entry in a fixed-base table satisfies <code>y mod 2⁶⁴ ≤ p mod 2⁶⁴</code>. Since <code>p = 2²⁵⁶ − 2³² − 977</code> has upper limbs all <code>2⁶⁴−1</code>, that single low-limb inequality forces <em>every</em> schoolbook borrow of <code>p − y</code> to vanish. Negation therefore becomes plain limbwise constant subtraction — no packed-borrow column, no witnessed bits, no booleanity rows.</p>
+    <p>The invariant is discharged once, at compile time, against data you generated yourself. The rival snapshot still carries the borrow bits.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.9</span><h3>Read the interface's assumptions before validating anything</h3></div>
+    <div class="chips"><span class="chip price">15,840 avoided</span><span class="chip">Universal habit</span><span class="chip proved">Measured</span></div>
+    <p class="lede">The least mathematical entry here and one of the most valuable. The challenge interface may already <em>give</em> you the well-formedness of public inputs as a hypothesis. If it does, every byte you range-check is score spent proving something you were handed.</p>
+    <p>In one tree the specification supplies "these inputs are octet strings" for free, so the circuit never range-checks a public input byte. The byte-unpacking and the entire PKCS#1 padding construction are certified at <code>Count.zero</code> — they emit no operations at all, because the padding is a compile-time constant vector combined affinely with the digest.</p>
+    <p>Cost of not reading it: 1,056 input bytes at ⟨7,8⟩ each is <strong>15,840 score</strong>, about 5% of that circuit, for nothing.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.10</span><h3>A gadget with constant arguments is not a cheaper gadget — it is no gadget</h3></div>
+    <div class="chips"><span class="chip price">⟨195,196⟩ → ⟨61,61⟩</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">In the first rounds of a hash, most of the state still equals the initialisation vector. <code>Ch(e,f,g)</code> with <code>f</code> and <code>g</code> constant is, per bit, either a constant or <code>eⱼ</code> or <code>1−eⱼ</code> — <strong>affine, hence free.</strong> Same for <code>Maj</code> with two constant arguments.</p>
+    <div class="math">round 1 of block 1:  no Ch gadget, no Maj gadget at all      ⟨130,132⟩
+round 0 of block 1:  everything constant except one word     ⟨61,61⟩
+a general round:                                             ⟨195,196⟩</div>
+    <p>Several constants can also be <em>folded together</em> at compile time — three constant addends become one — and subtracting a constant is free two's complement, <code>not(C) + 1</code>, with no borrow logic.</p>
+    <p><strong>The audit:</strong> walk the first and last rounds of any iterated construction and ask, per gadget, how many of its arguments are compile-time known. The answer is rarely zero, and every constant argument collapses part of the truth table into affine wiring.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">III.11</span><h3>Invert the certificate to move the awkward operand into the target</h3></div>
+    <div class="chips"><span class="chip price">−75 alloc / −77 constr per site</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">You want <code>r = c·a mod p</code> with c a compile-time constant, and you want to run the certificate in a cheaper limb view than the one <code>a</code> arrives in. Naively you must re-limb <code>a</code>, which costs a normalisation. Don't — <strong>certify the equation the other way round.</strong></p>
+    <p>c is invertible mod p, so <code>r = c·a</code> is equivalent to <code>c⁻¹·r = a</code>. In that form the two multiplicands are the freshly witnessed remainder (whose limbs come free out of the bytes its canonicality check already allocates) and the compile-time constant <code>c⁻¹</code> — while <code>a</code> appears <em>only as the certificate target</em>, an affine addend, cheap in any limb view.</p>
+    <p>This is the consumer-functional law used as a design move rather than an audit: targets are read as affine addends and are cheap in any view; multiplicands need full rank. An inversion that swaps which value sits where can pay for itself outright.</p>
+    <p><strong>Sweep for it:</strong> any fixed multiplier — endomorphism constants, curve constants, Montgomery or Barrett factors, round constants — whose operand arrives in the wrong view.</p>
+  </article>
+</section>
+
+<!-- =========================== PART IV =========================== -->
+<section class="part" id="iv">
+  <div class="part-head">
+    <span class="part-num">Part IV</span>
+    <h2>Bound arithmetic</h2>
+    <p>In any non-native circuit, a quiet fraction of the score is decided not by the algorithm but by the integers you wrote in the parameter file. This is the least glamorous part of the subject and among the most reliably profitable.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.1</span><h3>Pseudo-Mersenne folding collapses the quotient to a single wire</h3></div>
+    <div class="chips"><span class="chip price">176/178 vs 464/468</span><span class="chip">Structured modulus</span><span class="chip proved">Measured</span></div>
+    <p class="lede">The single biggest lever in non-native arithmetic. For <code>p = 2²⁵⁶ − c</code> with c small, <code>2²⁵⁶ ≡ c (mod p)</code>. Fold the high convolution positions back onto the low ones by <code>d_k = c_k + c·c_{k+m}</code> — <strong>a free affine recombination</strong>, because c is a compile-time constant.</p>
+    <p>This shrinks the certified value from ~2⁵¹⁸ to ~2³²³, so the quotient becomes a <em>single field element</em> instead of a multi-limb big integer needing its own 256-bit normalisation. And because each limb of p is a constant, the whole right-hand side <code>q·p_k + t_k</code> is affine in q, so the closing equation is one affine row.</p>
+    <p>The textbook non-native modmul witnesses q as a full-width integer and pays a range check plus a second convolution <code>q ⊛ p</code>. <strong>Folding first makes both disappear.</strong></p>
+    <div class="fails"><span class="label">Where it stops</span><p>Requires a pseudo-Mersenne or low-Hamming-weight modulus. For a generic modulus — an RSA modulus, say — the quotient is irreducibly wide, and the score goes back to being dominated by certifying its bits.</p></div>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.2</span><h3>Choose the limb base so the fold constant is limb-aligned</h3></div>
+    <div class="chips"><span class="chip price">176/178 → 97/99</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">The fold constant enters the carry width <em>linearly</em>, so its representation in your chosen base is a first-class cost decision.</p>
+    <div class="math">c = 2³² + 977
+
+in base 2⁶⁴:   one 33-bit digit    → inflates a folded cell by 2³³
+in base 2³²:   digits 977 and 1    → inflates a folded cell by only 979
+
+The 15-cell convolution costs 8 rows more than the 7-cell one,
+but the quotient drops 69 → 38 bits and the carry 101 → 45.</div>
+    <p><strong>And the re-limbing is free.</strong> Splitting a 64-bit limb costs exactly what normalising it already cost — witness the low half, range-check it, define the high half affinely, range-check that — while additionally handing you the narrower limbs. Better still, a value that already went through a byte-serialising validity check hands you its 32-bit limbs as a pure affine recombination of four bytes, at zero cost.</p>
+    <p>A related freebie: you need not re-limb <em>both</em> operands. Place a 64-bit operand's limbs at the <em>even</em> 32-bit positions with the literal zero expression at odd positions. Half the positions are structurally zero, so the cap analysis charges the smaller bound — mixed-base multiplication with no conversion at all.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.3</span><h3>Balanced (signed) limbs buy a bit of carry <em>and</em> a bit of quotient</h3></div>
+    <div class="chips"><span class="chip price">−20 per reduction</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">Subtract a compile-time shift from every limb — affine, hence free — so digits carry magnitude ≈2<sup>B−1</sup> instead of 2<sup>B</sup>−1. Each convolution coefficient loses about two bits, so each carry width loses one.</p>
+    <div class="math">unsigned first square:   Σ Wf = 1170,  peak width 33
+balanced middle squares: Σ Wf = 1152,  peak width 32      → −18 per squaring</div>
+    <p><strong>The second effect is the one that is easy to miss.</strong> Storing the residue in a representative interval <em>centred on zero</em> rather than [0,N) tightens the bound on the next square, which drops the quotient's top limb by a bit — another −2 per squaring, and the only reason that narrower quotient is sound at all.</p>
+    <p>Design note worth stealing: define the shift once in the <em>finest</em> radix and derive every other view from it. Here one byte-level constant is read at three different limb widths, which is what lets the circuit change radix mid-computation for free. Its digits are genuinely mixed-radix — the correct cap at one width is 8,421,504, where the tempting 2<sup>23</sup> is strictly smaller and <em>unsound</em>, and 2<sup>24</sup> wastes a full bit.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.4</span><h3>Exact mixed-radix bounds, never rounded powers of two</h3></div>
+    <div class="chips"><span class="chip price">a record, on four constants</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A bound written as 2<sup>a</sup>, or as a sum of two powers of two, is an <em>over-estimate</em> of a quantity whose true value is a small integer multiple of a power of two. Carry width is <code>⌈log₂(OFF_L + OFF_R)⌉</code>, so rounding each addend up can push the ceiling across an integer boundary — and a bit is 2 score at <em>every site sharing the parameter</em>.</p>
+    <div class="math">rounded:  nfL = 2⁷⁷            nfR = 2⁷⁰            offL = 2⁴⁵ + 2¹⁴     offR = 2³⁹
+exact:    nfL = 979·2⁶⁷+3·2³²  nfR = 2⁶⁹+3·2⁶⁴    offL = 979·2³⁵+8192  offR = 2³⁷+3·2³²+256
+
+carry width 46 → 45.  That single bit propagated as ⟨−1,−1⟩ through every gadget
+sharing the instance, for −92 at the top and a leaderboard record.</div>
+    <p>Note the shapes: <strong>979 = 977 + 2</strong>, the Solinas constant plus the borrow-free digit cap; <strong>3</strong> = the digit cap. The constants are structured, and the structure is what the rounding destroys.</p>
+    <p>The check is cheap and mechanical: for every bound constant in every parameter file, write the true bound as an exact integer expression, recompute the ceiling, and see whether the width falls. Any file whose entries are bare powers of two is a candidate.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.5</span><h3>Triangular term counts — the top cell has exactly one term</h3></div>
+    <div class="chips"><span class="chip price">−152, −124</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured</span></div>
+    <p class="lede">A convolution's per-position term count is 1, 2, …, n, …, 2, 1 — not a uniform maximum. Declaring the bound as a constant function of position at the maximum cell count over-charges every position but the middle, and the width tables should be visibly tent-shaped.</p>
+    <p>The sharpest consequence: <strong>the top cell has exactly one term</strong>, and that is where the quotient width gets decided. Two separate records came from noticing this on a single position.</p>
+    <p><strong>The generalisation is two levers that only work together.</strong> Lever A: propagate the triangular profile through the fold, which turns a naive uniform cap into a steeply decaying digit profile. Lever B: with G groups, exactly one carry is materialised and only its width is billed — and that width is dominated by the <em>top cell of the paid group</em>, since <code>OFF_L(0) ≈ Nf(gf₀ − 1)/2ᴮ</code>. So widen group 0 until its top position sits at the <em>small</em> end of the decaying profile.</p>
+    <div class="math">triangular profile through the fold:
+  d = [6840, 5871, 4894, 3917, 2940, 1963, 986, 9]     (not a uniform 979)
+
+regrouping [2,1,5] → [6,1,1] makes OFF_L(0) read d₅ = 1963, not d₁ = 5871
+
+  1963·2³⁴ ≈ 3.372·10¹³  →  offL = 33724083219955
+  offR ≈ 5.6·10¹¹,  sum ≈ 3.43·10¹³  &lt;  2⁴⁵ = 3.52·10¹³   →  Wf = 45
+  under [2,1,5] the sum is ≈ 1.01·10¹⁴                     →  Wf = 47
+
+47 → 45 bits = ⟨2,2⟩ off every certificate sharing the instance.</div>
+    <p><strong>Neither lever works alone.</strong> With a constant cap, regrouping changes nothing at all. That is why this stayed unexploited for so long: each half, tried by itself, measures as worth zero. The partition itself is worth choosing by dynamic programming rather than by hand.</p>
+    <p>Exact cost of one certificate, m limbs and one paid carry: <code>⟨(2m−1) + 1 + (qBits−1) + (Wf−1), (2m−1) + qBits + Wf + 1⟩</code>. At m=8, qBits=38, Wf=45 that is ⟨97,99⟩.</p>
+    <p><strong>And the group schedule itself should follow the tent.</strong> Group width is a per-position optimisation against the local bound, not a global constant: use wide groups where the tent is thin at the edges and narrow ones where the coefficients peak. One graduated schedule runs 9, then 13, 12, 13, 6, 1 across 767 coefficient positions — which is what holds its total carry width to 2,783.</p>
+    <p>The tents also <em>chain</em>: a square's per-position bound should feed the next product's convolution directly rather than being flattened to a scalar maximum first. That chaining is where most of the width comes off.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.6</span><h3>The residue-ring multiply — the fold polynomial is yours to choose</h3></div>
+    <div class="chips"><span class="chip price">⟨4,4⟩ vs ⟨7,7⟩</span><span class="chip">Non-native arithmetic</span><span class="chip proved">Measured + proved optimal</span></div>
+    <p class="lede">When a circuit multiplies limb vectors and immediately folds, it never consumes the full 2m−1 convolution — it consumes only <code>z mod (Xᵐ − cF)</code>. Multiplication in the residue ring has bilinear rank <code>Σᵢ (2·deg fᵢ − 1)</code> over the irreducible factors, which beats 2m−1 <strong>whenever the modulus splits</strong>.</p>
+    <div class="math">The gadget: witness the m folded coefficients F, and for each root ρ emit ONE row
+
+    (Σ aᵢ ρⁱ) · (Σ bᵢ ρⁱ) = Σ_k F_k ρᵏ
+
+one product per row, every coefficient a compile-time constant hence affine-free.
+Soundness is Vandermonde uniqueness: F − F_true has degree &lt; m and m roots.</div>
+    <p>Measured: cF = 2³² + 977 is a fourth power mod the BN254 scalar field, so <code>X⁴ − cF</code> splits completely and the rank is 4 — ⟨4,4⟩ per product against ⟨7,7⟩.</p>
+    <p><strong>General lesson: before pricing a limb multiply, ask what the consumer actually reads.</strong> If it reads a residue, the fold polynomial is a free design choice and you should choose it to split. But note the counterweight — splitting most is not the same as being best, because coefficient <em>size</em> is priced too; at one base there were two admissible degree-8 moduli and the smaller-coefficient one won despite splitting less.</p>
+  </article>
+  <article class="entry">
+    <div class="entry-head"><span class="sig">IV.7</span><h3>Fold an intermediate into a consumer that has spare arity</h3></div>
+    <div class="chips"><span class="chip price">15,360 — the entire #1 vs #2 gap</span><span class="chip">Universal</span><span class="chip proved">Measured</span></div>
+    <p class="lede">If your XOR gadget takes three operands per row and a consumer is currently using two, an intermediate that is a pure affine combination of things that consumer already reads is <strong>free to fold in</strong>.</p>
+    <p>In Keccak's θ the value <code>D[x] = C[x−1] ⊕ ROT(C[x+1],1)</code> is never materialised: it is folded into the very XOR3 that already had to consume <code>A[x,y]</code>. Rotation is free wiring, so the rotated operand costs nothing to supply.</p>
+    <div class="math">D materialised (rival):  ThetaD ⟨320,320⟩ + ThetaXor ⟨1600,1600⟩  = ⟨2560,2560⟩/round
+D fused (record):        ThetaC ⟨640,640⟩ + ThetaXor ⟨1600,1600⟩   = ⟨2240,2240⟩/round
+
+Both trees have identical XOR3 and χ rows. The fusion is the ONLY difference,
+and it is the whole 15,360-point gap between first and second place.</div>
+    <p><strong>The counting rule:</strong> fold when the consumer's available arity exceeds the arity it currently uses. This is the cheapest kind of win to find and the easiest to leave on the table, because the intermediate usually has a name in the specification and naming a thing invites materialising it.</p>
+  </article>
+
+</section>
+
+<!-- =========================== PART V =========================== -->
+<section class="part" id="v">
+  <div class="part-head">
+    <span class="part-num">Part V</span>
+    <h2>Knowing when to stop</h2>
+    <p>Proving a gadget is at its floor is worth as much as another optimization, because it redirects every future hour. These are the only three tools that work, and each has a sharp edge.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">V.1</span><h3>Krull codimension — you can only shave rows by shaving witnesses</h3></div>
+    <div class="chips"><span class="chip">Universal</span><span class="chip proved">Proved</span></div>
+    <p class="lede">Each row is one hypersurface, so by Krull's height theorem every component of the solution variety has codimension ≤ k. If soundness demands the witness be determined by the inputs, then k ≥ m − dim V, and <strong>score ≥ 2m − dim V</strong>.</p>
+    <p>The strategic consequence is the single most useful sentence in this collection: <strong>the triangular pattern — each witness defined by exactly one row — already meets this with equality.</strong> You cannot shave rows by cleverness in the constraint layer alone. You can only shave rows by shaving witnesses.</p>
+    <p>Conversely, k &gt; m − dim V <em>proves</em> redundancy exists.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">V.2</span><h3>Bezout degree — and the bound that does <em>not</em> hold over F<sub>p</sub></h3></div>
+    <div class="chips"><span class="chip">Universal</span><span class="chip refuted">Carries a trap</span></div>
+    <p class="lede">Each row at most doubles degree, so k ≥ log₂ deg(graph of the certified relation). Sanity checks: <code>y = x⁵</code> needs k ≥ 3, so a 3-row S-box is optimal and no nondeterministic trick shaves it; <code>y = 1/x</code> has graph <code>xy = 1</code> of degree 2, so k ≥ 1 — correctly <em>not</em> penalising the witnessed-inverse trick.</p>
+    <div class="fails"><span class="label">The trap</span><p><strong>MC ≥ deg − 1 does not hold over F<sub>p</sub>.</strong> One row doubles multilinear degree, so you only get rows ≥ ⌈log₂ deg⌉. Do not use the GF(2) degree bound to convince yourself an F<sub>p</sub> gadget is optimal — the zero-test trick, a degree-n function in two rows, is exactly the loophole.</p></div>
+    <p>A second trap, learned expensively: the Bezout row floor is valid only when the accepted set is finite <em>in the ambient space you are arguing in</em>. When a 256-bit value's acceptor lives in F<sub>r</sub><sup>8</sup> rather than F<sub>r</sub><sup>1</sup>, a positive-dimensional component escapes Bezout entirely and the honest floor drops by 4×. Check the ambient dimension before quoting a floor.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">V.3</span><h3>Counting over F<sub>p</sub> — the bound that survives nondeterminism</h3></div>
+    <div class="chips"><span class="chip">Universal</span><span class="chip proved">Proved</span></div>
+    <p class="lede">A k-row, m-wire system is described by 3k(m+1) field elements, so with s = k+m, <code>s ≥ 2√(log_p|F| / 3) − 1</code>. This gives s ≥ 295 for an arbitrary 16-bit table — <strong>a rigorous proof that lookup-free table emulation is expensive</strong>, and the reason the √N law of I.7 is the right tool rather than a workaround.</p>
+    <div class="fails"><span class="label">Honest limit on all three tools</span><p>They are geometric: they constrain the variety over the algebraic closure, while soundness concerns only the F<sub>p</sub>-points. By Lang–Weil they are effectively unconditional for gadgets under about 63 rows, and genuinely open above that. And there is no theory beyond them — our cost measure is nondeterministic nonscalar complexity, for which <em>no superlinear lower bound is known on any explicit function</em>, and the commutative-algebra invariant that would settle it (arithmetical rank) is provably degree-blind. Treat every "proved optimal" as "not beaten yet".</p></div>
+  </article>
+</section>
+
+<!-- =========================== PART VI =========================== -->
+<section class="part" id="vi">
+  <div class="part-head">
+    <span class="part-num">Part VI</span>
+    <h2>Traps</h2>
+    <p>Each of these cost real submissions. They are included because the failure mode is invisible from inside the design.</p>
+  </div>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">VI.1</span><h3>The exported cost must be definitionally equal to the internal ledger</h3></div>
+    <div class="chips"><span class="chip refuted">Cost two submissions</span></div>
+    <p class="lede">If the top-level cost theorem is <code>fun input =&gt; Comb.costIs_main input</code>, the exported literals must be <em>defeq</em> to whatever the internal constant evaluates to. Shrink the circuit, update the internal constant, forget the exported one, and the term no longer has its ascribed type — elaboration fails outright.</p>
+    <p>Twice this hid a finished improvement. Once a complete residue-ring multiply shipped with the internal ledger correctly advanced and the exported literals still holding the value from a small unrelated change: hard type error, status <em>failed</em>, and the improvement invisible. Once an improvement was proved in a module nothing imported, so nineteen consecutive submissions would have scored the old number even had they built.</p>
+    <p><strong>The rule:</strong> after any cost change, re-derive the exported literals <em>from</em> the internal constant rather than editing them by hand, and check every intermediate aggregate on the path up. <strong>The diagnostic:</strong> extract every cost constant from both trees and diff; if the top-level pair differs from its container's pair, that is the bug.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">VI.2</span><h3>F<sub>p</sub> versus GF(2) is a packing rule, not a slogan</h3></div>
+    <div class="chips"><span class="chip">Universal</span><span class="chip proved">Quantified</span></div>
+    <p class="lede">F<sub>p</sub> wins on <em>wide fan-in conjunctions</em>: AND over n bits is <code>s = Σxᵢ − n</code> (free, affine) followed by a two-row zero-test — two rows <em>independent of n</em>, against n−1 AND gates in GF(2), which is tight there. GF(2) wins on XOR, free there and a row here.</p>
+    <p>That single asymmetry is why a field-based SHA-256 needs ~30,952 nonlinear constraints while the boolean circuit needs 22,573 AND gates.</p>
+    <p><strong>Practical rule:</strong> keep values integer-packed so XOR chains become free sums, and bit-split only when a genuinely bitwise operation forces it.</p>
+    <p><strong>Ceiling on the whole question:</strong> the counting bound over a 254-bit field is weaker than the GF(2) bound by a factor ~14, so information-theoretically the field can buy at most ~14–16× over the best boolean circuit. Published AND-gate records are a realistic if modestly loose guide to what is reachable.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">VI.3</span><h3>A pattern that has paid twice is a reason to check the next instance, never to assume it</h3></div>
+    <div class="chips"><span class="chip refuted">Cost a work slot</span></div>
+    <p class="lede">After the exact-bounds lever (IV.1) paid twice, a sweep was queued over "the remaining instances" on the assumption that they were still set from the uniform bound. They were not — two of them were already exactly triangular, and the queued item was worth zero.</p>
+    <p>The same shape recurs with proxies. A lead was tracked by watching a <em>step total</em> rather than the site it was actually about; the first unrelated change to that step reported the lead as landed. <strong>A proxy witness reports the tree moving, not the lead landing.</strong></p>
+    <p>Both are the same error: substituting an inference for a sighting. In a codebase being changed concurrently by several agents, the only durable statement is one anchored to a constant you have just read.</p>
+  </article>
+  <article class="entry">
+    <div class="entry-head"><span class="sig">VI.4</span><h3>False friends — things that look like tricks and are not</h3></div>
+    <div class="chips"><span class="chip refuted">Priced at zero</span></div>
+    <p class="lede"><strong>A mux over variable data is not free.</strong> It is ⟨size, size⟩ — one row per element. A 4-limb point mux is ⟨4,4⟩; a full accumulator-state mux is ⟨16,16⟩. Only <em>constant-table</em> selection is free (III.5), and conflating the two will make you budget a design that cannot be built.</p>
+    <p><strong>Splitting limbs "for free" is a re-accounting, not a saving.</strong> It is free only because the normalisation it replaces already cost the same. The actual saving is downstream, in the narrower quotient and carry (IV.2) — quote it there, not twice.</p>
+    <p><strong>Merging duplicated one-hot decodes is ordinary common-subexpression elimination.</strong> Real, worth a few units once, and not a technique.</p>
+    <p><strong>The 2k−1-point multiply is textbook Toom-style evaluation.</strong> What is R1CS-specific — and the only part worth writing down — is that the evaluation points being <em>compile-time constants</em> is what keeps each row rank-1 and therefore legal.</p>
+  </article>
+
+  <article class="entry">
+    <div class="entry-head"><span class="sig">VI.5</span><h3>Half of this book is void over GF(2) — the non-transfer list</h3></div>
+    <div class="chips"><span class="chip refuted">Model boundary</span></div>
+    <p class="lede">The same competition runs some challenges over a canonical GF(2) model, where the field is F₂ and every row must literally be <code>var k − A·B</code>. Techniques do not port, and knowing which fail is what stops a slot being spent proving something impossible.</p>
+    <div class="math">                                    prime R1CS              canonical GF(2)
+single-row non-vanishing multiplier ⟨1,1⟩ per bit           IMPOSSIBLE — over F₂ the only
+                                                            nonvanishing affine multiplier is 1
+λ-packing                           halves Ch/Maj/XOR2      IMPOSSIBLE — no constants but 0,1
+booleanity rows                     needed unless implied   never — every element IS a bit
+bit decomposition                   a real cost to defer    meaningless — words ARE bit vectors
+XOR, rotations, XOR-with-constant   free (affine)           free (F₂-linear)  ← the one that ports
+θ, ρ, π, ι in Keccak                θ costs 2,240/round     FREE
+a pure affine assertion             1 row, 0 witnesses      not expressible as a useful row</div>
+    <p>The inversion that <em>does</em> work there is worth knowing on its own terms: where the prime model says "witness the value and pin it", the canonical model says <strong>witness the product and derive the value affinely</strong> — pinning a carry directly is a legal R1CS row but an illegal canonical one, so you witness <code>dᵢ = (xᵢ+cᵢ)(yᵢ+cᵢ)</code> and read the carry back as a free prefix sum.</p>
+    <p>Two structural facts from that side that are genuinely instructive: a full adder costs exactly one AND because <code>maj(x,y,z) = (x+z)(y+z) + z</code>, and <strong>a half adder consuming a constant bit is free</strong>, because both its sum and its carry are affine over F₂ — so it buys you a row exactly once, at whichever column you choose to spend it.</p>
+  </article>
+
+</section>
+
+<footer class="colophon">
+  <p><strong>On evidence grades.</strong> <em>Measured</em> means the constant was read out of a tree that built and verified. <em>Proved</em> means an argument, checked. <em>Estimated</em> means a model, and is marked as such — the distinction between these three is the most valuable thing in this collection, and collapsing them is how a work queue fills with items worth nothing.</p>
+  <p>Compiled from a running optimization loop against live competitors under the cost model <code>allocations + constraints</code>. Prices are the deltas actually observed on submission, not projections.</p>
+</footer>
+
+</div>
