@@ -190,13 +190,19 @@ def main():
         tried = 0
         drops = list(range(len(std)))
         random.Random(0).shuffle(drops)
-        while time.time() < t_end and tried < len(drops):
-            d = drops[tried]
+        nh = len(std) - 1
+        # splits control how many helpers may consume already-produced targets
+        splits = sorted({nh, nh - 1, nh - 2, nh // 2, max(1, nh - 4)})
+        rep = 0
+        while time.time() < t_end:
+            d = drops[tried % len(drops)]
+            sp = splits[rep % len(splits)]
             tried += 1
-            s, tr = local_search(std, d, natoms, targets,
-                                 nstage_split=len(std) - 1,
+            if tried % len(drops) == 0:
+                rep += 1
+            s, tr = local_search(std, d, natoms, targets, nstage_split=sp,
                                  iters=int(os.environ.get("REPAIR_ITERS", 3000)),
-                                 seed=1234 + d)
+                                 seed=1234 + 97 * d + 7919 * rep)
             if bestall is None or s < bestall[0]:
                 bestall = (s, d, tr)
             if s == 0:

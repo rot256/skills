@@ -727,14 +727,35 @@ def main():
     print("-" * 74)
     print("theta score = 153600 + 48*h =", 153600 + 48 * len(best_gates))
 
+    # --- reconciliation with the live challenge's cost model -----------------
+    # The challenge is BIT-LEVEL (1600 state bits), and its h counts HELPER
+    # gates only: the 1600 target gates are already paid for inside the 153600
+    # base (see prompts_small/keccak-f1600.md).  A lane-uniform schedule with
+    # `a` auxiliary lane-gates and 25 output lane-gates therefore costs
+    # h = 64*a.  Our 35 = 10 aux + 25 outputs  ->  h = 640, i.e. EXACTLY the
+    # standing record 184320.  See theta_bits.py for the bit-level model and
+    # theta_repair.py for the search that tried to get below it.
+    n_aux = len(best_gates) - 25
+    h_bits = 64 * n_aux
+    print("bit-level reconciliation: %d aux lane-gates x 64 = h = %d helpers, "
+          "score %d" % (n_aux, h_bits, 153600 + 48 * h_bits))
+
     out = {
-        "h": len(best_gates),
+        "h": h_bits,
+        "h_lane_gates": len(best_gates),
+        "aux_lane_gates": n_aux,
         "method": best_method,
         "baseline_h": baseline_h,
         "gates": [list(g) for g in best_gates],
         "outputs": {"A'[%d,%d]" % k: v for k, v in best_names.items()},
         "verified": bool(okf),
-        "score": 153600 + 48 * len(best_gates),
+        "score": 153600 + 48 * h_bits,
+        "beats_record": (h_bits < 640),
+        "note": ("Lane-level SLP optimum found is 35 Xor3Lane gates = 10 "
+                 "auxiliary + 25 outputs. In the live challenge's bit-level "
+                 "cost model the 1600 output gates sit in the 153600 base and "
+                 "h counts helpers only, so this is h = 10*64 = 640: it TIES "
+                 "the standing record and does not beat it."),
     }
     with open(os.path.join(here, "theta_slp_result.json"), "w") as f:
         json.dump(out, f, indent=1)

@@ -1,0 +1,15 @@
+==========================================================================
+step 1: model check against reference Keccak theta
+  linear-algebra model reproduces theta on 300 random states: True
+  shifts appearing in the 25 targets: [0, 1]
+  => targets live in M = GF(2)^25 (+) s.GF(2)^25, closure confirmed
+  target atom-weights: [11]
+  D[x] atom-weights  : [10]
+==========================================================================
+step 2: textbook baseline
+  h = 40  verified: True ok
+==========================================================================
+step 4(b): absorb D into the output gate
+  h = 35  verified: True ok
+==========================================================================
+step 3: Boyar-Peralta, width-3 gates, randomised restarts

@@ -1,0 +1,8 @@
+======================================================================
+analogue ncols=3 w=1 : 15 atoms, 15 targets, 3 nodes, node-graph cycles=[3]
+  standard construction h=6 -> unresolved=0 (FEASIBLE)
+  h=5 (one helper deleted): tried 49 deletions, best unresolved=0 <-- REPAIRED, RECORD BEATEN
+  wrote repair_3_1.json
+======================================================================
+analogue ncols=5 w=1 : 25 atoms, 25 targets, 5 nodes, node-graph cycles=[5]
+  standard construction h=10 -> unresolved=0 (FEASIBLE)
