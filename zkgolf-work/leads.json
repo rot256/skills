@@ -88,14 +88,14 @@
     {
       "id": "vb-fold64-residue",
       "slug": "secp256k1-scalar-mul",
-      "price": 192,
-      "summary": "The last two un-swept fold bound constants, both still at B=64: wfFold = 100 (ParamsFold.lean) and qBitsFoldT = 69 (ParamsFoldT.lean). Sweeping to 99 and 68 is about -46 and -146.",
+      "price": 146,
+      "summary": "HALF LANDED, HALF OPEN. wfFold is done; qBitsFoldT is still 69 and sweeping it to 68 is about -146 over 73 instances.",
       "source": "re-price after the 32-bit siblings landed in the 306,680 record",
       "witness": {
-        "file": "ParamsFold.lean",
-        "pattern": "def wfFold .* := 100"
+        "file": "ParamsFoldT.lean",
+        "pattern": "def qBitsFoldT : . := 69"
       },
-      "note": "CHECK, DO NOT ASSUME -- this family has now paid four times (ParamsFold32T, ParamsFold32, ParamsFold32M, ParamsFold32N) and the last time I queued 'sweep the remaining instances' on that momentum the targets turned out to be already exact and the item was worth zero. ParamsFold at B=64 is FIXED at gf = [2,1,1] -- gf_0 > 2 breaks 2^Wf * 2^192 < p -- so the regrouping lever is unavailable here and only the exact-bounds lever (write the true bound as a small multiple of a power of two, recompute ceil(log2)) can move these. Verify the true bounds before spending the slot."
+      "note": "THE LANDED HALF DEMONSTRATES THE MECHANISM, SO COPY IT RATHER THAN RE-DERIVING: wfFold went from a CONSTANT 100 to a POSITION-DEPENDENT `if k = 0 then 99 else 100`. That is the position-dependent-bound lever, and it works because ONLY Wf(0) IS BILLED under a one-paid-carry group schedule -- so narrowing position 0 alone captures the whole win and the other positions can stay loose. Apply the same shape to the quotient: write the true bound at the deciding position as an exact integer expression (small multiple of a power of two, summed), recompute ceil(log2(...)), and see whether 69 falls to 68. CHECK, DO NOT ASSUME -- this family has now paid five times and the one time I queued a sweep on that momentum the targets were already exact and the item was worth zero. ParamsFold at B=64 is FIXED at gf = [2,1,1] (gf_0 > 2 breaks 2^Wf * 2^192 < p), so the regrouping lever is unavailable here and only the exact-bounds lever can move it."
     }
   ]
 }

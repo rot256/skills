@@ -237,7 +237,7 @@ WORKQUEUE={
    "SLOT ON WINDOW WIDTH ALONE — the one time to revisit it is INSIDE a job that also collapses the per-addition "
    "cost, since the optimum trades select cost against ADDITION cost."),
  ]),
- "secp256k1-scalar-mul": (305390, None, [
+ "secp256k1-scalar-mul": (305248, None, [
   ("33000 to 49000 — THE ONLY ITEM AIMED AT WHERE THE SCORE ACTUALLY IS","REWRITE THE EXCEPTION DETECTOR SO THE STEP "
    "STOPS MATERIALISING 256-BIT VALUES. MEASURE FIRST, THEN BELIEVE THIS: one glvStep costs 4,369 (<2178,2191>, GLVStepCostCW.lean:18), of which FIVE "
    "256-BIT RANGE CHECKS (Normalize32 504, ValidP 525, Normalize32 504, ValidP 525, ValidP 525) are 2,583 — 59% of "
