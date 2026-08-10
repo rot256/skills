@@ -24,7 +24,7 @@ IDEAS={
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (49218, 49536, [
   ("survival, not score — read this before you optimise anything here","ELABORATION TIME IS A FIRST-CLASS COST ON "
-   "THIS SLUG AND YOU CAN LOSE A RECORD TO IT. All three verifier timeouts in the loop's entire history are on "
+   "THIS SLUG AND IT IS NOW BLOCKING THE NEXT RECORD. THREE INDEPENDENT TREES HAVE REACHED EXACTLY 47,417 AND ALL THREE FAILED — two verifier timeouts and one clean failure — so whatever takes this tree from 47,437 to 47,417 pushes it past what the verifier will elaborate. DO NOT AIM AT THAT DESIGN AGAIN. Either reach a lower score by a structurally different route, or spend this slot BUYING ELABORATION HEADROOM FIRST: mark the heavy definitions irreducible — cost constants, params tables, and any def whose body is a large literal vector — of which only 48 of 202 solution files do so today. A reduction that cannot be verified banks nothing and burns the slot. All three verifier timeouts in the loop's entire history are on "
    "THIS challenge — 50,379, then 49,620, then 47,417 — none on any other slug across 81 submissions. They are "
    "getting WORSE as the score improves, which is exactly what you expect if the moves that shrink the circuit "
    "(folded certificates, wider convolutions, position-dependent bound tables) are also the ones that make proofs "
