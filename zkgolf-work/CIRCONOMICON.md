@@ -1227,11 +1227,35 @@ determined by the inputs, then $k \geq m - \dim V$, and
 
 $$\text{score} \geq 2m - \dim V$$
 
-The strategic consequence is the single most useful sentence in this collection: **the
-triangular pattern — each witness defined by exactly one row — already meets this with
-equality.** You cannot shave rows by cleverness in the constraint layer alone. You can
-only shave rows by shaving witnesses. Conversely, $k > m - \dim V$ *proves* redundancy
-exists.
+> **Corrected, and the correction matters.** The argument above assumes every witness is
+> uniquely pinned. Soundness only requires the *output* to be pinned, so intermediates may
+> have positive-dimensional fibres. With $d$ the generic fibre dimension the honest bound is
+> $$k \geq m - d, \qquad \text{score} \geq 2m - d$$
+> and since $0 \leq d \leq m$ this bottoms out at $\text{score} \geq m$, where $m$ is a
+> *design parameter*. **As a floor on a relation, Krull says nothing.** Treat it as a
+> per-circuit bookkeeping identity, never as a floor.
+
+**The strategic consequence survives, for a better reason.** A free dimension is worth 1 to
+keep (drop the row, keep the allocation) but **2 to remove** — solve an affine functional
+for one wire and substitute, which is free, and shrinking a fibre cannot break
+output-constancy so soundness is automatic. So $d > 0$ is not an opportunity: **it is a
+defect report naming $d$ deletable allocations.** Verified on 33,288 random systems with
+zero counterexamples.
+
+The dichotomy is exhaustive: either the freedom is *unused*, and it normalises away; or it
+is *used*, and the fibre was not positive-dimensional in that direction. There is no third
+case. The deepest reason is Lang–Weil: a positive-dimensional fibre over $\mathbb{F}_r$ is
+automatically *nonempty*, so it carries no soundness content at all — the rows you would
+"save" were never doing soundness work. **Dimension is soundness-inert over a finite field.**
+
+So: you still cannot shave rows by cleverness in the constraint layer, only by shaving
+witnesses. Conversely $k > m - \dim V$ *proves* redundancy exists.
+
+**The auditor this yields.** $d$ is the corank of the Jacobian $\partial(\text{rows})/\partial w$
+at a generic honest witness — a mechanical check naming exactly how many allocations are
+free to delete. The compile-time companion is specific to R1CS: the degree-2 part of every
+row is $(a_w\!\cdot\!w)(b_w\!\cdot\!w)$ with $a_w, b_w$ *compile-time constants*, so every
+fibre's asymptotic cone lies in one fixed variety known before running anything.
 
 ## V.2 Bezout degree — and the bound that does *not* hold over $\mathbb{F}_p$
 
@@ -1265,6 +1289,19 @@ $$s \geq 2\sqrt{\frac{\log_p |F|}{3}} - 1$$
 This gives $s \geq 295$ for an arbitrary 16-bit table — **a rigorous proof that
 lookup-free table emulation is expensive**, and the reason the $\sqrt N$ law of I.11 is
 the right tool rather than a workaround.
+
+> **Which of these survive nondeterminism.** Only V.1 was cracked, and it was the weakest.
+> The Bezout bound *survives projection* — linear projection does not raise degree, so
+> $\deg \overline{\pi(V)} \leq \deg V \leq 2^k$ and the bound holds for arbitrary fibres. The
+> counting bound is manifestly nondeterminism-proof, since it counts circuits rather than
+> varieties. **The money is in degree, not dimension.**
+
+> **A ceiling on the whole hypersurface-counting programme.** Storch (1972) and
+> Eisenbud–Evans (1973): every algebraic set in $\mathbb{A}^N$ is cut out set-theoretically
+> by $N$ equations. So *any* argument that merely counts hypersurfaces can never prove a
+> relation-level floor above $N = \text{inputs} + \text{outputs}$. Combined with arithmetical
+> rank being degree-blind, that programme was capped before it began — which is why the
+> rank-1, degree-2 *shape* is the only thing left to exploit.
 
 > **Honest limit on all three tools.** They are geometric: they constrain the variety
 > over the algebraic closure, while soundness concerns only the $\mathbb{F}_p$-points. By
