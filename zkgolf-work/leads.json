@@ -74,18 +74,6 @@
       "note": "NUMBER CORRECTED: this entry previously said the gap was 2,390, against a 'live seed' of 46,828. That 46,828 was read from out/secp256k1-fixed-base-scalar-mul/, which is per-job scratch -- it was one job's candidate tree, not the record, and it is gone. The record is 47,437 (projs/.../Main.lean, combCost <23663,23774>). I made the exact mistake this ledger exists to prevent, in the ledger itself. THE UNDERLYING ITEM STANDS: the variable-base queue had the same disease at a 7,398 gap and SIX items had re-derived to zero. Re-price this queue against records/ or projs/ -- never out/ -- at the next research refresh, and do NOT silence the banner by editing the derived number without redoing the arithmetic."
     },
     {
-      "id": "sha-d-compressors-unwired",
-      "slug": "sha256-hash",
-      "price": 470,
-      "summary": "A job built and cost-proved the deferred-reduction 'D' compressor family and did not wire it into main. The work exists only in that job's scratch tree, NOT in the record -- so it is unbanked, and the tree is transient.",
-      "source": "SHA-256/Keccak code-reading pass, 2026-08-09",
-      "witness": {
-        "file": "Solution/SHA256/CostD.lean",
-        "pattern": "compressBlockWideSparseDCost"
-      },
-      "note": "TREE LAYER MATTERS HERE AND I GOT IT WRONG FIRST TIME. CostD.lean exists in NEITHER records/ nor projs/ -- it lives only in out/sha256-hash/, a job's scratch tree that the next job overwrites. So this is not 'unwired code sitting in the record'; it is FINISHED WORK A JOB DID NOT LAND, and it will be lost when that directory is re-extracted. RESCUE IT BEFORE PRICING IT: copy the D files out of out/sha256-hash/*/Solution/SHA256/ now. Measured constants from that tree: compressBlockWideSparseD <14931,15018> against the landed <14992,15079>; compressBlock1SparseD <14785,14873> against 14845; compressBlock5D <10627,10691> against 10689; offset by selectDigestD <76,110> against <8,40>. Net about -470 IF LANDABLE, plus about -1 per compressor because the D variants predate ScheduleLastPair and still call scheduleStepLastCost twice. UNVERIFIED: whether the D path elaborates and whether its soundness proofs are complete. A cost lemma in an unimported module is exactly what this corpus records as scoring nothing."
-    },
-    {
       "id": "vb-fold64-residue",
       "slug": "secp256k1-scalar-mul",
       "price": 146,

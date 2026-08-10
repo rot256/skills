@@ -343,11 +343,13 @@ WORKQUEUE={
    "IS WIRED TO NOTHING — the deferred-relation rewrite already removed it, which is where the -1,072 went. The "
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
- "sha256-hash": (145470, None, [
+ "sha256-hash": (144990, None, [
   ("survival first — this slug has never banked a submission","BUY ELABORATION HEADROOM BEFORE YOU REDUCE ANY "
    "SCORE. Post-harness-fix this challenge is 0 FOR 2 AND BOTH FAILURES WERE VERIFIER TIMEOUTS: 144,858 (-612) and "
-   "145,164 (-306). NOTE THAT THE HALF-SIZED REDUCTION ALSO TIMED OUT — the wall is the tree's ABSOLUTE SIZE, not "
-   "the aggressiveness of any single change, so a more cautious optimisation will NOT get through it. The whole "
+   "145,164 (-306). BUT A COMPETITOR THEN LANDED A -480 THAT VERIFIED, SO THE WALL IS NOT SIZE — IT IS THE PROOF COST OF "
+   "THE PARTICULAR CHANGE. A -480 whose obligations are cheap beats a -306 whose obligations are expensive, so "
+   "do NOT simply aim smaller; aim for changes that add little elaboration. Their tree uses irreducible in 38 "
+   "of 149 files, EXACTLY AS OURS DOES, so that is not where their margin came from. The whole "
    "timeout ledger across every slug is 6, of which 4 are fixed-base and 2 are this one: BOTH LARGE TREES AND "
    "NOTHING ELSE. THE ONLY MOVE THAT HELPS IS SHRINKING THE PROOF RATHER THAN THE CIRCUIT — mark the heavy "
    "definitions irreducible (cost constants, the big params and schedule tables, any def whose body is a large "
