@@ -344,6 +344,15 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (145470, None, [
+  ("survival first — this slug has never banked a submission","BUY ELABORATION HEADROOM BEFORE YOU REDUCE ANY "
+   "SCORE. Post-harness-fix this challenge is 0 FOR 2 AND BOTH FAILURES WERE VERIFIER TIMEOUTS: 144,858 (-612) and "
+   "145,164 (-306). NOTE THAT THE HALF-SIZED REDUCTION ALSO TIMED OUT — the wall is the tree's ABSOLUTE SIZE, not "
+   "the aggressiveness of any single change, so a more cautious optimisation will NOT get through it. The whole "
+   "timeout ledger across every slug is 6, of which 4 are fixed-base and 2 are this one: BOTH LARGE TREES AND "
+   "NOTHING ELSE. THE ONLY MOVE THAT HELPS IS SHRINKING THE PROOF RATHER THAN THE CIRCUIT — mark the heavy "
+   "definitions irreducible (cost constants, the big params and schedule tables, any def whose body is a large "
+   "literal vector), and prefer a submission that verifies at a modest gain over one that times out at a large "
+   "one. A reduction that cannot be verified banks nothing and burns the slot."),
   ("448 — A NEW LEVER, AND THE SHAPE IT ATTACKS IS SITTING IN Cost.lean RIGHT NOW","TRUNCATE THE SIGMA CARRY WORD "
    "MOD 2^32 AND ONE LANE DISAPPEARS. Cost.lean:50-53 declares sigmaCost = <32,32>, lowerSigma0Cost = <32,32> and "
    "lowerSigma1Cost = <32,32>, each 32 XOR3 lanes at <1,1> (Cost.lean:170 proves CostIs (subcircuit Xor3.circuit b) "
