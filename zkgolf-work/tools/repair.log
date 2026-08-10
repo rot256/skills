@@ -10,3 +10,7 @@ analogue ncols=5 w=1 : 25 atoms, 25 targets, 5 nodes, node-graph cycles=[5]
 ======================================================================
 analogue ncols=5 w=2 : 50 atoms, 50 targets, 10 nodes, node-graph cycles=[10]
   standard construction h=20 -> unresolved=0 (FEASIBLE)
+  h=19 (one helper deleted): tried 62 deletions, best unresolved=10 
+======================================================================
+analogue ncols=5 w=4 : 100 atoms, 100 targets, 20 nodes, node-graph cycles=[20]
+  standard construction h=40 -> unresolved=0 (FEASIBLE)

@@ -246,5 +246,29 @@
  "verified": true,
  "score": 184320,
  "beats_record": false,
- "note": "Lane-level SLP optimum found is 35 Xor3Lane gates = 10 auxiliary + 25 outputs. In the live challenge's bit-level cost model the 1600 output gates sit in the 153600 base and h counts helpers only, so this is h = 10*64 = 640: it TIES the standing record and does not beat it."
+ "note": "Lane-level SLP optimum found is 35 Xor3Lane gates = 10 auxiliary + 25 outputs. In the live challenge's bit-level cost model the 1600 output gates sit in the 153600 base and h counts helpers only, so this is h = 10*64 = 640: it TIES the standing record and does not beat it.",
+ "cost_model": "Live challenge is BIT-LEVEL: 1600 state bits, round score = 153600 + 48*h, h counts HELPER gates only (the 1600 target Xor3 rows are inside the 153600 base). See prompts_small/keccak-f1600.md.",
+ "record_h": 640,
+ "best_h_found": 640,
+ "findings": {
+  "lane_level_optimum_found": "35 Xor3Lane gates = 10 auxiliary + 25 outputs (verified on 500 random states)",
+  "bit_level_equivalent": "10 aux lane-gates x 64 bits = 640 helpers = the standing record, score 184320",
+  "node_cycle": "Column-slices (x,b) form a single 320-cycle under (x,b)->(x+2,b-1); each slice-seed is an edge.",
+  "why_640_is_tight": "5 atoms per node = exactly 2 fanin-3 gates (3 then +2); target weight 11 = exactly 1 rider + 5 + 5 = 3 slots. Every count is saturated.",
+  "analogue_3col": "3-column w=1 analogue DOES admit 5 helpers instead of 6 (corpus 9->8 reproduced and verified).",
+  "analogue_3col_is_not_faithful": "the saving needs the rider node of an edge to coincide with the far endpoint of the adjacent edge, i.e. rider offset k == 2 on the node cycle. Measured k: 3-col w=1 -> k=2 (coincidence holds); ALL 5-column instances -> k = 3 mod 5 (w=1 k=3, w=2 k=8, w=4 k=8, w=64 k=128). Since 3 != 2 mod 5 the coincidence CANNOT occur for Keccak theta at any w.",
+  "searches_run": [
+   "Boyar-Peralta width-3 with randomised restarts (lane level)",
+   "greedy CSE (lane level)",
+   "randomised D-subproblem search (lane level, 8 and 9 aux gates: none found)",
+   "simulated annealing over helper sets (bit level analogues)",
+   "seeded local search: delete one helper from the record construction and repair (3,5,10,20-node cycles)"
+  ],
+  "repair_search_results": {
+   "3-node cycle (3 cols, w=1), k=2": "h 6 -> 5  REPAIRED (saving exists)",
+   "5-node cycle (5 cols, w=1), k=3": "h 10 -> 9  NOT repaired, 367 restarts, stuck at 10 unresolved",
+   "10-node cycle (5 cols, w=2), k=8": "h 20 -> 19 NOT repaired, 62 restarts, stuck at 10 unresolved",
+   "20-node cycle (5 cols, w=4), k=8": "h 40 -> 39 NOT repaired (earlier run, 16 deletions)"
+  }
+ }
 }
