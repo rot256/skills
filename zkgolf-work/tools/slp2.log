@@ -13,3 +13,55 @@ step 4(b): absorb D into the output gate
   h = 35  verified: True ok
 ==========================================================================
 step 3: Boyar-Peralta, width-3 gates, randomised restarts
+  BP produced no complete schedule in budget (148.3s)
+==========================================================================
+step 4(a): greedy common-subexpression
+  CSE produced no complete schedule (61.2s)
+==========================================================================
+step 4(c): can fewer than 10 auxiliary gates make every D[x] a 2-sum?
+  max_gates=8: none found after 127945 random gate-sets (3.0s)
+  max_gates=9: none found after 115283 random gate-sets (3.0s)
+  witness check: the five C[x] (10 gates) make every D[x] a 2-sum: True
+==========================================================================
+BEST: h = 35  via absorbed-D (4b)
+final verification on 500 random states: True ok
+--------------------------------------------------------------------------
+E0       = A[0,0] XOR A[0,1] XOR A[0,2]
+C0       = E0 XOR A[0,3] XOR A[0,4]
+E1       = A[1,0] XOR A[1,1] XOR A[1,2]
+C1       = E1 XOR A[1,3] XOR A[1,4]
+E2       = A[2,0] XOR A[2,1] XOR A[2,2]
+C2       = E2 XOR A[2,3] XOR A[2,4]
+E3       = A[3,0] XOR A[3,1] XOR A[3,2]
+C3       = E3 XOR A[3,3] XOR A[3,4]
+E4       = A[4,0] XOR A[4,1] XOR A[4,2]
+C4       = E4 XOR A[4,3] XOR A[4,4]
+O0_0     = A[0,0] XOR C4 XOR rot1(C1)
+O0_1     = A[0,1] XOR C4 XOR rot1(C1)
+O0_2     = A[0,2] XOR C4 XOR rot1(C1)
+O0_3     = A[0,3] XOR C4 XOR rot1(C1)
+O0_4     = A[0,4] XOR C4 XOR rot1(C1)
+O1_0     = A[1,0] XOR C0 XOR rot1(C2)
+O1_1     = A[1,1] XOR C0 XOR rot1(C2)
+O1_2     = A[1,2] XOR C0 XOR rot1(C2)
+O1_3     = A[1,3] XOR C0 XOR rot1(C2)
+O1_4     = A[1,4] XOR C0 XOR rot1(C2)
+O2_0     = A[2,0] XOR C1 XOR rot1(C3)
+O2_1     = A[2,1] XOR C1 XOR rot1(C3)
+O2_2     = A[2,2] XOR C1 XOR rot1(C3)
+O2_3     = A[2,3] XOR C1 XOR rot1(C3)
+O2_4     = A[2,4] XOR C1 XOR rot1(C3)
+O3_0     = A[3,0] XOR C2 XOR rot1(C4)
+O3_1     = A[3,1] XOR C2 XOR rot1(C4)
+O3_2     = A[3,2] XOR C2 XOR rot1(C4)
+O3_3     = A[3,3] XOR C2 XOR rot1(C4)
+O3_4     = A[3,4] XOR C2 XOR rot1(C4)
+O4_0     = A[4,0] XOR C3 XOR rot1(C0)
+O4_1     = A[4,1] XOR C3 XOR rot1(C0)
+O4_2     = A[4,2] XOR C3 XOR rot1(C0)
+O4_3     = A[4,3] XOR C3 XOR rot1(C0)
+O4_4     = A[4,4] XOR C3 XOR rot1(C0)
+--------------------------------------------------------------------------
+theta score = 153600 + 48*h = 155280
+bit-level reconciliation: 10 aux lane-gates x 64 = h = 640 helpers, score 184320
+wrote /home/user/skills/zkgolf-work/tools/theta_slp_result.json

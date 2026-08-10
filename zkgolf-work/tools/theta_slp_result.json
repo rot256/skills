@@ -1,5 +1,7 @@
 {
- "h": 35,
+ "h": 640,
+ "h_lane_gates": 35,
+ "aux_lane_gates": 10,
  "method": "absorbed-D (4b)",
  "baseline_h": 40,
  "gates": [
@@ -242,5 +244,7 @@
   "A'[4,4]": "O4_4"
  },
  "verified": true,
- "score": 155280
+ "score": 184320,
+ "beats_record": false,
+ "note": "Lane-level SLP optimum found is 35 Xor3Lane gates = 10 auxiliary + 25 outputs. In the live challenge's bit-level cost model the 1600 output gates sit in the 153600 base and h counts helpers only, so this is h = 10*64 = 640: it TIES the standing record and does not beat it."
 }

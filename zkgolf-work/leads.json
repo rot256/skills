@@ -34,13 +34,13 @@
       "id": "sha-sigma-trunc",
       "slug": "sha256-hash",
       "price": 448,
-      "summary": "Work the sigma carry word mod 2^32: lane 31 enters with a factor of 2 so its weight is 2^32 and it vanishes. sigmaCost <32,32> -> <31,31>, -2 per instance.",
+      "summary": "UNBLOCKED AND WIDENED. The top majority bit of EVERY Sigma AND sigma word is free, not just sigma: in the carry-save form each enters with coefficient -2, so bit 31 contributes -2*2^31*maj31 = -2^32*maj31 == 0 mod 2^32. 224 gadget bits per block at <1,1> = 448 score.",
       "source": "SHA-256 deep round, 2026-08-09",
       "witness": {
         "file": "Solution/SHA256/Cost.lean",
         "pattern": "def sigmaCost : Count := .32, 32."
       },
-      "note": "Check the fused-reduction carry widths FIRST -- the addend becomes [0, 2^33) and if any carry sits on a power-of-two boundary the saving is cancelled."
+      "note": "THE BLOCKER THIS ENTRY RAISED IS NOW ANSWERED, so it can be executed. It said 'check the fused-reduction carry widths FIRST -- the addend becomes [0,2^33) and if any carry sits on a power-of-two boundary the saving is cancelled.' MEASURED over 4.2e5 states including saturated extremes: under the fused round the quotient is e' in {0..6} (3 bits) and a' in {0..8} (4 bits). Neither sits on a boundary, so the saving stands. Independently re-derived and machine-verified on 2e5 random inputs for all four functions.\nWIDENED: the original entry covered only the two sigma functions. The criterion is v2(coefficient) + j >= 32, and in the carry-save form Sigma0/Sigma1 also enter at coefficient -2, so their bit 31 is free too. Maj and Ch enter at coefficient +1 and have NO free bit -- do not try to extend it to them. Per block: 64 rounds x 2 Sigmas + 48 schedule steps x 2 sigmas = 224 gadget bits.\nFIRST STEP: change the Sigma/sigma loop bound from j < 32 to j < 31, define N = sum_{j<31} 2^j maj_j, and re-derive the consumer's quotient width against the numbers above.\nDEPENDS ON the carry-save rewrite (sha-carrysave) being in place -- the free bit only exists once the word is expressed as [rot+rot+rot] - 2N. Do that one first."
     },
     {
       "id": "keccak-theta-slp",
@@ -61,7 +61,7 @@
         "file": "Solution/*/Params24.lean",
         "pattern": "limbCap"
       },
-      "note": "BLOCKED: the slug is on NO_DISPATCH in tick.py, so no job will ever take this. The de-funding comment says the lever was re-measured down to 218 with ~98 remaining -- the ~98 is WRONG, the full 218 is untaken (the -120 that set the last record lived entirely in the WindowSquare term)."
+      "note": "BLOCKED: the slug is on NO_DISPATCH in tick.py, so no job will ever take this. The de-funding comment says the lever was re-measured down to 218 with ~98 remaining -- the ~98 is WRONG, the full 218 is untaken (the -120 that set the last record lived entirely in the WindowSquare term).\n\n*** A RESEARCH PASS ON 2026-08-10 REPORTED THE RSA LEADERBOARD AS 'best 827,118 against a baseline of 827,136 -- essentially untouched, ~2.7x headroom'. THAT IS WRONG AND THE ERROR IS 2.6x. The record is 321,769 (ours, rot256), confirmed two ways: targets.json, and records/rsa-.../Main.lean where allocations 160527 + constraints 161242 = 321769 exactly. The same pass then modelled a rebuilt bigint part at ~302,000, which against the REAL 321,769 is a few percent, not 2.7x -- and 302,000 is the bigint part alone, before the SHA-256 half. So the 'essentially untouched challenge' framing does not survive. DO NOT re-fund this slug on that number. The pass also proposed 'terminal fusion' (fuse the last squaring into the PKCS#1 certificate, x15^2 * s = q*n + P) as new and worth ~8,194 -- but that IS Circonomicon II.15, which already describes one first square, 14 middle squares and one ternary reduction asserting a*a*s == EM mod n directly. Almost certainly already landed; verify against SqMulModBalTo.lean before believing it is open. WHAT DOES LOOK GENUINELY OPEN from that pass is INCOMPLETE REDUCTION: maintain x_i < 2^4096 rather than x_i < n, which restores the invariant without ever comparing r < n and removes 16 of the 17 full 4096-bit comparisons. That is IV.8 (which sites need canonicality at all) applied to the squaring chain. ***"
     },
     {
       "id": "fb-queue-stale",
@@ -200,6 +200,42 @@
       "source": "foundations/symmetric-function research, 2026-08-10",
       "witness": null,
       "note": "Crossover is at n=7 (tree 6 vs free-sum 5); it widens fast -- n=15 gives 14 vs 7, n=31 gives 30 vs 9, n=63 gives 62 vs 11. Linear becomes logarithmic. SOUNDNESS: q is a genuine integer in [0, 2^m - 1] via its own bits, and s - 2q in {0,1} forces q = floor(s/2) uniquely; a superset range is safe whenever 2q+1 > n is unreachable. NOT APPLICABLE TO KECCAK THETA -- its widest XOR is the 5-way column parity, which is below the crossover, and see keccak-theta-slp for why materialising anything wider loses. The general form is Paterson-Stockmeyer: any SYMMETRIC boolean function is a univariate in the free sum s, evaluable in about 2*sqrt(n) products (m non-scalar mults reach degree floor((m+2)^2/4)). Look for symmetric subfunctions before building trees. NEGATIVE WORTH KEEPING: generic bit-packing into base-8/base-13 digits of one field element never helps, because the unpacking identity was ALREADY free and packing forces you to witness digits that were free affine forms. That is distinct from I.2 lambda-packing, which is genuine but needs the packed output consumed additively."
+    },
+    {
+      "id": "sha-carrysave",
+      "slug": "sha256-hash",
+      "price": 0,
+      "summary": "Rewrite Sigma0/Sigma1/sigma0/sigma1 in carry-save form and never materialise them. A+B+C = (A xor B xor C) + 2*maj(A,B,C) over the integers, so each becomes a FREE integer affine combination of rotations minus twice a majority word.",
+      "source": "SHA-256 reformulation research, 2026-08-10, verified on 1e5 random inputs per function and on 1e5 full-round states",
+      "witness": null,
+      "note": "COST-NEUTRAL BY ITSELF -- a maj bit and an xor3 bit are both <1,1>, and maj = (s - xor3)/2 with s free, so they are affinely interchangeable. ITS VALUE IS AS A PRECONDITION: it is what makes sha-sigma-trunc's free top bit exist, it enables sha-shr-pack, and it deletes four 32-bit intermediate words per round from the witness. The fused round becomes e' == d + h + K + W + [ROTR6+ROTR11+ROTR25](e) + Ch(e,f,g) - 2N1 (mod 2^32), and a' the same plus [ROTR2+ROTR13+ROTR22](a) + Maj(a,b,c) - 2N0. Sigma0, Sigma1, T1 and T2 are never materialised; the whole nonlinearity of a round is three majority words and one Ch word. FIRST STEP: prove in Lean that A + B + C = (A ^^^ B ^^^ C) + 2 * maj A B C over Nat restricted to < 2^32, then rewrite the round to emit N0, N1 and fold the rotation sums into the existing free linear combination."
+    },
+    {
+      "id": "sha-shr-pack",
+      "slug": "sha256-hash",
+      "price": 240,
+      "summary": "The SHR positions of sigma0/sigma1 feed compile-time ZEROS, so their gadgets degenerate from degree 3 to degree 2 -- maj(A,B,0) = A AND B, xor3(A,B,0) = A XOR B -- and degree-2 gadgets pack TWO per row. sigma0 positions 29-30 and sigma1 positions 22-30.",
+      "source": "SHA-256 reformulation research, 2026-08-10",
+      "witness": null,
+      "note": "5 rows per schedule step, 240 per block. THE UNDERLYING DICHOTOMY IS THE REUSABLE PART AND IT IS PROVED: a gadget's MULTILINEAR DEGREE over the boolean cube decides everything. Degree 2 (Ch, XOR2, AND2) takes the C-slot shape gamma*z = P0*Q0 - R0 and packs EXACTLY 2 per row -- never 3, because for k gadgets on disjoint variables the quadratic form is a direct sum of k rank->=1 blocks and the C-slot shape needs rank <= 2 modulo the free diagonal shifts. Degree 3 (Maj, XOR3, AND3) takes the non-vanishing-multiplier shape and packs NEVER -- proved, including against decoy roots, by applying the bi-non-affine projector: z^2 contributes 2*lambda*f~ (x) g~ which nothing else in the row can match. Exhaustive search over multipliers with coefficients in [-3,3] agrees: zero hits for MAJ+MAJ, XOR3+XOR3, XOR3+MAJ, MAJ+CH, AND3+MAJ, including pairs sharing one or two inputs. SO: stop looking for a row that packs two Maj or two XOR3. That search is closed. circomlib captures part of this (its O1 pass kills mid = b*c for 13 bits per SigmaPlus, 624 constraints) but neither the packing of the surviving degree-2 gadgets nor the free top bit appears in any implementation found."
+    },
+    {
+      "id": "sha-schedule-q2",
+      "slug": "sha256-hash",
+      "price": 0,
+      "summary": "The message-schedule quotient is exactly 2 bits. Machine-checked over 2e5 random 4-tuples: q_i in {0,1,2,3}, and it follows immediately because after the -2n corrections all four terms are genuine 32-bit words so their sum is < 4*2^32.",
+      "source": "SHA-256 reformulation research, 2026-08-10",
+      "witness": null,
+      "note": "CHECK WHAT WE CURRENTLY CHARGE BEFORE PRICING THIS -- if MessageSchedule.lean already witnesses 2 bits the item is worth zero; if it charges 3 bits or a product chain, replace with two witnessed bits and let the reduction row absorb q = q0 + 2*q1 for free. The whole schedule step is one free affine form plus two majority words plus this quotient: the bracketed rotation/shift sum plus W[i-7] plus W[i-16] is ENTIRELY FREE, and the only nonlinearity is -2*n1(W[i-2]) - 2*n0(W[i-15]). Carries cannot be shared across words -- each W feeds exactly one sigma0 and one sigma1 in its lifetime and the majority words of different steps have disjoint variable sets. NEGATIVE WORTH KEEPING: the SHA-2 cryptanalysis literature on the linearised schedule (Rijmen-Oswald, Pramstaller et al., Matusiewicz-Pieprzyk, Mendel et al.) does NOT hand us this decomposition -- it replaces + by XOR and studies the code's minimum weight, discarding the carry correction as the thing that makes linearisation approximate. That is the term we need."
+    },
+    {
+      "id": "sha-dead-ends",
+      "slug": "sha256-hash",
+      "price": 0,
+      "summary": "CLOSED DIRECTIONS, recorded so they are not re-explored. Sparse/spread representation, meet-in-the-middle, alternative rotation-friendly representations, and rank/tensor diagonalisation of the Sigma words are all dead, each for a structural reason.",
+      "source": "SHA-256 reformulation research, 2026-08-10",
+      "witness": null,
+      "note": "(1) SPARSE/SPREAD (halo2 table16, 2099 rows) -- the ENTIRE saving is that the dense<->spread bijection is one LOOKUP row. Enforcing it arithmetically means decomposing the 16-bit chunk into bits and re-summing with weights 4^i, i.e. back to >=1 row per bit. No lookup-free variant exists or can. (2) MEET-IN-THE-MIDDLE -- the backward round invokes the IDENTICAL four nonlinear gadgets on the identical words; the bijection is realised entirely by free affine rearrangement, so direction does not touch the nonlinear content. Zero gain, and note the feed-forward is NOT what blocks it. (3) ROTATION-FRIENDLY REPRESENTATIONS (roots of unity in F_r, F_2[x]/(x^32-1)) -- every invertible linear change of representation is free in BOTH directions, so it cannot change the cost of anything. The bit vector already has rotation free AND addition free; the only cost is re-decomposition, which is intrinsic to the nonlinear interface. (4) RANK/TENSOR DIAGONALISATION of the Sigma words -- the quadratic part is rank <= 32 and would give 16 rows, but the cubic part T = sum 2^j x_{j+u} x_{j+v} x_{j+w} is a DIAGONAL 3-tensor with 32 nonzero entries, slice rank exactly 32, so >= ceil(32/3) = 11 multiplications for T alone and realistically 32. THE LESSON: the non-vanishing-multiplier row is extraordinarily good precisely because it computes a degree-3 function in ONE row by hiding the degree in a division. Rank methods must pay for degree 3 explicitly and cannot compete. (5) A GENUINE BUT SMALL ITEM, not a dead end: for the FIRST block the state is the constant IV, so round 0's gadgets are compile-time constants and at round 1 both Maj and Ch have two constant arguments and collapse to free affine functions. Worth about 2 rounds on block 1 only."
     }
   ]
 }
