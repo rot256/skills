@@ -343,7 +343,7 @@ WORKQUEUE={
    "IS WIRED TO NOTHING — the deferred-relation rewrite already removed it, which is where the -1,072 went. The "
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
- "sha256-hash": (144990, None, [
+ "sha256-hash": (144985, None, [
   ("survival first — this slug has never banked a submission","BUY ELABORATION HEADROOM BEFORE YOU REDUCE ANY "
    "SCORE. Post-harness-fix this challenge is 0 FOR 2 AND BOTH FAILURES WERE VERIFIER TIMEOUTS: 144,858 (-612) and "
    "145,164 (-306). BUT A COMPETITOR THEN LANDED A -480 THAT VERIFIED, SO THE WALL IS NOT SIZE — IT IS THE PROOF COST OF "
