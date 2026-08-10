@@ -4,7 +4,8 @@
     "usage": "python3 check_leads.py            # status of every lead\npython3 check_leads.py --open     # only the ones still open",
     "status_values": "open = witness still matches, nobody has landed it. landed = witness gone, RE-PRICE THE SIBLINGS. unverifiable = no mechanical witness exists; must be checked by hand.",
     "rule": "When a lead flips to landed, do not just delete it -- the pattern that paid once is a reason to CHECK the next instance, never a reason to assume it. Re-derive the siblings against the new tree before requeueing them.",
-    "trees": "THREE tree locations, NOT interchangeable. records/<slug>/ is the LEADER's tree, reseeded from whoever holds the record -- this is what jobs are seeded from and therefore what a lead must beat. projs/<slug>/Solution/ is OUR working tree; it equals records/ only on slugs where we lead (on keccak-f1600 ours is theta 3200 against the record's 2240, so reading the wrong one INVERTS the answer). out/<slug>/ is per-job scratch, wiped and re-extracted for the very next job -- a constant read there belongs to whichever job landed last. check_leads.py resolves records/ then projs/ then out/, in that order."
+    "trees": "THREE tree locations, NOT interchangeable. records/<slug>/ is the LEADER's tree, reseeded from whoever holds the record -- this is what jobs are seeded from and therefore what a lead must beat. projs/<slug>/Solution/ is OUR working tree; it equals records/ only on slugs where we lead (on keccak-f1600 ours is theta 3200 against the record's 2240, so reading the wrong one INVERTS the answer). out/<slug>/ is per-job scratch, wiped and re-extracted for the very next job -- a constant read there belongs to whichever job landed last. check_leads.py resolves records/ then projs/ then out/, in that order.",
+    "price_zero": "price 0 means UNPRICED, not worthless -- a lead whose mechanism is confirmed but whose row count has not been derived. Derive it before queueing, and write the number back here. Only fb-queue-stale is genuinely a 0 (it is queue hygiene)."
   },
   "leads": [
     {
@@ -84,6 +85,87 @@
         "pattern": "def qBitsFoldT : . := 69"
       },
       "note": "THE LANDED HALF DEMONSTRATES THE MECHANISM, SO COPY IT RATHER THAN RE-DERIVING: wfFold went from a CONSTANT 100 to a POSITION-DEPENDENT `if k = 0 then 99 else 100`. That is the position-dependent-bound lever, and it works because ONLY Wf(0) IS BILLED under a one-paid-carry group schedule -- so narrowing position 0 alone captures the whole win and the other positions can stay loose. Apply the same shape to the quotient: write the true bound at the deciding position as an exact integer expression (small multiple of a power of two, summed), recompute ceil(log2(...)), and see whether 69 falls to 68. CHECK, DO NOT ASSUME -- this family has now paid five times and the one time I queued a sweep on that momentum the targets were already exact and the item was worth zero. ParamsFold at B=64 is FIXED at gf = [2,1,1] (gf_0 > 2 breaks 2^Wf * 2^192 < p), so the regrouping lever is unavailable here and only the exact-bounds lever can move it."
+    },
+    {
+      "id": "kec-port-record",
+      "slug": "keccak-f1600",
+      "price": 122880,
+      "summary": "Port the record circuit from projs/keccak-f1600/reference/ onto our valid baseline. Seed is 307200, record is 184320, and reference/ is BYTE-IDENTICAL to records/. Single-row chiLane + Xor3Lane 5-way parity + theta-D fusion.",
+      "source": "cross-tree transplant audit + seed-divergence discovery, 2026-08-10",
+      "witness": null,
+      "note": "MECHANICAL WITNESS REMOVED AS UNSOUND. I first wrote this lead with an INVERTED witness -- open while Solution/KeccakF1600/Xor3Lane.lean is ABSENT. That cannot work: check_leads.py resolves records/ FIRST, and records/keccak-f1600/ ALWAYS contains Xor3Lane.lean because it IS the leader tree. The witness would have reported on the record rather than on us. That is the exact proxy-witness failure this ledger exists to prevent, attempted here for the third time -- so the rule is now explicit: A WITNESS THAT RESOLVES THROUGH records/ CAN NEVER TEST WHETHER *WE* HAVE SOMETHING. For gap-to-leader leads, check by hand.\nCHECK BY HAND (open if the file is absent / if localLength is 6400):\n  ls projs/keccak-f1600/Solution/KeccakF1600/Xor3Lane.lean\n  grep 'localLength n = ' projs/keccak-f1600/Solution/KeccakF1600/PermutationDefs.lean\n\nVERIFIED BY HAND 2026-08-10: records/ round localLength = 3840, ours = 6400; 16 of 22 files differ and Xor3Lane.lean is missing from ours entirely. Cost decomposition from records/keccak-f1600/Cost.lean: ThetaC 640 + ThetaXor 1600 + ChiLane 64/lane x 25 = 1600, total 3840/round, x2 x 24 rounds = 184320 exactly. The three techniques are (a) chiLane as ONE row per bit with the non-vanishing multiplier (4a+b+c-3), (b) Xor5Lane as two Xor3Lane instead of four XorLane, (c) ThetaXor consuming the column parities c directly so D is never materialised. All three are already catalogued (I.1, IV.7) -- this is not discovery, it is our tree never having received them.\n\n*** WHY 414 KECCAK JOBS PRODUCED ZERO SUBMISSIONS EVER. *** tick.py seeds jobs from projs/, not records/ (dispatch loop: proj_dir = projs/{slug}). check_records.py downloads the new record into records/ but SKIPS the copy into projs/ when the record omits computableWitness -- ordian's 184320 does omit it. targets.json was still updated to 184320. gen_prompts.py then wrote 'contains a VALID, VERIFIED seed scoring allocations+constraints = {target}' into the FIRST line of the prompt. So every one of those 414 jobs was told it was holding a record-tier tree and was actually handed one 122880 worse, with the real record sitting unmentioned in reference/ until a footnote ~100 lines later. Zero submissions is the expected outcome of that, not evidence about the challenge -- and the 'keccak is the worst sink on the board' judgement that cut its slot was drawn from that contaminated number.\nFIXED 2026-08-10: gen_prompts.seed_cost() now reads allocations+constraints out of the seed's own Main.lean; when it disagrees with the target the prompt states BOTH numbers, names the gap, and points the job at reference/ as a PORT rather than a discovery task; and keccak is refunded to a full slot pair (taken from gf2-sha256, whose own analysis caps its remaining gap at 1182).\nTHE GENERAL BUG, WHICH WILL RECUR: any gate in check_records.py that skips the projs/ copy leaves targets.json and projs/ disagreeing silently, and every downstream prompt then quotes the target as though it were the seed. gen_prompts.py now prints a SEED DIVERGENCE line whenever they differ. Do not silence that line by editing targets.json -- either re-seed projs/ or explain the divergence here."
+    },
+    {
+      "id": "vb-validp-weakinv",
+      "slug": "secp256k1-scalar-mul",
+      "price": 0,
+      "summary": "Transplant fixed-base's ValidP.tail (four bare witnesses + four rows, weak-inverse form) into scalar-mul's ValidP.tail, which still uses three IsZeroField calls plus two product witnesses.",
+      "source": "cross-tree transplant audit, 2026-08-10",
+      "witness": {
+        "file": "ValidP.lean",
+        "pattern": "IsZeroField"
+      },
+      "note": "PRICE NOT YET DERIVED -- the audit gives the shape ('8 allocations, 12 rows' -> 'four bare witnesses and four rows' per the fixed-base docstring) but I have NOT counted the live call sites, so the 0 is a placeholder meaning UNPRICED, not worthless. Do the count before queueing: sites paying it are AddMod (x4), CompleteAdd, DivOrZeroW, MulModSub2F32, MulModSub2F32W2, MulModSub2W2, MulModSub2W32M, SubMod. Both files still carry the SAME stale header docstring ('264 witnesses and 272 rows'), which is the evidence they are the same lineage and fixed-base forked and rewrote the body. Same prime, same limbBits 64, same 4-limb Emu, both trees already have IsZeroFe.lean and ToBitsAffine.lean, so the port is local."
+    },
+    {
+      "id": "vb-groupedeq-circuitD",
+      "slug": "secp256k1-scalar-mul",
+      "price": 0,
+      "summary": "GroupedEqXV.circuitD is fully built with soundness AND completeness proved, and has ZERO call sites. The non-D circuit is used 129 times across 17 files. This is II.11 (never assert your last equation), saving one row per site.",
+      "source": "cross-tree transplant audit, 2026-08-10",
+      "witness": null,
+      "note": "VERIFIED BY HAND: grep for circuitD across records/secp256k1-scalar-mul/ outside GroupedEqXV.lean returns 0. RSA runs exactly this machinery live (GroupedEqD.circuitD from SqMulModBalTo.lean and SquareModBalGT.lean) with the delta proved in GroupedEqDCost.lean:11 vs :58 -- <alloc, cons+1> vs <alloc, cons>. So the technique is not speculative, only unwired here. PRICE UNCOUNTED: 129 references is an upper bound on sites, not a count of rows saved, and I have not checked how many are live on the step path. BLOCKER: circuitD exposes AssumptionsD/SpecD rather than Assumptions/Spec, so each call site's surrounding soundness proof must re-derive the top coefficient as topExprD instead of reading it from the witness vector. FIRST MOVE: wire ONE site -- MulModFoldT.lean:698 -- smallest blast radius, and it is live. A dead-but-proved gadget is the highest-confidence lead class we have; this is the second one found (interpolatedMulX in RSA was the first)."
+    },
+    {
+      "id": "vb-foldqinv",
+      "slug": "secp256k1-scalar-mul",
+      "price": 0,
+      "summary": "Quotient as an affine EXPRESSION rather than a witness: q = (sum lhs_k 2^64k - sum tail_k 2^64k) * P256^-1 over already-allocated wires. Saves one allocation per mulmod site; the RangeCheck survives and already accepts an Expression.",
+      "source": "cross-tree transplant audit, 2026-08-10",
+      "witness": {
+        "file": "MulModFoldT.lean",
+        "pattern": "witnessField"
+      },
+      "note": "VERIFIED BY HAND: records/secp256k1-fixed-base-scalar-mul/ has FoldQInv.lean and FoldQInv5.lean; records/secp256k1-scalar-mul/ has NEITHER. Live in fixed-base at ChainFold.lean:44,311 and PairAddFoldA.lean:131. NOT IN THE CIRCONOMICON: IV.1 gets the quotient down to a single wire and II.9 makes carries affine, but neither says the quotient WIRE ITSELF can be deleted. The general rule is that after folding the quotient is determined by wires you already hold -- II.9 applied to the quotient rather than to a carry. Add as a IV.1 sub-entry. CHECK FIRST: that P256 is invertible in the scalar field, and that every lhs/tail wire is allocated before the range check at each site. The witness above is deliberately loose (witnessField appears for other reasons too) -- confirm by hand that the q at MulModFoldT.lean:695-696 is still a witness."
+    },
+    {
+      "id": "fb-base32-fold",
+      "slug": "secp256k1-fixed-base-scalar-mul",
+      "price": 0,
+      "summary": "Fixed-base has NO base-2^32 machinery at all -- every fold is base 2^64 with cFold = 2^32+977 as one 33-bit digit. Scalar-mul's Split32/Limbs32/MulModFold32M/N family is IV.2, priced there at 176/178 -> 97/99.",
+      "source": "cross-tree transplant audit, 2026-08-10",
+      "witness": null,
+      "note": "VERIFIED BY HAND: `ls records/secp256k1-fixed-base-scalar-mul/ | grep -ci 'split32|32'` returns 0. Live carry widths tell the same story: fixed-base wfFold5 = 100, wfFold2 = 102, wfFoldY = 99 against scalar-mul's wfFold32 = 45 and wfFold32T = 43. LARGEST candidate found by the audit and the one with real re-derivation work. BLOCKER, AND IT IS SERIOUS: fixed-base's CRT fold (CrtFold5) and qInv5 are derived for the 4x64 layout, and IV.6 warns the fold polynomial's splitting behaviour is coefficient-size sensitive. THE ONE CHECK THAT DECIDES IT: does X^k - cFold still split at base 2^32 for the fixed-base limb count? Answer that before any other work on this lead."
+    },
+    {
+      "id": "fb-exact-bounds-fold5",
+      "slug": "secp256k1-fixed-base-scalar-mul",
+      "price": 0,
+      "summary": "FoldParams.wfFold5 is a CONSTANT 100 and nfFold5L is flat bare powers of two across positions 0-2. Scalar-mul's ParamsFold.wfFold has the position-dependent form `if k = 0 then 99 else 100`; RSA's Params24 has full 38-entry carry-width tents with exact 30-digit offsets.",
+      "source": "cross-tree transplant audit, 2026-08-10",
+      "witness": {
+        "file": "FoldParams.lean",
+        "pattern": "wfFold5"
+      },
+      "note": "This is the SAME family as vb-fold64-residue, which has now paid five times. THE MECHANISM, COPIED FROM THE LANDED HALF: only Wf(0) is billed under a one-paid-carry group schedule, so narrowing position 0 alone captures the whole win. Write the true convolution cap at position 0 of the folded 5-position layout as an exact integer expression, recompute ceil(log2(OFF_L+OFF_R)), and see whether 100 falls. CHECK, DO NOT ASSUME -- the one time I queued a sweep on this family's momentum the targets were already exactly triangular and the item was worth zero. Also applies to FoldParamsC1.lean (wfFold2 = 102) and FoldWideParams.lean."
+    },
+    {
+      "id": "ecip-derandomized",
+      "slug": "secp256k1-scalar-mul",
+      "price": 0,
+      "summary": "ECIP: verify Q = kP by a divisor witness + Weil reciprocity instead of an addition chain. ~89 F_p multiplications, and witness degrees are INDEPENDENT of scalar bit-length (measured: identical degrees at 8/32/64/128/200/255 bits). The open question is whether it can be DERANDOMIZED.",
+      "source": "secp256k1 alternative-formulations research, 2026-08-10, verified empirically against garaga on secp256k1",
+      "witness": null,
+      "note": "*** SOUNDNESS CORRECTION TO THE RESEARCH RESULT, AND IT IS THE WHOLE LEAD. *** The agent proposed deriving the challenge point A0 by hashing the witness with an in-circuit Poseidon, and argued the premise 'no Fiat-Shamir available' was wrong because grinding costs ~2^250. THAT ARGUMENT DOES NOT APPLY HERE. Our obligation is a Lean theorem `soundness : forall env, constraints_hold env -> spec env` -- UNCONDITIONAL, over ALL witnesses, with no random oracle and no computational assumption. 'The adversary would need 2^250 hash evaluations' is not a proof of that statement and cannot be made into one. A fixed public A0 is worse, not better: the prover chooses the divisor witness knowing A0. So ECIP AS PUBLISHED IS NOT DIRECTLY EXPRESSIBLE. WHAT MIGHT SAVE IT, AND THIS IS THE ACTUAL LEAD: the witness degrees are TINY -- measured n+1/n+2/n+2/n+5, i.e. 2/3/3/6 at n=1. A polynomial identity of degree d is forced by checking it at d+1 distinct FIXED points. So check the Weil-reciprocity identity at ~7 fixed points and it stops being a probabilistic check and becomes an identity, with no challenge and no hash. Cost is then roughly 7 x 89 = 623 certified F_p multiplications for a full 256-bit variable-base scalar multiplication, against a current 62-step GLV loop. THE ONE THING TO DERIVE BEFORE ANYTHING ELSE: what is the exact degree of the verification identity as a rational function of A0, counting numerator and denominator separately, and how many fixed evaluation points force it? If that number is small, this replaces the entire scalar-mul architecture. Also note the agent's corollary: if ECIP works, GLV and the lattice relation become redundant, since cost does not depend on scalar size. Source: Liam Eagen, eprint 2022/596; reference impl garaga hydra/garaga/hints/ecip.py."
+    },
+    {
+      "id": "vb-lambda-elim",
+      "slug": "secp256k1-scalar-mul",
+      "price": 0,
+      "summary": "Eliminate lambda from affine addition: 3 certificates + a lambda witness -> 2 certificates and no lambda. (x3+x1+x2)(x1-x2)^2 = (y1-y2)^2 (deg 3) and (y3+y2)(x1-x2) = (y1-y2)(x1-x3) (deg 2). Doubling likewise 3 -> 2.",
+      "source": "secp256k1 alternative-formulations research, 2026-08-10",
+      "witness": null,
+      "note": "gnark keeps lambda and does NOT do this, so it is not folklore. DIRECTLY COMPARABLE TO WHAT WE ALREADY PRICE: this is the II.14 degree ladder -- deleting a witness by raising a certificate's degree. Our own table says D=2 -> D=3 costs +240 and materialising a value costs 531, so the trade is only worth taking where the degree rise is affordable, and the table also says D=3 is INFEASIBLE at 4x64 (the folded position exceeds 2^253) and fine at 8x32. So this lead is COUPLED to fb-base32-fold and to which fold a site sits on -- price it per site, on the 32-bit sites first. Do not sweep."
     }
   ]
 }

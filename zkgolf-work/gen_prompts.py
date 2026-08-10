@@ -596,16 +596,58 @@ def workqueue_block(slug, big):
     elif pred and big:
         head+=f"Implementing all of them is predicted to reach about {pred}.\n"
     return head+"\n".join(f"  [~{t2} score] {t}" for (g,t2,t) in keep)
+def seed_cost(slug, inst):
+    """(allocations+constraints) actually present in projs/<slug>/Solution/<inst>/Main.lean.
+
+    Returns None if the defs are not plain numeric literals -- callers must treat None as
+    "unknown", never as "equal to the target". THIS IS READ FROM projs/, WHICH IS WHAT
+    tick.py SEEDS JOBS FROM (`proj_dir = f"projs/{slug}"`). Do not switch it to records/:
+    records/ is the leader's tree and is NOT always copied into projs/ -- the computableWitness
+    gate in check_records.py deliberately skips the copy, and that divergence is exactly the
+    thing this function exists to detect.
+    """
+    p = f"projs/{slug}/Solution/{inst}/Main.lean"
+    try: src = open(p).read()
+    except OSError: return None
+    got = {}
+    for name in ("allocations", "constraints"):
+        m = re.search(r"def\s+" + name + r"\s*:\s*Nat\s*:=\s*(\d+)\b", src)
+        if not m: return None
+        got[name] = int(m.group(1))
+    return got["allocations"] + got["constraints"]
+
 os.makedirs("prompts",exist_ok=True); os.makedirs("prompts_small",exist_ok=True)
-def tmpl(inst,t,framing,ideas,show_target=True,wq=""):
-    if show_target:
+def tmpl(inst,t,framing,ideas,show_target=True,wq="",seed=None):
+    # NEVER state the target as if it were the seed's cost. They coincide only when the last
+    # reseed succeeded; when it did not, saying "your seed scores {t}" is a flat lie and the job
+    # spends its whole budget confused about what it is holding.
+    divergent = seed is not None and seed != t
+    if show_target and not divergent:
         goal=(f"scoring allocations+constraints = {t}, defining ALL\n"
               f"required declarations INCLUDING `computableWitness`, and it passes the verifier. GOAL: a NEW solution scoring\n"
               f"STRICTLY BELOW {t} that STILL fully verifies.")
+    elif show_target:
+        goal=(f"scoring allocations+constraints = {seed}, defining ALL\n"
+              f"required declarations INCLUDING `computableWitness`, and it passes the verifier.\n"
+              f"\n"
+              f"*** READ THIS BEFORE ANYTHING ELSE — YOUR SEED IS NOT THE RECORD. ***\n"
+              f"The seed you have been given scores {seed}. The standing record is {t}, a gap of {seed - t}\n"
+              f"({100.0*(seed-t)/seed:.0f}% of your seed). The record holder's tree is NOT in `Solution/` because it omits\n"
+              f"`computableWitness` and is therefore not a valid submission — but its circuit IS reproducible. It is\n"
+              f"supplied to you as read-only context in `reference/*.lean.txt`.\n"
+              f"YOUR JOB IS NOT TO INVENT A NEW OPTIMIZATION. It is to PORT the reference circuit onto this valid\n"
+              f"baseline and re-prove `computableWitness` (adapt the one already in your seed). Read `reference/`\n"
+              f"FIRST, diff it against `Solution/`, and reproduce its structure. Anything strictly below {seed} is\n"
+              f"progress; reaching {t} recovers the full gap; below {t} takes the record.\n"
+              f"GOAL: a NEW solution scoring STRICTLY BELOW {seed} that STILL fully verifies.")
     else:
         # small-win: no numeric anchor — the seed IS the SOTA; beat it by any margin
+        sota=("seed IS the current state of the art (SOTA)." if not divergent else
+              f"seed is NOT the state of the art — it scores {seed} against a standing record of {t}. The record\n"
+              "tree is read-only context in `reference/*.lean.txt` (it omits `computableWitness`, so it cannot be\n"
+              "submitted as-is); port from it rather than inventing.")
         goal=("defining ALL required declarations INCLUDING `computableWitness`, and it passes the verifier — this\n"
-              "seed IS the current state of the art (SOTA). GOAL: ANY new solution that scores STRICTLY LESS than the\n"
+              f"{sota} GOAL: ANY new solution that scores STRICTLY LESS than the\n"
               "seed and STILL fully verifies. There is no number to hit — beat the seed by ANY margin, however small; a\n"
               "single-unit fully-verified reduction is a win. Read `allocations`+`constraints` in the seed to know what to beat.")
     return f"""You are optimizing a zkGolf circuit in the Clean Lean-4 framework (clean pinned @ 041c6e7e, Lean v4.28.0, Mathlib v4.28.0).
@@ -638,8 +680,15 @@ OPTIMIZATION IDEAS (verify before use): {ideas}{wq}
 Return the complete updated `Solution/{inst}/` files, fully compiling."""
 for slug,inst in INST.items():
     t=tg[slug]["target"]
-    open(f"prompts/{slug}.md","w").write(tmpl(inst,t,"Be ambitious — aim for a large structural reduction.",IDEAS[slug],wq=workqueue_block(slug,True)))
-    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug],show_target=False,wq=workqueue_block(slug,False)))
+    sc=seed_cost(slug,inst)
+    if sc is None:
+        print(f"WARN {slug}: could not read allocations/constraints from the seed's Main.lean — "
+              f"prompt falls back to asserting the target ({t}) is the seed cost. VERIFY BY HAND.")
+    elif sc != t:
+        print(f"SEED DIVERGENCE {slug}: projs/ seed scores {sc}, target is {t} (gap {sc-t}). "
+              f"Prompt now states both and points the job at reference/.")
+    open(f"prompts/{slug}.md","w").write(tmpl(inst,t,"Be ambitious — aim for a large structural reduction.",IDEAS[slug],wq=workqueue_block(slug,True),seed=sc))
+    open(f"prompts_small/{slug}.md","w").write(tmpl(inst,t,"Prefer a SMALL, safe, guaranteed-provable reduction; certainty of a verified result matters most.",IDEAS[slug],show_target=False,wq=workqueue_block(slug,False),seed=sc))
 kref="\n\nREFERENCE: `reference/*.lean.txt` is the record which hits the target cost but OMITS `computableWitness` (now invalid). Reproduce its circuit optimization on the valid baseline AND add a fully-proved `computableWitness` (adapt the baseline's). Reference files are context only, not compiled."
 for f in ("prompts/keccak-f1600.md","prompts_small/keccak-f1600.md"):
     if os.path.exists(f): open(f,"a").write(kref)

@@ -1,0 +1,4 @@
+targets: 25 distinct: 25
+D atom-weights: [10, 10, 10, 10, 10]
+witness g=10: objective=0.0 resolved=25/25  (0.0 == feasible)
+g=9: 66 annealing runs, best objective=10030.0, max targets resolved=15/25 -> infeasible

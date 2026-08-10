@@ -1,0 +1,16 @@
+==========================================================================
+model check: bit-level target masks vs reference Keccak theta
+  targets reproduce theta (bit and 64-bit-word reference): True
+==========================================================================
+record construction in this cost model
+  helpers h = 640  target gates = 1600
+  concrete verification vs reference theta: True
+  score = 153600 + 48*640 = 184320
+==========================================================================
+analogue searches (targets free, minimise helpers)
+  ncols=3 w=1 helpers=6 : unresolved=0/15 after 5 runs <-- FEASIBLE
+  ncols=3 w=1 helpers=5 : unresolved=5/15 after 183 runs 
+  ncols=5 w=1 helpers=10 : unresolved=20/25 after 65 runs 
+  ncols=5 w=1 helpers=9 : unresolved=20/25 after 68 runs 
+  ncols=5 w=2 helpers=20 : unresolved=50/50 after 13 runs 
+  ncols=5 w=2 helpers=19 : unresolved=50/50 after 13 runs 

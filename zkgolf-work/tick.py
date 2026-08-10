@@ -53,12 +53,28 @@ DISPATCH = [s for s in CHALLENGES5 if s not in NO_DISPATCH]
 # (3) gf2-sha256 also has zero submissions, and unlike keccak its own analysis now says the whole
 #     remaining gap is at most 1,182 -- the 20,862 that justified funding it was a degree-bound error.
 #     One big-win slot, no small-win.
+# *** 2026-08-10 REWEIGHT: keccak's slot was mispriced because its JOBS WERE MISINFORMED. ***
+# The "414 jobs, zero submissions" figure that justified cutting keccak to one slot was not a
+# statement about the challenge. tick.py seeds from `projs/{slug}` (see the dispatch loop), and
+# projs/keccak-f1600/Solution/ holds OUR 307200 tree, while targets.json says 184320 -- because
+# check_records.py downloads the record into records/ but SKIPS the copy into projs/ when the
+# record omits `computableWitness`, which ordian's 184320 does. gen_prompts.py then wrote
+# "your seed scores {target}" into the prompt header. So every one of those 414 jobs was told it
+# was holding a record-tier tree and handed one 122880 worse. Zero submissions is the expected
+# outcome of that, not evidence about keccak.
+# Fixed in gen_prompts.py (seed_cost() now reads the seed's real Main.lean and the header states
+# both numbers). The task is now a PORT, not a discovery: the record circuit is already sitting in
+# projs/keccak-f1600/reference/ byte-identical to records/, and it is worth 122880 -- by far the
+# largest single item on the board. Funded back to a full pair.
+# The slot comes from gf2-sha256-compress-canonical, which is the weakest on the board: zero
+# submissions ever AND its own analysis caps the remaining gap at 1,182. Trading a <=1,182 lottery
+# ticket for a 122,880 port with the source in hand. Total stays 20.
 SLOTS = {
     "secp256k1-scalar-mul":          {"big-win": 2, "small-win": 1},
     "secp256k1-fixed-base-scalar-mul": {"big-win": 2, "small-win": 1},
     "sha256-hash":                   {"big-win": 1, "small-win": 1},
-    "keccak-f1600":                  {"big-win": 1, "small-win": 0},
-    "gf2-sha256-compress-canonical": {"big-win": 1, "small-win": 0},
+    "keccak-f1600":                  {"big-win": 1, "small-win": 1},
+    "gf2-sha256-compress-canonical": {"big-win": 0, "small-win": 0},
 }
 def slot_plan(slug):
     """(purpose, prompt_dir, replica_index) triples for one slug, in dispatch order."""
