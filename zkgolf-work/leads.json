@@ -26,10 +26,10 @@
       "id": "vb-fold-audit-64",
       "slug": "secp256k1-scalar-mul",
       "price": 19840,
-      "summary": "Roughly two loop certificates per step may still be on the 4x64 fold (folds average 278 vs CERT32 194 / CERT64 354). -160 each x 2 x 62.",
+      "summary": "CONFIRMED: two base-2^64 fold certificates per step, at DivOrZeroF3.lean:326 and DivOrZeroS32.lean:366. Port them to the 32-bit family. Price still unverified.",
       "source": "range-check floor analysis, 2026-08-09",
       "witness": null,
-      "note": "UNVERIFIABLE MECHANICALLY and it is an inference from an average, NOT a sighting. First action is to enumerate every fold instance on the live step path and record its cost; if all are 32-bit, close this lead."
+      "note": "CONFIRMED AS A SIGHTING 2026-08-11, against the 304206 tree. The audit this entry demanded was run and the answer is that the folds are NOT all 32-bit. ParamsFoldT.lean:42 has qBitsFoldT = 69 against ParamsFold32T.lean:67's qBitsFold32T = 36, so MulModFoldT IS the base-2^64 fold, and it is live at exactly TWO sites on the step path: DivOrZeroF3.lean:326 and DivOrZeroS32.lean:366. Both reach the step through SlopeXS/Slope2 -> FusedStep -> GLVStep, which is TWO 64-bit certificates per step -- precisely the number the original average-based inference predicted. (A third site, PointValid.lean:62, is not on the per-step path and should not be counted.) The 32-bit family that should replace them is all present and costed: mulModFold32Cost <97,99>, mulModFold32TCost <93,95>, mulModFold32MCost <159,161>, mulModFold32NCost <157,159>. WHAT IS STILL NOT RE-DERIVED, AND SAY SO RATHER THAN QUOTING IT AS FACT: the -160 per instance comes from the item's earlier CERT64 354 vs CERT32 194 measurement. Cost.lean defines mulModFoldTCount only as a Count EXPRESSION (line 2313) with no proved numeric constant, unlike the 32-bit variants which all have one. So the 19,840 is 2 x 62 x (an unverified 160). Evaluate mulModFoldTCount numerically before committing a slot -- the sighting is confirmed, the price is not.\n\nPRIOR TEXT: UNVERIFIABLE MECHANICALLY and it is an inference from an average, NOT a sighting. First action is to enumerate every fold instance on the live step path and record its cost; if all are 32-bit, close this lead."
     },
     {
       "id": "sha-sigma-trunc",
