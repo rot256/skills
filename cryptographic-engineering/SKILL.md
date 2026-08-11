@@ -103,9 +103,14 @@ pub struct Scalar(FieldElement);
 pub struct NonZeroScalar(Scalar);
 ```
 
-Construct `Scalar` only from a canonical field encoding, then construct `NonZeroScalar` through `TryFrom<Scalar>`. Implement immutable `AsRef<Scalar>` and `Deref<Target = Scalar>` for ergonomic use where the less-restricted type is accepted.
+Construct `Scalar` only from a canonical field encoding,
+then construct `NonZeroScalar` through `TryFrom<Scalar>`.
+Implement immutable `AsRef<Scalar>` and `Deref<Target = Scalar>`
+for ergonomic use where the less-restricted type is accepted.
 
-Use refinement to make partial operations total, for example requiring the denominator of a division to be `NonZeroScalar` so the operation can only be invoked where it is defined:
+Use refinement to make partial operations total,
+for example requiring the denominator of a division to be `NonZeroScalar`
+so the operation can only be invoked where it is defined:
 
 ```rust
 impl NonZeroScalar {
@@ -125,9 +130,13 @@ impl std::ops::Div<&NonZeroScalar> for &Scalar {
 }
 ```
 
-Lagrange interpolation is the canonical instance: distinct validated share indices make every pairwise difference of evaluation points a `NonZeroScalar`, so coefficient computation cannot divide by zero.
+Lagrange interpolation is the canonical instance:
+distinct validated share indices make every pairwise difference of evaluation points a `NonZeroScalar`,
+so coefficient computation cannot divide by zero.
 
-Do not implement `AsMut`, `DerefMut`, or expose a mutable inner value: mutation could turn a refined value into an invalid one. When ownership must be relaxed, implement the infallible `From<NonZeroScalar> for Scalar` or `From<NonZeroPoint> for Point` conversion.
+Do not implement `AsMut`, `DerefMut`, or expose a mutable inner value:
+mutation could turn a refined value into an invalid one.
+When ownership must be relaxed, implement the infallible `From<NonZeroScalar> for Scalar` or `From<NonZeroPoint> for Point` conversion.
 
 Apply the same pattern to:
 
@@ -138,9 +147,14 @@ Apply the same pattern to:
 - Supported message and algorithm versions.
 - Ordered or duplicate-free transcript collections.
 
-Use layered refinement types such as `Point`/`NonZeroPoint` and `Scalar`/`NonZeroScalar`, as well as arrays, enums, and other validated newtypes, instead of raw vectors, integers, strings, or booleans when they encode protocol invariants. Accept the weakest type that satisfies each API's actual precondition. Validate cross-field invariants by converting an entire wire struct into one validated aggregate, not by validating fields independently and hoping the caller completes the checks.
+Use layered refinement types such as `Point`/`NonZeroPoint` and `Scalar`/`NonZeroScalar`,
+as well as arrays, enums, and other validated newtypes, instead of raw vectors, integers, strings,
+or booleans when they encode protocol invariants.
+Accept the weakest type that satisfies each API's actual precondition.
 
-If parsing must temporarily hold invalid data, keep it in an explicitly named private wire type. Do not expose it to cryptographic operations, application state, logs, callbacks, or persistence before successful conversion.
+If parsing must temporarily hold invalid data, keep it in an explicitly named private wire type.
+Do not expose it to cryptographic operations, application state, logs, callbacks, or persistence before successful conversion.
+NEVER construct an instance of a type for which its invariants do not hold, not even temporarily.
 
 ## Domain-separate with semantic types
 
@@ -169,16 +183,16 @@ pub trait Tagged: serde::Serialize {
 }
 ```
 
-Use length-delimited structured encoding such as `(separator, value)`. Never create transcripts by concatenating variable-length fields without lengths or an equally unambiguous grammar.
-
+Use length-delimited structured encoding such as `(separator, value)`.
+Never create transcripts by concatenating variable-length fields without lengths or an equally unambiguous grammar.
 Name separators by version and purpose:
 
 ```rust
-impl Tagged for EmailCertificateMessage {
+impl Tagged for EmailCertificate {
     const SEPARATOR: &'static str = "v0:email-cert";
 }
 
-impl Tagged for RecoveryRequestMessage {
+impl Tagged for RecoveryRequest {
     const SEPARATOR: &'static str = "v0:recovery-request";
 }
 ```
@@ -186,19 +200,22 @@ impl Tagged for RecoveryRequestMessage {
 Apply these rules:
 
 - Assign a distinct separator to every semantic role, even when two types currently serialize identically.
-- Include a version in every protocol-facing separator, such as `v0:<component>-<purpose>`.
-- Treat a separator as immutable once data using it can persist or cross a trust boundary.
+- Include a version in every protocol-facing separator, such as `v0:<component>-<purpose>`. Use a consistent type throughout the project.
+- Treat a separator as defining a type: do not use the same seperator across different types, or keep the same seperator when e.g. adding fields to a type.
 - Search the whole project for duplicates when adding a separator. The trait cannot enforce global uniqueness.
 - Use zero-field marker types for KDF purposes that have no runtime context.
 - Give separate stages separate tags: input hashing, proof challenges, output derivation, encryption pads, MACs, and nonces must not share a domain.
 
-For hash-to-curve, use both a standards-compliant suite/DST and a typed encoded message. Include the application, curve/group, protocol version, and semantic purpose in the DST.
+For hash-to-curve, use both a standards-compliant suite/DST and a typed encoded message.
+Include the application, curve/group, protocol version, and semantic purpose in the DST.
 
-## Construct explicit transcripts
+## Construct Explicit Transcripts
 
-Represent every cryptographic transcript as a serializable struct with named fields. Include all values that affect authorization or interpretation.
+Represent every cryptographic transcript as a serializable struct with named fields.
+Include all values that affect authorization or interpretation.
 
-This Schnorr signature-of-knowledge transcript binds the application message, proof commitment, and ordered commitment set:
+This Schnorr signature-of-knowledge transcript binds the application message, proof commitment,
+and ordered commitment set:
 
 ```rust
 #[derive(serde::Serialize)]
@@ -213,7 +230,9 @@ impl Tagged for SokMessage<'_> {
 }
 ```
 
-Do not sign or hash only the payload when its meaning also depends on an account ID, recipient, public key, counter, session ID, algorithm, or external context. Put those values in the transcript.
+Do not sign or hash only the payload when its meaning also depends on an account ID, recipient,
+public key, counter, session ID, algorithm, or external context.
+Put those values in the transcript.
 
 When a generic inner type would otherwise disappear during serialization, include its separator explicitly:
 
@@ -234,7 +253,8 @@ let transcript = MacTranscript {
 };
 ```
 
-Preserve ordering when ordering is semantically meaningful. Sort or canonicalize sets before encoding when it is not.
+Preserve ordering when ordering is semantically meaningful.
+Sort or canonicalize sets before encoding when it is not.
 
 ## Fiat-Shamir
 
