@@ -431,7 +431,11 @@ a tagged info value does not automatically protect an untagged or copied IKM buf
 
 ## Fiat-Shamir
 
-There are two, and exactly two, acceptable ways to implement Fiat-Shamir. Both make it impossible for verifier code to use a prover message that has not been absorbed into the transcript, because the transcript is the only way to reach the value. Any structure that follows neither, such as deserializing a plain proof struct and absorbing fields by hand, is highly discouraged: one forgotten absorption is a weak-Fiat-Shamir break.
+There are two, and exactly two, acceptable ways to implement Fiat-Shamir.
+Both make it impossible for verifier code to use a prover message that has not been absorbed
+into the transcript, because the transcript is the only way to reach the value.
+Any structure that follows neither, such as deserializing a plain proof struct
+and absorbing fields by hand, is highly discourage.
 
 **Opaque Message Wrappers.** Wrap *every* prover message in `Msg<T>`,
 which implements `Serialize`/`Deserialize` but never exposes the inner value.
@@ -513,7 +517,6 @@ and the wire format is declared by the struct instead of being implicit in verif
 In either style:
 
 - Do not implement `Clone` for the transcript type.
-  Especially in the case of the first style.
 
 - Always absorb the statement before any prover message: the public inputs,
   the relation/circuit identity (a hash of the circuit description or the verifying key), and the parameters.
@@ -523,7 +526,8 @@ In either style:
 ## One Key, One Purpose
 
 Be liberal in defining newtypes for key material,
-to ensure that keys are separated by usage at the type-system level.
+to ensure that keys are separated by usage at the type-system level,
+and to make the meaning of a key easy to read from its type or methods.
 Expose the underlying capability through explicit forwarding methods,
 which can also narrow which message types the key accepts:
 
@@ -594,7 +598,8 @@ impl<const N: usize> std::fmt::Debug for Secret<N> {
 ```
 
 
-Also zeroize secret field elements, secret shares, polynomial coefficients, signing keys, KEM decapsulation keys, derived keys, and random masks.
+Also zeroize secret field elements, secret shares,
+signing keys, KEM decapsulation keys, derived keys, and masks, etc.
 Enable dependency features such as `zeroize` when the underlying library provides them.
 DO NOT ad-hoc zeroize thoughout the code.
 
@@ -614,8 +619,8 @@ may leave secrets in memory, even after zeroizing.
 ## Compare Cryptographic Values in Constant Time
 
 Use `subtle` instead of handwritten comparison loops.
-Give each fixed-size cryptographic value its own newtype so its equality and role are enforced by the type,
-as in the `Mac` example above;
+Give each fixed-size cryptographic value its own newtype
+so its equality and role are enforced by the type, as in the `Mac` example above;
 use dedicated newtypes for keys, nonces, tags, commitments,
 and identifiers even when their byte lengths match.
 
@@ -627,11 +632,14 @@ but do not claim unit tests prove timing behavior; rely on reviewed primitives a
 
 ## Checks Return Result
 
-Cryptographic checks always return `Result`, never `bool`: `Result` is `must_use`, so a caller cannot silently discard the verdict. In languages without a `Result` type, checks raise exceptions instead.
+Cryptographic checks always return `Result`, never `bool`:
+`Result` is `must_use`, so a caller cannot silently discard the verdict.
+In languages without a `Result` type, checks raise exceptions instead.
 
 ## Sign and Verify Typed Messages
 
-Reconstruct the expected signed object from trusted context and parsed fields. This envelope prevents replaying a ciphertext in another position or session:
+Reconstruct the expected signed object from trusted context and parsed fields.
+This envelope prevents replaying a ciphertext in another position or session:
 
 ```rust
 #[derive(serde::Serialize)]
