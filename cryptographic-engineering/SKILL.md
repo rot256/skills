@@ -299,80 +299,28 @@ The trait is core-compatible, so the same code serves embedded targets.
 pub trait Sink {
     fn write(&mut self, bytes: &[u8]);
 }
-
-impl Sink for Vec<u8> {
-    fn write(&mut self, bytes: &[u8]) {
-        self.extend_from_slice(bytes);
-    }
-}
-
-/// Counts bytes without storing them.
-pub struct ByteCounter(pub usize);
-
-impl Sink for ByteCounter {
-    fn write(&mut self, bytes: &[u8]) {
-        self.0 += bytes.len();
-    }
-}
-
-/// Writes into the front of a fixed slice; panics if it runs out of space.
-impl Sink for &mut [u8] {
-    fn write(&mut self, bytes: &[u8]) {
-        assert!(bytes.len() <= self.len(), "slice sink out of space");
-        let (head, tail) = core::mem::take(self).split_at_mut(bytes.len());
-        head.copy_from_slice(bytes);
-        *self = tail;
-    }
-}
 ```
 
-Bridge the serializer to sinks once:
+Consumers implement `Sink` or get a small explicit adapter,
+and a hash returns a dedicated newtype rather than raw bytes:
 
 ```rust
-struct IntoSink<'a, S: Sink>(&'a mut S);
+/// Domain-separated hash of a tagged value.
+pub struct Digest([u8; 32]);
 
-impl<S: Sink> postcard::ser_flavors::Flavor for IntoSink<'_, S> {
-    type Output = ();
-
-    fn try_push(&mut self, byte: u8) -> postcard::Result<()> {
-        self.0.write(&[byte]);
-        Ok(())
-    }
-
-    fn try_extend(&mut self, bytes: &[u8]) -> postcard::Result<()> {
-        self.0.write(bytes);
-        Ok(())
-    }
-
-    fn finalize(self) -> postcard::Result<()> {
-        Ok(())
-    }
-}
-```
-
-Hash and MAC states get a small explicit adapter:
-
-```rust
-/// Sink adapter for any hash or MAC state.
-pub struct Absorbing<D: digest::Update>(pub D);
-
-impl<D: digest::Update> Sink for Absorbing<D> {
-    fn write(&mut self, bytes: &[u8]) {
-        self.0.update(bytes);
-    }
-}
-
-fn hash<T: Tagged>(input: &T) -> [u8; 32] {
-    use sha3::Digest;
-
+fn hash<T: Tagged>(input: &T) -> Digest {
     let mut h = Absorbing(sha3::Sha3_256::new());
     input.absorb(&mut h);
-    h.0.finalize().into()
+    Digest(h.0.finalize().into())
 }
 ```
 
-`Tagged::encode` uses `ByteCounter` to size an exact allocation
-and the slice sink to fill it.
+`Tagged::encode` uses a counting sink to size an exact allocation
+and a slice sink to fill it.
+The complete implementation, with the `Vec`, counting, and slice sinks,
+the postcard bridge, the `Absorbing` hash adapter,
+and compiling, tested versions of every interface in this document,
+lives in the [sink reference crate](references/sink/src/lib.rs).
 
 ## Examples
 
@@ -380,6 +328,9 @@ Concrete instantiations of the overall philosophy:
 every operation consumes tagged messages rather than raw bytes,
 binds its purpose into what it hashes,
 and reports failure through one uniform `Result`.
+A complete, compiling version of every example below
+lives in the [sink reference crate](references/sink),
+kept honest by its test suite.
 
 ### Signing
 
@@ -413,7 +364,7 @@ Return a uniform external failure instead of leaking parser or equation details.
 ### Symmetric Encryption
 
 ```rust
-fn seal<M: Tagged, A: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+fn seal<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
     rng: &mut R,
     key: &Key,
     plaintext: &M,
@@ -436,7 +387,7 @@ or associated-data value fails with the same external error.
 ### Public-Key Encryption
 
 ```rust
-fn encrypt<M: Tagged, A: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+fn encrypt<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
     rng: &mut R,
     ek: &EncryptionKey,
     plaintext: &M,
@@ -466,7 +417,7 @@ from the raw shared secret under a tagged context:
 
 ```rust
 impl EncapsulationKey {
-    pub fn encaps<C: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+    pub fn encaps<C: Tagged, R: rand_core::CryptoRng>(
         &self,
         rng: &mut R,
         context: &C,
