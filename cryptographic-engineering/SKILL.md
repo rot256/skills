@@ -158,13 +158,18 @@ NEVER construct an instance of a type for which its invariants do not hold, not 
 
 ## Domain-Separate With Semantic Types
 
-Require cryptographic inputs to implement a trait that combines canonical serialization with a stable purpose tag:
+Require cryptographic inputs to implement a trait that combines canonical serialization with a stable purpose tag.
+Serialization streams into a sink (see the Sink section),
+so the encoding of secret material need not exist as an intermediate buffer:
 
 ```rust
+use zeroize::Zeroizing;
+
 pub trait Tagged: serde::Serialize {
     const SEPARATOR: &'static str;
 
-    fn encode(&self) -> Vec<u8>
+    /// Stream the domain-separated encoding into a sink.
+    fn absorb<S: Sink>(&self, sink: &mut S)
     where
         Self: Sized,
     {
@@ -174,14 +179,58 @@ pub trait Tagged: serde::Serialize {
             val: &'a T,
         }
 
-        postcard::to_allocvec(&DomainTuple {
-            sep: Self::SEPARATOR,
-            val: self,
-        })
-        .expect("in-memory transcript encoding must succeed")
+        postcard::serialize_with_flavor(
+            &DomainTuple {
+                sep: Self::SEPARATOR,
+                val: self,
+            },
+            IntoSink(sink),
+        )
+        .expect("in-memory serialization must succeed");
+    }
+
+    /// Materialize the encoding; only for APIs that demand a byte slice.
+    /// Zeroized on drop.
+    fn encode(&self) -> Zeroizing<Box<[u8]>>
+    where
+        Self: Sized,
+    {
+        let mut counter = ByteCounter(0);
+        self.absorb(&mut counter);
+
+        let mut out = Zeroizing::new(vec![0u8; counter.0].into_boxed_slice());
+        let mut slot: &mut [u8] = &mut out;
+        self.absorb(&mut slot);
+        assert!(slot.is_empty(), "encoded length must match counted length");
+        out
     }
 }
 ```
+
+`absorb` is the single serialization path:
+hashes, KDFs, MACs, and Fiat-Shamir transcripts consume the encoding as sinks,
+so the serialized secret exists only inside the primitive's internal state.
+
+`encode` is derived from `absorb` for the few APIs that demand a byte slice,
+such as non-prehashed Ed25519, so the two paths can never diverge.
+It counts with a `ByteCounter` (see the Sink section),
+allocates an exact-size boxed slice, and writes into it.
+A `Box<[u8]>` cannot grow,
+so reallocation, and with it any stale partial copy on the heap,
+is impossible by construction, and the slice is zeroized on drop.
+Zeroizing every encoding is cheap
+and avoids having to classify which messages contain secret material.
+
+The two passes assume `Serialize` impls are deterministic and side-effect-free.
+Keep them pure byte layout;
+precompute any expensive representation in the type rather than during serialization,
+which also avoids paying for it twice.
+
+postcard is illustrative:
+any canonical, self-delimiting serialization serves.
+The point is building every cryptographic operation
+around signing, hashing, encrypting, and deriving from domain-separated types,
+not the particular serializer.
 
 Use length-delimited structured encoding such as `(separator, value)`.
 Never create transcripts by concatenating variable-length fields without lengths or an equally unambiguous grammar.
@@ -236,6 +285,94 @@ let transcript = MacTranscript {
 
 Preserve ordering when ordering is semantically meaningful.
 Sort or canonicalize sets before encoding when it is not.
+
+## Sink
+
+Absorbing bytes into a hash, MAC, sponge, or buffer cannot fail,
+so the sink trait is infallible;
+`std::io::Write` would force a `Result` that is a lie for these consumers.
+Keep `std::io::Write` as a separate, genuinely fallible interface for real I/O.
+The trait is core-compatible, so the same code serves embedded targets.
+
+```rust
+/// Infallible byte sink; absorbing cannot fail.
+pub trait Sink {
+    fn write(&mut self, bytes: &[u8]);
+}
+
+impl Sink for Vec<u8> {
+    fn write(&mut self, bytes: &[u8]) {
+        self.extend_from_slice(bytes);
+    }
+}
+
+/// Counts bytes without storing them.
+pub struct ByteCounter(pub usize);
+
+impl Sink for ByteCounter {
+    fn write(&mut self, bytes: &[u8]) {
+        self.0 += bytes.len();
+    }
+}
+
+/// Writes into the front of a fixed slice; panics if it runs out of space.
+impl Sink for &mut [u8] {
+    fn write(&mut self, bytes: &[u8]) {
+        assert!(bytes.len() <= self.len(), "slice sink out of space");
+        let (head, tail) = core::mem::take(self).split_at_mut(bytes.len());
+        head.copy_from_slice(bytes);
+        *self = tail;
+    }
+}
+```
+
+Bridge the serializer to sinks once:
+
+```rust
+struct IntoSink<'a, S: Sink>(&'a mut S);
+
+impl<S: Sink> postcard::ser_flavors::Flavor for IntoSink<'_, S> {
+    type Output = ();
+
+    fn try_push(&mut self, byte: u8) -> postcard::Result<()> {
+        self.0.write(&[byte]);
+        Ok(())
+    }
+
+    fn try_extend(&mut self, bytes: &[u8]) -> postcard::Result<()> {
+        self.0.write(bytes);
+        Ok(())
+    }
+
+    fn finalize(self) -> postcard::Result<()> {
+        Ok(())
+    }
+}
+```
+
+Hash and MAC states get a small explicit adapter:
+
+```rust
+/// Sink adapter for any hash or MAC state.
+pub struct Absorbing<D: digest::Update>(pub D);
+
+impl<D: digest::Update> Sink for Absorbing<D> {
+    fn write(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+}
+
+fn hash<T: Tagged>(input: &T) -> [u8; 32] {
+    use sha3::Digest;
+
+    let mut h = Absorbing(sha3::Sha3_256::new());
+    input.absorb(&mut h);
+    h.0.finalize().into()
+}
+```
+
+`Tagged::encode` uses `ByteCounter` to size an exact allocation
+and the slice sink to fill it.
 
 ## Examples
 
@@ -450,7 +587,7 @@ pub struct Msg<T>(T);
 impl Transcript {
     /// Absorb the domain-separated encoding, then release the value.
     pub fn recv<T: Tagged>(&mut self, msg: Msg<T>) -> T {
-        self.absorb(&msg.0.encode());
+        msg.0.absorb(&mut self.sponge);
         msg.0
     }
 }
@@ -770,14 +907,24 @@ pub struct Padded<T, const BLOCK: usize>(T);
 
 impl<T: serde::Serialize, const BLOCK: usize> serde::Serialize for Padded<T, BLOCK> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut bytes = postcard::to_allocvec(&self.0).map_err(serde::ser::Error::custom)?;
-        let target = bytes
-            .len()
+        const { assert!(BLOCK > 0, "BLOCK must be nonzero") };
+
+        let mut counter = ByteCounter(0);
+        postcard::serialize_with_flavor(&self.0, IntoSink(&mut counter))
+            .map_err(serde::ser::Error::custom)?;
+
+        let target = counter
+            .0
             .checked_next_multiple_of(BLOCK)
-            .unwrap_or(bytes.len())
+            .unwrap_or(counter.0)
             .max(BLOCK);
-        bytes.resize(target, 0);
-        bytes.serialize(serializer)
+
+        let mut padded = Zeroizing::new(vec![0u8; target].into_boxed_slice());
+        let mut slot: &mut [u8] = &mut padded;
+        postcard::serialize_with_flavor(&self.0, IntoSink(&mut slot))
+            .map_err(serde::ser::Error::custom)?;
+
+        (*padded).serialize(serializer)
     }
 }
 
@@ -785,7 +932,8 @@ impl<'de, T: serde::de::DeserializeOwned, const BLOCK: usize> serde::Deserialize
     for Padded<T, BLOCK>
 {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let bytes: Vec<u8> = serde::Deserialize::deserialize(deserializer)?;
+        let bytes: Zeroizing<Vec<u8>> =
+            Zeroizing::new(serde::Deserialize::deserialize(deserializer)?);
         postcard::from_bytes(&bytes)
             .map(Padded)
             .map_err(serde::de::Error::custom)
@@ -796,6 +944,12 @@ impl<T: Tagged, const BLOCK: usize> Tagged for Padded<T, BLOCK> {
     const SEPARATOR: &'static str = T::SEPARATOR;
 }
 ```
+
+The padded encoding follows the same two-pass discipline as `Tagged::encode`:
+count, allocate the exact padded size, write the inner value into the prefix.
+The zero fill of the allocation doubles as the padding,
+and both temporaries are `Zeroizing`,
+since a padded plaintext is normally about to be encrypted and therefore secret.
 
 ## Validate Adversarially
 
