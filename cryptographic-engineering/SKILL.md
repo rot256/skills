@@ -160,13 +160,10 @@ pub trait Tagged: serde::Serialize {
             val: &'a T,
         }
 
-        bincode::serde::encode_to_vec(
-            &DomainTuple {
-                sep: Self::SEPARATOR,
-                val: self,
-            },
-            bincode::config::standard(),
-        )
+        postcard::to_allocvec(&DomainTuple {
+            sep: Self::SEPARATOR,
+            val: self,
+        })
         .expect("in-memory transcript encoding must succeed")
     }
 }
@@ -495,7 +492,7 @@ Use a transport wrapper such as URL-safe unpadded Base64 only after canonical bi
 When ciphertext length leaks sensitive structure, pad the serialized plaintext into documented buckets before encryption. Make bucketing a reusable wrapper type instead of ad hoc call-site logic:
 
 ```rust
-/// Serializes as `bincode(inner) || zero padding`, padded to the next
+/// Serializes as `postcard(inner) || zero padding`, padded to the next
 /// multiple of `BLOCK` (at least one block). The inner encoding is
 /// self-delimiting, so deserialization stops at the logical end and
 /// accepts any padding amount, letting `BLOCK` evolve without breaking
@@ -503,11 +500,9 @@ When ciphertext length leaks sensitive structure, pad the serialized plaintext i
 #[derive(Clone)]
 pub struct Padded<T, const BLOCK: usize>(T);
 
-// BINCODE_CONFIG: bincode::config::standard().with_limit::<MAX_BYTES>()
 impl<T: serde::Serialize, const BLOCK: usize> serde::Serialize for Padded<T, BLOCK> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut bytes = bincode::serde::encode_to_vec(&self.0, BINCODE_CONFIG)
-            .map_err(serde::ser::Error::custom)?;
+        let mut bytes = postcard::to_allocvec(&self.0).map_err(serde::ser::Error::custom)?;
         let target = bytes
             .len()
             .checked_next_multiple_of(BLOCK)
@@ -523,9 +518,9 @@ impl<'de, T: serde::de::DeserializeOwned, const BLOCK: usize> serde::Deserialize
 {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes: Vec<u8> = serde::Deserialize::deserialize(deserializer)?;
-        let (inner, _consumed) = bincode::serde::decode_from_slice(&bytes, BINCODE_CONFIG)
-            .map_err(serde::de::Error::custom)?;
-        Ok(Padded(inner))
+        postcard::from_bytes(&bytes)
+            .map(Padded)
+            .map_err(serde::de::Error::custom)
     }
 }
 
