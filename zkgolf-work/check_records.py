@@ -36,14 +36,26 @@ for slug,inst in INST.items():
     soldir=f"projs/{slug}/Solution/{inst}"
     for f in glob.glob(soldir+"/*.lean"): os.remove(f)
     for f in files: shutil.copy(f, soldir)
-    for pf in (f"prompts/{slug}.md", f"prompts_small/{slug}.md"):
-        if os.path.exists(pf):
-            c = open(pf).read()            # read FIRST (never truncate-before-read)
-            if c.strip():                  # never blank out a prompt
-                open(pf, "w").write(c.replace(str(old), str(new)))
+    # DO NOT rewrite prompt text here. A blind old->new replace also hits the workqueue header's
+    # `derived` value, which is a claim about WHEN the items were worked out, not a copy of the
+    # live score -- rewriting it silences the `now != derived` staleness banner and makes stale
+    # items read as freshly derived. Prompts are regenerated from targets.json below instead.
     tg[slug]={"target":new,"seed":f"valid record {new} by {t['github_login']}","by":t["github_login"]}
     changed.append((slug,old,new,t["github_login"]))
 json.dump(tg,open("targets.json","w"),indent=2)
+if changed:
+    # Regenerate prompts from the new targets.json. gen_prompts.py is the only place that knows
+    # which numbers are live (the target, the seed's real cost) and which are historical claims
+    # (the workqueue's `derived`), so it is the only thing allowed to write a prompt.
+    try:
+        r = subprocess.run(["python3", "gen_prompts.py"], capture_output=True, text=True, timeout=300)
+        if r.returncode != 0:
+            print("NOTIFY: gen_prompts FAILED after reseed: " + (r.stderr.strip().splitlines() or ["?"])[-1])
+        else:
+            for line in r.stdout.splitlines():
+                if line.startswith(("SEED DIVERGENCE", "WARN")): print("NOTIFY: " + line)
+    except Exception as e:
+        print(f"NOTIFY: gen_prompts could not run after reseed: {e}")
 # NOTE: never cancel in-flight jobs. When a record moves we only re-seed projs + update
 # targets/prompts for FUTURE dispatches; running jobs finish on their own and the tick gate
 # re-evaluates their output against the new best.
