@@ -5,7 +5,10 @@ description: Design, implement, modify, and review robust cryptographic software
 
 # Cryptographic Engineering
 
-Treat protocol meaning as part of the type system. Operate on semantic values rather than untyped byte strings, bind every cryptographic operation to its purpose and context, and make invalid states impossible to represent.
+Treat protocol meaning as part of the type system.
+Operate on semantic values rather than untyped byte strings,
+bind every cryptographic operation to its purpose and context,
+and make invalid states impossible to represent.
 
 ## Start from the protocol
 
@@ -15,13 +18,21 @@ Before editing code:
 2. Record what each hash, KDF, signature, encryption, commitment, or proof must bind.
 3. Separate protocol versions and algorithm versions explicitly.
 4. Decide which malformed inputs must be rejected before expensive cryptography.
-5. Prefer established, reviewed constructions and libraries. Implement a new construction only when the protocol requires it and its security argument is understood.
+5. Prefer established, reviewed constructions and libraries.
+   Implement a new construction only when the protocol requires it and its security argument is understood.
 
-Do not let serialization layout, call-site convention, or comments carry an invariant that a type or API can enforce.
+Do not let serialization layout, call-site convention,
+or comments carry an invariant that a type or API can enforce.
 
 ## Make invalid states unrepresentable
 
-Separate untrusted wire representations from validated cryptographic types. Give validated types private fields and expose only fallible constructors, `TryFrom`, or custom deserializers that enforce every invariant before construction.
+Separate untrusted wire representations from validated cryptographic types.
+Give validated types private fields and expose only fallible constructors.
+Make the validated types implement `Deserialize` themselves — route the derive
+through the fallible conversion with `#[serde(try_from = "...")]` or write a
+manual deserializer — so every invariant is enforced during deserialization
+and protocol messages declare the refined types directly in their fields.
+The raw wire type stays a private implementation detail of decoding.
 
 ```rust
 #[derive(serde::Deserialize)]
@@ -29,9 +40,13 @@ struct WirePoint([u8; 48]);
 
 /// Canonically decoded, on-curve point in the required prime-order subgroup.
 /// The identity point is allowed.
+#[derive(serde::Deserialize)]
+#[serde(try_from = "WirePoint")]
 pub struct Point(ark_bls12_381::G1Affine);
 
 /// A [`Point`] guaranteed not to be the identity.
+#[derive(serde::Deserialize)]
+#[serde(try_from = "Point")]
 pub struct NonZeroPoint(Point);
 
 impl TryFrom<WirePoint> for Point {
@@ -68,19 +83,51 @@ impl std::ops::Deref for NonZeroPoint {
 }
 ```
 
-Verify the exact guarantees of the library decoder. For untrusted elliptic-curve input, require canonical field encodings, an on-curve point, and membership in the correct prime-order subgroup before constructing `Point`. When a protocol position also forbids the identity, require `NonZeroPoint`; do not make all valid points globally nonzero. Never use unchecked point deserialization merely because a later equation is expected to fail.
+Verify the exact guarantees of the library decoder.
+For untrusted elliptic-curve input, require canonical field encodings, an on-curve point, and membership in the correct prime-order subgroup before constructing `Point`. When a protocol position also forbids the identity, require `NonZeroPoint`; do not make all valid points globally nonzero. Never use unchecked point deserialization merely because a later equation is expected to fail.
 
 Build the same refinement hierarchy for scalars:
 
 ```rust
+#[derive(serde::Deserialize)]
+struct WireScalar([u8; 32]);
+
 /// Canonically decoded scalar; zero is allowed.
+#[derive(serde::Deserialize)]
+#[serde(try_from = "WireScalar")]
 pub struct Scalar(FieldElement);
 
 /// A [`Scalar`] guaranteed not to be zero.
+#[derive(serde::Deserialize)]
+#[serde(try_from = "Scalar")]
 pub struct NonZeroScalar(Scalar);
 ```
 
-Construct `Scalar` only from a canonical field encoding, then construct `NonZeroScalar` through `TryFrom<Scalar>`. Implement immutable `AsRef<Scalar>` and `Deref<Target = Scalar>` for ergonomic use where the less-restricted type is accepted. Do not implement `AsMut`, `DerefMut`, or expose a mutable inner value: mutation could turn a refined value into an invalid one. When ownership must be relaxed, implement the infallible `From<NonZeroScalar> for Scalar` or `From<NonZeroPoint> for Point` conversion.
+Construct `Scalar` only from a canonical field encoding, then construct `NonZeroScalar` through `TryFrom<Scalar>`. Implement immutable `AsRef<Scalar>` and `Deref<Target = Scalar>` for ergonomic use where the less-restricted type is accepted.
+
+Use refinement to make partial operations total, for example requiring the denominator of a division to be `NonZeroScalar` so the operation can only be invoked where it is defined:
+
+```rust
+impl NonZeroScalar {
+    /// Total: a nonzero scalar in a prime field is always invertible,
+    /// and the inverse is itself nonzero.
+    pub fn invert(&self) -> NonZeroScalar {
+        NonZeroScalar(Scalar(self.0.0.inverse().expect("nonzero scalar is invertible")))
+    }
+}
+
+impl std::ops::Div<&NonZeroScalar> for &Scalar {
+    type Output = Scalar;
+
+    fn div(self, denom: &NonZeroScalar) -> Scalar {
+        Scalar(self.0 * denom.invert().0.0)
+    }
+}
+```
+
+Lagrange interpolation is the canonical instance: distinct validated share indices make every pairwise difference of evaluation points a `NonZeroScalar`, so coefficient computation cannot divide by zero.
+
+Do not implement `AsMut`, `DerefMut`, or expose a mutable inner value: mutation could turn a refined value into an invalid one. When ownership must be relaxed, implement the infallible `From<NonZeroScalar> for Scalar` or `From<NonZeroPoint> for Point` conversion.
 
 Apply the same pattern to:
 
@@ -154,7 +201,7 @@ For hash-to-curve, use both a standards-compliant suite/DST and a typed encoded 
 
 Represent every cryptographic transcript as a serializable struct with named fields. Include all values that affect authorization or interpretation.
 
-This pattern, adapted from the Swafe Schnorr proof, binds the application message, proof commitment, and ordered commitment set:
+This Schnorr signature-of-knowledge transcript binds the application message, proof commitment, and ordered commitment set:
 
 ```rust
 #[derive(serde::Serialize)]
@@ -345,7 +392,7 @@ impl VerificationKey {
 
 Use strict verification offered by the library. Match signature and verification-key algorithm versions explicitly. Return a uniform external failure instead of leaking parser or equation details.
 
-Reconstruct the expected signed object from trusted context and parsed fields. This Swafe-style envelope prevents replaying a guardian share in another position or session:
+Reconstruct the expected signed object from trusted context and parsed fields. This envelope prevents replaying a guardian share in another position or session:
 
 ```rust
 #[derive(serde::Serialize)]
@@ -394,7 +441,7 @@ pub enum AccountState {
 
 Serialize and deserialize `AccountState` itself. The canonical enum encoding includes the variant discriminant followed by the selected payload, so deserialization produces `AccountState::V0(value)` or `AccountState::V1(value)` directly. Do not expose a separate version field, a parallel fieldless version enum, or a raw integer/string tag for callers to dispatch themselves.
 
-If the serializer's derived enum representation is part of the stable protocol, freeze its exact encoding and variant order. If explicit numeric assignments or gaps are required, generate the enum's serialization from one declaration rather than maintaining a second version type. Swafe uses this form:
+If the serializer's derived enum representation is part of the stable protocol, freeze its exact encoding and variant order. If explicit numeric assignments or gaps are required, generate the enum's serialization from one declaration rather than maintaining a second version type, for example with a macro of this form:
 
 ```rust
 versioned_enum!(
@@ -443,7 +490,51 @@ Decode textual formats into typed structs. Do not navigate security-sensitive in
 
 Use a transport wrapper such as URL-safe unpadded Base64 only after canonical binary serialization. Do not confuse text encoding with cryptographic domain separation.
 
-When ciphertext length leaks sensitive structure, pad the serialized plaintext into documented buckets before encryption. Authenticate the padded representation and define strict maximum lengths to prevent allocation attacks.
+## Padding
+
+When ciphertext length leaks sensitive structure, pad the serialized plaintext into documented buckets before encryption. Make bucketing a reusable wrapper type instead of ad hoc call-site logic:
+
+```rust
+/// Serializes as `bincode(inner) || zero padding`, padded to the next
+/// multiple of `BLOCK` (at least one block). The inner encoding is
+/// self-delimiting, so deserialization stops at the logical end and
+/// accepts any padding amount, letting `BLOCK` evolve without breaking
+/// persisted data.
+#[derive(Clone)]
+pub struct Padded<T, const BLOCK: usize>(T);
+
+// BINCODE_CONFIG: bincode::config::standard().with_limit::<MAX_BYTES>()
+impl<T: serde::Serialize, const BLOCK: usize> serde::Serialize for Padded<T, BLOCK> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut bytes = bincode::serde::encode_to_vec(&self.0, BINCODE_CONFIG)
+            .map_err(serde::ser::Error::custom)?;
+        let target = bytes
+            .len()
+            .checked_next_multiple_of(BLOCK)
+            .unwrap_or(bytes.len())
+            .max(BLOCK);
+        bytes.resize(target, 0);
+        bytes.serialize(serializer)
+    }
+}
+
+impl<'de, T: serde::de::DeserializeOwned, const BLOCK: usize> serde::Deserialize<'de>
+    for Padded<T, BLOCK>
+{
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let bytes: Vec<u8> = serde::Deserialize::deserialize(deserializer)?;
+        let (inner, _consumed) = bincode::serde::decode_from_slice(&bytes, BINCODE_CONFIG)
+            .map_err(serde::de::Error::custom)?;
+        Ok(Padded(inner))
+    }
+}
+
+impl<T: Tagged, const BLOCK: usize> Tagged for Padded<T, BLOCK> {
+    const SEPARATOR: &'static str = T::SEPARATOR;
+}
+```
+
+Padding is representation, not meaning: `Padded<T, BLOCK>` keeps `T`'s separator, and the padding-tolerant deserializer is what allows the bucket size to change over time.
 
 ## Validate adversarially
 
