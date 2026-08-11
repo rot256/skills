@@ -44,8 +44,21 @@ for slug,inst in INST.items():
         prev = sorted(glob.glob(soldir+"/*.lean"))
         if prev:
             pdir = f"projs/{slug}/reference/prev-{old}"
+            # NEVER DELETE A BETTER SNAPSHOT TO MAKE ROOM FOR A WORSE ONE. The outgoing tree is
+            # usually the immediately-previous record, but not always: when the VM rolls back, projs/
+            # holds a MUCH older tree and `old` is a much larger score, and the naive keep-only-the-
+            # newest rule then clobbers a genuinely useful archive with rolled-back junk. Observed
+            # live -- a rollback replaced prev-304008, prev-144669 and prev-47435 with prev-316436,
+            # prev-145470 and prev-49180, losing our last fixed-base record tree. Keep any snapshot
+            # that scores BETTER (lower) than the one being written, and at most one that scores
+            # worse, so a rollback can cost at most the one stale entry.
             for stale in glob.glob(f"projs/{slug}/reference/prev-*"):
-                if stale != pdir: shutil.rmtree(stale, ignore_errors=True)
+                if stale == pdir: continue
+                try: sc = int(os.path.basename(stale).split("-", 1)[1])
+                except Exception: sc = None
+                if sc is not None and sc < old:
+                    print(f"NOTIFY: keeping better archive {os.path.basename(stale)} (< {old})"); continue
+                shutil.rmtree(stale, ignore_errors=True)
             os.makedirs(pdir, exist_ok=True)
             for f in prev: shutil.copy(f, os.path.join(pdir, os.path.basename(f)+".txt"))
             open(os.path.join(pdir,"MANIFEST.txt"),"w").write(
