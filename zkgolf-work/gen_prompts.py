@@ -353,7 +353,7 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (144985, None, [
-  ("survival first — this slug has never banked a submission","BUY ELABORATION HEADROOM BEFORE YOU REDUCE ANY "
+  ("survival first — BUT WE HAVE NOW BANKED ONE, AND IT SETTLES THE WALL QUESTION","*** 2026-08-11: 144,687 VERIFIED AND TOOK THE RECORD BACK FROM yash1io's 144,985. That is a -298, and OUR OWN -306 ON THIS SLUG TIMED OUT. So a -298 verifies where a -306 died: the wall is NOT the size of the reduction, it is the PROOF COST OF THE PARTICULAR CHANGE, now confirmed by our own submissions rather than by inference from a competitor. DO NOT AIM SMALLER — aim for changes whose obligations are cheap. *** BUY ELABORATION HEADROOM BEFORE YOU REDUCE ANY "
    "SCORE. Post-harness-fix this challenge is 0 FOR 2 AND BOTH FAILURES WERE VERIFIER TIMEOUTS: 144,858 (-612) and "
    "145,164 (-306). BUT A COMPETITOR THEN LANDED A -480 THAT VERIFIED, SO THE WALL IS NOT SIZE — IT IS THE PROOF COST OF "
    "THE PARTICULAR CHANGE. A -480 whose obligations are cheap beats a -306 whose obligations are expensive, so "
