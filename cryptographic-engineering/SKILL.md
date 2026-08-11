@@ -10,7 +10,7 @@ Operate on semantic values rather than untyped byte strings,
 bind every cryptographic operation to its purpose and context,
 and make invalid states impossible to represent.
 
-## Start from the protocol
+## Start From the Protocol
 
 Before editing code:
 
@@ -24,7 +24,7 @@ Before editing code:
 Do not let serialization layout, call-site convention,
 or comments carry an invariant that a type or API can enforce.
 
-## Make invalid states unrepresentable
+## Make Invalid States Unrepresentable
 
 Separate untrusted wire representations from validated cryptographic types.
 Give validated types private fields and expose only fallible constructors.
@@ -156,7 +156,7 @@ If parsing must temporarily hold invalid data, keep it in an explicitly named pr
 Do not expose it to cryptographic operations, application state, logs, callbacks, or persistence before successful conversion.
 NEVER construct an instance of a type for which its invariants do not hold, not even temporarily.
 
-## Domain-separate with semantic types
+## Domain-Separate With Semantic Types
 
 Require cryptographic inputs to implement a trait that combines canonical serialization with a stable purpose tag:
 
@@ -188,12 +188,12 @@ Never create transcripts by concatenating variable-length fields without lengths
 Name separators by version and purpose:
 
 ```rust
-impl Tagged for EmailCertificate {
-    const SEPARATOR: &'static str = "v0:email-cert";
+impl Tagged for HandshakeInit {
+    const SEPARATOR: &'static str = "v0:handshake-init";
 }
 
-impl Tagged for RecoveryRequest {
-    const SEPARATOR: &'static str = "v0:recovery-request";
+impl Tagged for HandshakeFinal {
+    const SEPARATOR: &'static str = "v0:handshake-final";
 }
 ```
 
@@ -209,30 +209,11 @@ Apply these rules:
 For hash-to-curve, use both a standards-compliant suite/DST and a typed encoded message.
 Include the application, curve/group, protocol version, and semantic purpose in the DST.
 
-## Construct Explicit Transcripts
-
-Represent every cryptographic transcript as a serializable struct with named fields.
-Include all values that affect authorization or interpretation.
-
-This Schnorr signature-of-knowledge transcript binds the application message, proof commitment,
-and ordered commitment set:
-
-```rust
-#[derive(serde::Serialize)]
-struct SokMessage<'a> {
-    msg: [u8; 32],
-    delta: PedersenCommitment,
-    commitments: &'a [PedersenCommitment],
-}
-
-impl Tagged for SokMessage<'_> {
-    const SEPARATOR: &'static str = "v0:schnorr-sok";
-}
-```
-
+Represent every hashed or signed message as a serializable struct with named fields,
+including all values that affect authorization or interpretation.
 Do not sign or hash only the payload when its meaning also depends on an account ID, recipient,
-public key, counter, session ID, algorithm, or external context.
-Put those values in the transcript.
+public key, counter, session ID, algorithm, or external context;
+put those values in the message.
 
 When a generic inner type would otherwise disappear during serialization, include its separator explicitly:
 
@@ -256,11 +237,202 @@ let transcript = MacTranscript {
 Preserve ordering when ordering is semantically meaningful.
 Sort or canonicalize sets before encoding when it is not.
 
+## Examples
+
+Concrete instantiations of the overall philosophy:
+every operation consumes tagged messages rather than raw bytes,
+binds its purpose into what it hashes,
+and reports failure through one uniform `Result`.
+
+### Signing
+
+```rust
+fn sign<T: Tagged>(sk: &SigningKey, msg: &T) -> Signature;
+fn verify<T: Tagged>(vk: &VerificationKey, sig: &Signature, msg: &T) -> Result<(), CryptoError>;
+```
+
+Wrapping ed25519:
+
+```rust
+impl SigningKey {
+    pub fn sign<T: Tagged>(&self, msg: &T) -> Signature {
+        Signature(self.0.sign(&msg.encode()))
+    }
+}
+
+impl VerificationKey {
+    pub fn verify<T: Tagged>(&self, sig: &Signature, msg: &T) -> Result<(), CryptoError> {
+        self.0
+            .verify_strict(&msg.encode(), &sig.0)
+            .map_err(|_| CryptoError::SignatureVerificationFailed)
+    }
+}
+```
+
+Use strict verification offered by the library.
+Match signature and verification-key algorithm versions explicitly.
+Return a uniform external failure instead of leaking parser or equation details.
+
+### Symmetric Encryption
+
+```rust
+fn seal<M: Tagged, A: Tagged>(
+    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
+    key: &Key,
+    plaintext: &M,
+    associated_data: &A,
+) -> Ciphertext;
+
+fn open<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
+    key: &Key,
+    ciphertext: &Ciphertext,
+    associated_data: &A,
+) -> Result<M, CryptoError>;
+```
+
+Accept plaintext and associated data as distinct tagged types.
+Accept randomness through a cryptographically secure RNG bound rather than selecting a hidden global RNG.
+Both `M::SEPARATOR` and `A::SEPARATOR` are bound into authentication;
+decryption under the wrong plaintext type, associated-data type,
+or associated-data value fails with the same external error.
+
+### Public-Key Encryption
+
+```rust
+fn encrypt<M: Tagged, A: Tagged>(
+    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
+    ek: &EncryptionKey,
+    plaintext: &M,
+    associated_data: &A,
+) -> Ciphertext;
+
+fn decrypt<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
+    dk: &DecryptionKey,
+    ciphertext: &Ciphertext,
+    associated_data: &A,
+) -> Result<M, CryptoError>;
+```
+
+As with symmetric encryption, both type separators are bound into authentication,
+and every failure collapses into one uniform decryption error.
+
+Parameterize the ciphertext type with the message and context when practical.
+If wire compatibility requires an untyped ciphertext,
+require the caller to state the expected output type at decryption and authenticate that type's separator.
+
+### Key Encapsulation
+
+Standardized KEMs such as ML-KEM take no associated data:
+encapsulation consumes only the encapsulation key and decapsulation only the ciphertext.
+Add the missing context binding in the wrapper by deriving the output secret
+from the raw shared secret under a tagged context:
+
+```rust
+fn encaps<C: Tagged>(
+    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
+    ek: &EncapsulationKey,
+    context: &C,
+) -> (SharedSecret, KemCiphertext);
+
+fn decaps<C: Tagged>(
+    dk: &DecapsulationKey,
+    ciphertext: &KemCiphertext,
+    context: &C,
+) -> Result<SharedSecret, CryptoError>;
+```
+
+Internally both sides compute `kdf(raw_shared_secret, KemContext { ek, ciphertext, context })`.
+Binding the encapsulation key and ciphertext alongside the tagged context
+compensates for the varying binding guarantees of the underlying KEM;
+do not rely on the raw shared secret alone.
+
+Preserve implicit-rejection semantics:
+a mismatched ciphertext should surface as one uniform failure at first use of the derived secret,
+not as a distinguishable decapsulation error.
+
+### Message Authentication Codes
+
+```rust
+impl MacKey {
+    pub fn mac<T: Tagged>(&self, msg: &T) -> Mac;
+
+    pub fn check<T: Tagged>(&self, tag: &Mac, msg: &T) -> Result<(), CryptoError> {
+        if self.mac(msg) == *tag {
+            Ok(())
+        } else {
+            Err(CryptoError::AuthenticationFailed)
+        }
+    }
+}
+```
+
+Construct the expected tag as a `Mac` and compare `Mac` values, never raw byte slices.
+Return one uniform authentication failure on mismatch.
+
+`Mac` is a dedicated newtype whose equality is constant-time:
+
+```rust
+use subtle::ConstantTimeEq;
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct Mac(Secret<32>);
+
+impl ConstantTimeEq for Mac {
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
+        self.0.ct_eq(&other.0)
+    }
+}
+
+impl PartialEq for Mac {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl Eq for Mac {}
+```
+
+Do not use `type Mac = Secret<32>` or derive `PartialEq`:
+an alias permits accidental interchange with keys and nonces,
+while derived byte-array equality may exit early.
+
+### Key Derivation
+
+```rust
+fn kdf<T: Tagged>(ikm: &SecretKey, info: &T) -> DerivedKey;
+```
+
+Give every derived key a dedicated info type.
+Place the derivation purpose in the KDF customization string or equivalent domain-separation input
+and encode the context structurally:
+
+```rust
+#[derive(serde::Serialize)]
+struct SessionKeyInfo<'a> {
+    session_id: SessionId,
+    peer: &'a VerificationKey,
+}
+
+impl Tagged for SessionKeyInfo<'_> {
+    const SEPARATOR: &'static str = "v0:session-kdf";
+}
+```
+
+Do not reuse a derived key for encryption, authentication, commitments, exports, or unrelated protocol stages.
+Prefer independent subkeys even if their current source key and context are identical.
+
+Treat KDF input key material as secret.
+Zeroize serialized IKM and intermediate buffers;
+a tagged info value does not automatically protect an untagged or copied IKM buffer.
+
 ## Fiat-Shamir
 
 There are two, and exactly two, acceptable ways to implement Fiat-Shamir. Both make it impossible for verifier code to use a prover message that has not been absorbed into the transcript, because the transcript is the only way to reach the value. Any structure that follows neither, such as deserializing a plain proof struct and absorbing fields by hand, is highly discouraged: one forgotten absorption is a weak-Fiat-Shamir break.
 
-**Opaque message wrappers.** Wrap every prover message in `Msg<T>`, which implements `Serialize`/`Deserialize` but never exposes the inner value. Keep its field private to the transcript module; the only accessor is the transcript, which absorbs the message before releasing it:
+**Opaque Message Wrappers.** Wrap *every* prover message in `Msg<T>`,
+which implements `Serialize`/`Deserialize` but never exposes the inner value.
+Keep its field private to the transcript module; the only accessor is the transcript,
+which absorbs the message before releasing it:
 
 ```rust
 /// A prover message; the value is inaccessible until absorbed.
@@ -276,7 +448,11 @@ impl Transcript {
 }
 ```
 
-Make every proof field a `Msg`, including the final response. This is important for composition: when the proof is embedded as a sub-protocol of a larger argument, a message that was terminal is no longer terminal, and an unwrapped field would silently bypass the transcript. The transcript may defer hashing until a challenge is actually required, so absorbing trailing messages costs nothing.
+Make every proof field a `Msg`, including the final response.
+This is important for composition: when the proof is embedded as a sub-protocol of a larger argument,
+a message that was terminal is no longer terminal, and an unwrapped field would silently bypass the transcript.
+The transcript may defer hashing until a challenge is actually required,
+so absorbing trailing messages costs nothing.
 
 ```rust
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -294,9 +470,15 @@ fn verify(ts: &mut Transcript, pk: &PublicKey, pf: Proof) -> Result<(), VerifyEr
 }
 ```
 
-Have the transcript implement `RngCore + CryptoRng` so existing samplers draw challenges directly from it, e.g. `Scalar::random(ts)`. Never pass the transcript to an operation that needs secret randomness, such as nonces or blinding factors: its output is a deterministic public function of the transcript state.
+Have the transcript implement `RngCore + CryptoRng` so existing samplers draw challenges directly from it, e.g. `Scalar::random(ts)`.
+Never pass the transcript to an operation that needs secret randomness, such as nonces or blinding factors:
+its output is a deterministic public function of the transcript state.
 
-**Transcript-as-reader (Halo2 style).** The proof is an opaque byte stream; its structure lives in the verifier's sequence of reads. The verifier obtains each value only by reading it through the transcript, which decodes it canonically, absorbs it, and then returns it. Reads are generic over deserializable tagged types:
+**Transcript-as-Reader (Halo2 style).**
+The proof is an opaque byte stream; its structure lives in the verifier's sequence of reads.
+The verifier obtains each value only by reading it through the transcript,
+which decodes it canonically, absorbs it, and then returns it.
+Reads are generic over deserializable tagged types:
 
 ```rust
 pub trait TranscriptRead: Transcript {
@@ -305,78 +487,78 @@ pub trait TranscriptRead: Transcript {
 }
 ```
 
-Reject non-canonical encodings during the read. The prover mirrors every read with a write that absorbs the same value before emitting it, so both sides maintain identical states.
+Reject non-canonical encodings during the read.
+The prover mirrors every read with a write that absorbs the same value before emitting it,
+so both sides maintain identical states.
 
-In this style, care must be taken that the proof stream is empty when verification completes. Accepting a proof with unread trailing bytes makes every valid proof malleable: garbage can be appended without invalidating it. The preferred way to enforce this is structural: define the proof as a newtype over a fixed-length byte array, e.g. `struct Proof([u8; PROOF_SIZE]);`, and build the reader transcript from it. Deserialization then rejects any proof of the wrong length, and the read sequence consumes the array exactly.
+In this style, care must be taken that the proof stream is empty when verification completes.
+Accepting a proof with unread trailing bytes makes every valid proof malleable:
+garbage can be appended without invalidating it.
 
-Prefer the first style: proof messages are named typed fields rather than positions in a byte stream, and the wire format is declared by the struct instead of being implicit in verifier control flow.
+The preferred way to enforce this is structural:
+define the proof as a newtype over a fixed-length byte array,
+e.g. `struct Proof([u8; PROOF_SIZE]);`, and build the reader transcript from it.
+Deserialization then rejects any proof of the wrong length,
+and the read sequence consumes the array exactly.
 
-Do not clone a transcript. If a protocol needs parallel sub-transcripts, fork through an explicit operation that binds a distinct label into each child.
+**Preference:**
+Prefer the first style: proof messages are named typed fields rather than positions in a byte stream,
+and the wire format is declared by the struct instead of being implicit in verifier control flow.
 
-In either style, absorb the statement before any prover message: the public inputs, the relation/circuit identity (a hash of the circuit description or the verifying key), and the system parameters. Deriving challenges from prover messages alone is the classic weak-Fiat-Shamir vulnerability: the statement can then be chosen after the challenge is known.
+**Warnings:**
+In either style:
 
-## Make encryption type-aware
+- Do not implement `Clone` for the transcript type.
+  Especially in the case of the first style.
 
-Accept plaintext and associated data as distinct tagged types. Accept randomness through a cryptographically secure RNG bound rather than selecting a hidden global RNG.
+- Always absorb the statement before any prover message: the public inputs,
+  the relation/circuit identity (a hash of the circuit description or the verifying key), and the parameters.
+  Deriving challenges from prover messages alone is the classic weak-Fiat-Shamir vulnerability:
+  the statement can then be chosen after the challenge is known.
 
-```rust
-fn seal<M, A, R, K>(
-    rng: &mut R,
-    key: &K,
-    plaintext: &M,
-    associated_data: &A,
-) -> Ciphertext
-where
-    M: Tagged,
-    A: Tagged,
-    R: rand_core::RngCore + rand_core::CryptoRng,
-    K: AsRef<Key>;
+## One Key, One Purpose
 
-fn open<M, A, K>(
-    key: &K,
-    ciphertext: &Ciphertext,
-    associated_data: &A,
-) -> Result<M, CryptoError>
-where
-    M: Tagged + serde::de::DeserializeOwned,
-    A: Tagged,
-    K: AsRef<Key>;
-```
-
-Bind both `M::SEPARATOR` and `A::SEPARATOR` into authentication. Make decryption under the wrong plaintext type, associated-data type, or associated-data value fail with the same external error.
-
-For hybrid public-key encryption:
-
-1. Encapsulate with a reviewed KEM.
-2. Derive the DEM key under a dedicated KEM-to-DEM KDF tag.
-3. Encrypt through the same typed AEAD interface.
-4. Bind recipient-independent context and algorithm/version identifiers.
-5. Collapse decapsulation, authentication, and plaintext-decoding failures into one decryption failure unless the protocol explicitly requires otherwise.
-
-Parameterize the ciphertext type with the message and context when practical. If wire compatibility requires an untyped ciphertext, require the caller to state the expected output type at decryption and authenticate that type's separator.
-
-## Use KDFs by purpose
-
-Give every derived key a dedicated info type. Place the derivation purpose in the KDF customization string or equivalent domain-separation input and encode the context structurally.
+Be liberal in defining newtypes for key material,
+to ensure that keys are separated by usage at the type-system level.
+The newtype can implement `Deref` or `AsRef` to enable it to be used
+as e.g. a signing, encryption, or message-authentication key:
 
 ```rust
-#[derive(serde::Serialize)]
-struct BackupMetadataKeyInfo<'a> {
-    commitments: &'a [ShareCommitment],
-}
+/// Signs certificates; never signs protocol messages.
+pub struct CertSigningKey(SigningKey);
 
-impl Tagged for BackupMetadataKeyInfo<'_> {
-    const SEPARATOR: &'static str = "v0:backup-kdf-meta";
+/// Signs protocol messages within one session.
+pub struct SessionSigningKey(SigningKey);
+
+impl std::ops::Deref for CertSigningKey {
+    type Target = SigningKey;
+    fn deref(&self) -> &SigningKey {
+        &self.0
+    }
 }
 ```
 
-Do not reuse a derived key for encryption, authentication, commitments, exports, or unrelated protocol stages. Prefer independent subkeys even if their current source key and context are identical.
+`cert_key.sign(&cert)` still works through `Deref`,
+but an API that requires `&CertSigningKey` cannot receive a session key,
+and the two usages cannot be swapped at a call site.
 
-Treat KDF input key material as secret. Zeroize serialized IKM and intermediate buffers; a tagged info value does not automatically protect an untagged or copied IKM buffer.
+The same applies to MAC and encryption keys:
 
-## Contain and clear secrets
+```rust
+/// Authenticates storage-index entries.
+pub struct IndexMacKey(MacKey);
 
-Centralize fixed-size secret bytes in a wrapper that zeroizes on drop, compares in constant time, and redacts debug output:
+/// Encrypts backup payloads.
+pub struct BackupKey(Key);
+```
+
+Do not implement conversions between two usage newtypes,
+and derive each usage key under its own KDF tag.
+
+## Contain and Clear Secrets
+
+Centralize fixed-size secret bytes in a wrapper that zeroizes on drop,
+compares in constant time, and redacts debug output:
 
 ```rust
 use subtle::ConstantTimeEq;
@@ -404,7 +586,10 @@ impl<const N: usize> std::fmt::Debug for Secret<N> {
 }
 ```
 
-Also zeroize field elements, secret shares, polynomial coefficients, signing keys, KEM decapsulation keys, derived keys, and random masks. Enable dependency features such as `zeroize` when the underlying library provides them.
+
+Also zeroize secret field elements, secret shares, polynomial coefficients, signing keys, KEM decapsulation keys, derived keys, and random masks.
+Enable dependency features such as `zeroize` when the underlying library provides them.
+DO NOT ad-hoc zeroize thoughout the code.
 
 Audit the complete lifetime of secret material:
 
@@ -412,85 +597,52 @@ Audit the complete lifetime of secret material:
 - Wrap temporary plaintext, serialized IKM, seeds, and decrypted byte buffers in `Zeroizing` or zeroize them explicitly.
 - Ensure temporary Serde wire structs holding raw key bytes also zeroize on drop.
 - Avoid conversions that move a secret into an ordinary array or `Vec<u8>` without transferring the zeroization obligation.
-- Do not derive `Debug`, `Display`, `Hash`, or `Serialize` for secret types unless required and reviewed. Make secret serialization an explicit capability.
+- Do not derive `Debug`, `Display`, `Hash`, or `Serialize` for secret types unless required and reviewed.
 - Remember that zeroization does not prevent swapping, compiler-created copies, allocator copies, or side channels. Minimize exposure even when using `ZeroizeOnDrop`.
 
-Use constant-time equality and selection only for secret-dependent comparisons. Do not claim an entire routine is constant-time merely because its final comparison is.
+Use constant-time equality and selection only for secret-dependent comparisons.
+DO NOT store key-material or secrets in `Vec`s because reallocation
+may leave secrets in memory, even after zeroizing.
 
-## Compare cryptographic values in constant time
+## Compare Cryptographic Values in Constant Time
 
-Use `subtle` instead of handwritten comparison loops. Give each fixed-size cryptographic value its own newtype so its equality and role are enforced by the type:
+Use `subtle` instead of handwritten comparison loops.
+Give each fixed-size cryptographic value its own newtype so its equality and role are enforced by the type,
+as in the `Mac` example above;
+use dedicated newtypes for keys, nonces, tags, commitments,
+and identifiers even when their byte lengths match.
 
-```rust
-use subtle::ConstantTimeEq;
+Keep compared encodings fixed-size so length does not become part of a secret-dependent comparison.
+Preserve `subtle::Choice` through secret-dependent selection with `ConditionallySelectable` or `CtOption` where practical; convert to `bool` only at a deliberate public control-flow boundary. Review the whole operation for secret-dependent branches, indexing, table lookup, allocation, and early returns: constant-time equality alone does not make surrounding code constant-time.
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-struct Mac(Secret<32>);
+Test semantic equality and mismatches at the first, middle, and last byte,
+but do not claim unit tests prove timing behavior; rely on reviewed primitives and code inspection.
 
-impl ConstantTimeEq for Mac {
-    fn ct_eq(&self, other: &Self) -> subtle::Choice {
-        self.0.ct_eq(&other.0)
-    }
-}
-
-impl PartialEq for Mac {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Eq for Mac {}
-```
-
-Do not use `type Mac = Secret<32>` or derive `PartialEq`: an alias permits accidental interchange with keys and nonces, while derived byte-array equality may exit early. Construct the expected tag as a `Mac` and compare the two `Mac` values; return one uniform authentication/decryption failure on mismatch.
-
-Keep compared encodings fixed-size so length does not become part of a secret-dependent comparison. Preserve `subtle::Choice` through secret-dependent selection with `ConditionallySelectable` or `CtOption` where practical; convert to `bool` only at a deliberate public control-flow boundary. Review the whole operation for secret-dependent branches, indexing, table lookup, allocation, and early returns—constant-time equality alone does not make surrounding code constant-time.
-
-Use dedicated newtypes for keys, nonces, tags, commitments, and identifiers even when their byte lengths match. Test semantic equality and mismatches at the first, middle, and last byte, but do not claim unit tests prove timing behavior; rely on reviewed primitives and code inspection.
-
-## Checks return Result
+## Checks Return Result
 
 Cryptographic checks always return `Result`, never `bool`: `Result` is `must_use`, so a caller cannot silently discard the verdict. In languages without a `Result` type, checks raise exceptions instead.
 
-## Sign and verify typed messages
+## Sign and Verify Typed Messages
 
-Expose signature operations only over tagged messages:
-
-```rust
-impl VerificationKey {
-    pub fn verify<T: Tagged>(
-        &self,
-        signature: &Signature,
-        message: &T,
-    ) -> Result<(), CryptoError> {
-        self.0
-            .verify_strict(&message.encode(), &signature.0)
-            .map_err(|_| CryptoError::SignatureVerificationFailed)
-    }
-}
-```
-
-Use strict verification offered by the library. Match signature and verification-key algorithm versions explicitly. Return a uniform external failure instead of leaking parser or equation details.
-
-Reconstruct the expected signed object from trusted context and parsed fields. This envelope prevents replaying a guardian share in another position or session:
+Reconstruct the expected signed object from trusted context and parsed fields. This envelope prevents replaying a ciphertext in another position or session:
 
 ```rust
 #[derive(serde::Serialize)]
-struct SignedEncryptedShare<'a> {
+struct SignedCiphertext<'a> {
     ciphertext: &'a Ciphertext,
     index: u32,
     session_id: SessionId,
 }
 
-impl Tagged for SignedEncryptedShare<'_> {
-    const SEPARATOR: &'static str = "v0:signed-encrypted-share";
+impl Tagged for SignedCiphertext<'_> {
+    const SEPARATOR: &'static str = "v0:signed-ciphertext";
 }
 
 verification_key.verify(
-    &share.signature,
-    &SignedEncryptedShare {
-        ciphertext: &share.ciphertext,
-        index: share.index,
+    &item.signature,
+    &SignedCiphertext {
+        ciphertext: &item.ciphertext,
+        index: item.index,
         session_id: expected_session_id,
     },
 )?;
@@ -507,32 +659,44 @@ Before accepting signed state:
 
 For signed batches, sign the complete inner envelope and verify it before releasing any decrypted item. If ciphertext position or recipient membership is sensitive, avoid early-exit searches; process the full fixed/bounded collection and select results without secret-dependent control flow where feasible.
 
-## Version messages explicitly
+## Version Messages Explicitly
 
-Represent every long-lived or cross-boundary message as one closed, data-carrying enum. The variant is the version and carries exactly that version's payload:
+Represent every long-lived or cross-boundary message as one closed, data-carrying enum.
+The variant is the version and carries exactly that version's payload:
 
 ```rust
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub enum AccountState {
-    V0(AccountStateV0),
-    V1(AccountStateV1),
+pub enum Record {
+    V0(RecordV0),
+    V1(RecordV1),
 }
 ```
 
-Serialize and deserialize `AccountState` itself. The canonical enum encoding includes the variant discriminant followed by the selected payload, so deserialization produces `AccountState::V0(value)` or `AccountState::V1(value)` directly. Do not expose a separate version field, a parallel fieldless version enum, or a raw integer/string tag for callers to dispatch themselves.
+Serialize and deserialize `Record` itself.
+The canonical enum encoding includes the variant discriminant followed by the selected payload,
+so deserialization produces `Record::V0(value)` or `Record::V1(value)` directly.
+Do not expose a separate version field, a parallel fieldless version enum,
+or a raw integer/string tag for callers to dispatch themselves.
 
-If the serializer's derived enum representation is part of the stable protocol, freeze its exact encoding and variant order. If explicit numeric assignments or gaps are required, generate the enum's serialization from one declaration rather than maintaining a second version type, for example with a macro of this form:
+If the serializer's derived enum representation is part of the stable protocol,
+freeze its exact encoding and variant order.
+
+If explicit numeric assignments or gaps are required,
+generate the enum's serialization from one declaration rather than maintaining a second version type,
+for example with a macro of this form:
 
 ```rust
 versioned_enum!(
     #[derive(Clone, Debug)]
-    AccountState,
-    V0(AccountStateV0) = 0,
-    V1(AccountStateV1) = 1,
+    Record,
+    V0(RecordV0) = 0,
+    V1(RecordV1) = 1,
 );
 ```
 
-The generated public type is still the single `AccountState` enum. Its wire encoding contains the assigned variant number and payload, and its deserializer returns the corresponding data-carrying variant or rejects an unknown variant.
+The generated public type is still the single `Record` enum.
+Its wire encoding contains the assigned variant number and payload,
+and its deserializer returns the corresponding data-carrying variant or rejects an unknown variant.
 
 Apply these evolution rules:
 
@@ -547,11 +711,16 @@ Apply these evolution rules:
 - Convert old messages to a current internal model only through explicit, fallible upgrade functions. Preserve the original authenticated bytes or version until verification is complete.
 - Version algorithms separately from application messages when they can evolve independently.
 
-Test exact serialized bytes, not only round trips. Confirm that a new reader accepts every supported old variant, an old reader rejects new variants cleanly, unknown/reserved tags fail, removed tags behave intentionally, and changing the tag changes every signature, MAC, hash, or ciphertext transcript that must bind it.
+Test exact serialized bytes, not only round trips.
+Confirm that a new reader accepts every supported old variant,
+an old reader rejects new variants cleanly, unknown/reserved tags fail,
+removed tags behave intentionally, and changing the tag changes every signature,
+MAC, hash, or ciphertext transcript that must bind it.
 
-## Separate cryptographic encoding from transport encoding
+## Separate Cryptographic Encoding From Transport Encoding
 
-Use one stable canonical encoding for cryptographic transcripts and a separately reviewed transport layer. Do not assume JSON object ordering or a language-specific debug representation is canonical.
+Use one stable canonical encoding for cryptographic transcripts and a separately reviewed transport layer.
+Do not assume JSON object ordering or a language-specific debug representation is canonical.
 
 For all untrusted serialized input—binary or text:
 
@@ -572,14 +741,15 @@ Use a transport wrapper such as URL-safe unpadded Base64 only after canonical bi
 
 ## Padding
 
-When ciphertext length leaks sensitive structure, pad the serialized plaintext into documented buckets before encryption. Make bucketing a reusable wrapper type instead of ad hoc call-site logic:
+When ciphertext length leaks sensitive structure,
+pad the serialized plaintext into documented buckets before encryption.
+Make bucketing a reusable wrapper type instead of ad hoc call-site logic:
 
 ```rust
 /// Serializes as `postcard(inner) || zero padding`, padded to the next
 /// multiple of `BLOCK` (at least one block). The inner encoding is
 /// self-delimiting, so deserialization stops at the logical end and
-/// accepts any padding amount, letting `BLOCK` evolve without breaking
-/// persisted data.
+/// accepts any padding amount.
 #[derive(Clone)]
 pub struct Padded<T, const BLOCK: usize>(T);
 
@@ -612,9 +782,7 @@ impl<T: Tagged, const BLOCK: usize> Tagged for Padded<T, BLOCK> {
 }
 ```
 
-Padding is representation, not meaning: `Padded<T, BLOCK>` keeps `T`'s separator, and the padding-tolerant deserializer is what allows the bucket size to change over time.
-
-## Validate adversarially
+## Validate Adversarially
 
 Write positive tests, but prioritize failures that demonstrate binding and non-confusion:
 
@@ -631,7 +799,7 @@ Write positive tests, but prioritize failures that demonstrate binding and non-c
 
 Use known-answer and cross-implementation vectors for standardized primitives. Use property tests for algebraic relations and state-machine transitions. Do not use round-trip tests alone as evidence of cryptographic correctness.
 
-## Final review checklist
+## Final Review Checklist
 
 Before finishing a cryptographic change, confirm:
 
