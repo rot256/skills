@@ -322,10 +322,15 @@ WORKQUEUE={
    "per step x 62 = -248. The rest already landed — DivOrZeroN32 moved to Fold32N (FusedCost.lean:407-413), "
    "FinishXY.lean:47/60 is done, and the VarLookup win arrived by a different route (135 -> 122). One sub-item is "
    "genuinely cost-neutral; do not spend time on it. *** RE-VERIFIED AGAINST THE 306,406 RECORD TREE: ALL THREE SUB-ITEMS ARE STILL OPEN. The bMul Mux is still at FinishXY.lean:58, Slope2 still imports Mux, and DivOrZeroS32 still calls IsZeroFeSum at :273. The -274 that set 306,406 was -4 per step over 62 steps plus -26 outside the loop, and it was NOT any of these -- do not assume it was. ***"),
-  ("24 — VERBATIM, STILL THERE","TWO TABLE MICRO-WINS. (i) -16: delete the t4x and t8x canon-x muxes in "
-   "Subset.main, still at GLVBuildTable.lean:620-623 as 2 x <4,4>. (ii) -8: sign0 is still a live selector at "
-   "GLVBuildTable.lean:352-353. NOTE THE OLD VERSION OF THIS ITEM ENDED WITH 'DO NOT HUNT FOR THOUSANDS HERE' AND "
-   "THAT ADVICE IS NOW WRONG — the signed-digit migration restructures this very table for about -10,000."),
+  ("8 — RE-DERIVED AGAINST THE 304206 TREE, AND IT HALVED","ONE TABLE MICRO-WIN LEFT, NOT TWO. (ii) -8 STANDS, "
+   "VERIFIED VERBATIM: sign0 is still a live selector at GLVBuildTable.lean:353, `{ selector := input.sign0, "
+   "ifTrue := negPy, ifFalse := input.P.y }`. (i) IS DEAD — the -16 for deleting the t4x and t8x canon-x muxes in "
+   "Subset.main is GONE: `t4x` and `t8x` now have ZERO occurrences anywhere in the Solution tree, and "
+   "GLVBuildTable.lean:620-623 is a different piece of code (Subset.main's t3/t12 PhiPairAdd and a "
+   "canonicalisation comment). Do not go looking for them. THIS IS WHY THE STALENESS BANNER MATTERS: the item "
+   "carried the label 'VERBATIM, STILL THERE' and half of it had already landed. NOTE THE OLDEST VERSION OF THIS "
+   "ITEM ENDED WITH 'DO NOT HUNT FOR THOUSANDS HERE' AND THAT ADVICE IS STILL WRONG — the signed-digit migration "
+   "restructures this very table for about -10,000."),
   ("speculative — no droppable site has been verified","TWO AUDITS THAT CAME BACK EMPTY, KEPT ONLY SO THEY ARE NOT "
    "RE-OPENED BLIND. (a) MUXES WHOSE CONSUMER READS ONLY A PREDICATE: the exemplar cited by the old item IS NOT IN "
    "THIS TREE — Slope2.lean:85-86 still has the den2 Mux, and denSafeVec exists only at DivOrZeroF3.lean:169 where "
