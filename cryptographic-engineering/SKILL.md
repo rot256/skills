@@ -236,6 +236,65 @@ let transcript = MacTranscript {
 
 Preserve ordering when ordering is semantically meaningful. Sort or canonicalize sets before encoding when it is not.
 
+## Fiat-Shamir
+
+There are two, and exactly two, acceptable ways to implement Fiat-Shamir. Both make it impossible for verifier code to use a prover message that has not been absorbed into the transcript, because the transcript is the only way to reach the value. Any structure that follows neither, such as deserializing a plain proof struct and absorbing fields by hand, is highly discouraged: one forgotten absorption is a weak-Fiat-Shamir break.
+
+**Opaque message wrappers.** Wrap every prover message in `Msg<T>`, which implements `Serialize`/`Deserialize` but never exposes the inner value. Keep its field private to the transcript module; the only accessor is the transcript, which absorbs the message before releasing it:
+
+```rust
+/// A prover message; the value is inaccessible until absorbed.
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct Msg<T>(T);
+
+impl Transcript {
+    /// Absorb the domain-separated encoding, then release the value.
+    pub fn recv<T: Tagged>(&mut self, msg: Msg<T>) -> T {
+        self.absorb(&msg.0.encode());
+        msg.0
+    }
+}
+```
+
+Make every proof field a `Msg`, including the final response. This is important for composition: when the proof is embedded as a sub-protocol of a larger argument, a message that was terminal is no longer terminal, and an unwrapped field would silently bypass the transcript. The transcript may defer hashing until a challenge is actually required, so absorbing trailing messages costs nothing.
+
+```rust
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Proof {
+    commitment: Msg<Commitment>,
+    response: Msg<Response>,
+}
+
+fn verify(ts: &mut Transcript, pk: &PublicKey, pf: Proof) -> Result<(), VerifyError> {
+    ts.append(pk);
+    let commitment = ts.recv(pf.commitment);
+    let challenge: Scalar = ts.challenge();
+    let response = ts.recv(pf.response);
+    check(pk, &commitment, &challenge, &response)
+}
+```
+
+Have the transcript implement `RngCore + CryptoRng` so existing samplers draw challenges directly from it, e.g. `Scalar::random(ts)`. Never pass the transcript to an operation that needs secret randomness, such as nonces or blinding factors: its output is a deterministic public function of the transcript state.
+
+**Transcript-as-reader (Halo2 style).** The proof is an opaque byte stream; its structure lives in the verifier's sequence of reads. The verifier obtains each value only by reading it through the transcript, which decodes it canonically, absorbs it, and then returns it. Reads are generic over deserializable tagged types:
+
+```rust
+pub trait TranscriptRead: Transcript {
+    /// Decode a value from the proof stream, absorb it, then return it.
+    fn read<T: Tagged + serde::de::DeserializeOwned>(&mut self) -> Result<T, VerifyError>;
+}
+```
+
+Reject non-canonical encodings during the read. The prover mirrors every read with a write that absorbs the same value before emitting it, so both sides maintain identical states.
+
+In this style, care must be taken that the proof stream is empty when verification completes. Accepting a proof with unread trailing bytes makes every valid proof malleable: garbage can be appended without invalidating it. The preferred way to enforce this is structural: define the proof as a newtype over a fixed-length byte array, e.g. `struct Proof([u8; PROOF_SIZE]);`, and build the reader transcript from it. Deserialization then rejects any proof of the wrong length, and the read sequence consumes the array exactly.
+
+Prefer the first style: proof messages are named typed fields rather than positions in a byte stream, and the wire format is declared by the struct instead of being implicit in verifier control flow.
+
+Do not clone a transcript. If a protocol needs parallel sub-transcripts, fork through an explicit operation that binds a distinct label into each child.
+
+In either style, absorb the statement before any prover message: the public inputs, the relation/circuit identity (a hash of the circuit description or the verifying key), and the system parameters. Deriving challenges from prover messages alone is the classic weak-Fiat-Shamir vulnerability: the statement can then be chosen after the challenge is known.
+
 ## Make encryption type-aware
 
 Accept plaintext and associated data as distinct tagged types. Accept randomness through a cryptographically secure RNG bound rather than selecting a hidden global RNG.
@@ -368,6 +427,10 @@ Do not use `type Mac = Secret<32>` or derive `PartialEq`: an alias permits accid
 Keep compared encodings fixed-size so length does not become part of a secret-dependent comparison. Preserve `subtle::Choice` through secret-dependent selection with `ConditionallySelectable` or `CtOption` where practical; convert to `bool` only at a deliberate public control-flow boundary. Review the whole operation for secret-dependent branches, indexing, table lookup, allocation, and early returns—constant-time equality alone does not make surrounding code constant-time.
 
 Use dedicated newtypes for keys, nonces, tags, commitments, and identifiers even when their byte lengths match. Test semantic equality and mismatches at the first, middle, and last byte, but do not claim unit tests prove timing behavior; rely on reviewed primitives and code inspection.
+
+## Checks return Result
+
+Cryptographic checks always return `Result`, never `bool`: `Result` is `must_use`, so a caller cannot silently discard the verdict. In languages without a `Result` type, checks raise exceptions instead.
 
 ## Sign and verify typed messages
 
