@@ -276,8 +276,8 @@ Return a uniform external failure instead of leaking parser or equation details.
 ### Symmetric Encryption
 
 ```rust
-fn seal<M: Tagged, A: Tagged>(
-    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
+fn seal<M: Tagged, A: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+    rng: &mut R,
     key: &Key,
     plaintext: &M,
     associated_data: &A,
@@ -299,8 +299,8 @@ or associated-data value fails with the same external error.
 ### Public-Key Encryption
 
 ```rust
-fn encrypt<M: Tagged, A: Tagged>(
-    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
+fn encrypt<M: Tagged, A: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+    rng: &mut R,
     ek: &EncryptionKey,
     plaintext: &M,
     associated_data: &A,
@@ -328,17 +328,21 @@ Add the missing context binding in the wrapper by deriving the output secret
 from the raw shared secret under a tagged context:
 
 ```rust
-fn encaps<C: Tagged>(
-    rng: &mut (impl rand_core::RngCore + rand_core::CryptoRng),
-    ek: &EncapsulationKey,
-    context: &C,
-) -> (SharedSecret, KemCiphertext);
+impl EncapsulationKey {
+    pub fn encaps<C: Tagged, R: rand_core::RngCore + rand_core::CryptoRng>(
+        &self,
+        rng: &mut R,
+        context: &C,
+    ) -> (SharedSecret, KemCiphertext);
+}
 
-fn decaps<C: Tagged>(
-    dk: &DecapsulationKey,
-    ciphertext: &KemCiphertext,
-    context: &C,
-) -> Result<SharedSecret, CryptoError>;
+impl DecapsulationKey {
+    pub fn decaps<C: Tagged>(
+        &self,
+        ciphertext: &KemCiphertext,
+        context: &C,
+    ) -> Result<SharedSecret, CryptoError>;
+}
 ```
 
 Internally both sides compute `kdf(raw_shared_secret, KemContext { ek, ciphertext, context })`.
@@ -520,8 +524,8 @@ In either style:
 
 Be liberal in defining newtypes for key material,
 to ensure that keys are separated by usage at the type-system level.
-The newtype can implement `Deref` or `AsRef` to enable it to be used
-as e.g. a signing, encryption, or message-authentication key:
+Expose the underlying capability through explicit forwarding methods,
+which can also narrow which message types the key accepts:
 
 ```rust
 /// Signs certificates; never signs protocol messages.
@@ -530,17 +534,20 @@ pub struct CertSigningKey(SigningKey);
 /// Signs protocol messages within one session.
 pub struct SessionSigningKey(SigningKey);
 
-impl std::ops::Deref for CertSigningKey {
-    type Target = SigningKey;
-    fn deref(&self) -> &SigningKey {
-        &self.0
+impl CertSigningKey {
+    pub fn sign(&self, cert: &Certificate) -> Signature {
+        self.0.sign(cert)
     }
 }
 ```
 
-`cert_key.sign(&cert)` still works through `Deref`,
-but an API that requires `&CertSigningKey` cannot receive a session key,
-and the two usages cannot be swapped at a call site.
+An API that requires `&CertSigningKey` cannot receive a session key,
+and the certificate key cannot sign anything but a `Certificate`.
+Do not implement `Deref` to the underlying key:
+deref coercion lets every usage newtype flow implicitly into any function
+taking the base key type, silently undoing the separation.
+Unlike `NonZeroPoint`, which is a `Point` and may safely deref to one,
+a usage key is deliberately not substitutable for the base key.
 
 The same applies to MAC and encryption keys:
 
