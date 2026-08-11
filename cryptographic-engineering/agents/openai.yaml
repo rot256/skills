@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cryptographic Engineering"
+  short_description: "Build robust, type-driven cryptographic code"
+  default_prompt: "Use $cryptographic-engineering to design or review this cryptographic implementation."
