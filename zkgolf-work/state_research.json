@@ -1,0 +1,30 @@
+{
+  "efa0a118-ea1c-4b0d-9247-4a8836e243ba": {
+    "name": "carrysave",
+    "dir": "research/carrysave",
+    "status": "SUBMITTED",
+    "processed": false,
+    "ts": "2026-08-11T17:31:43.305622+00:00"
+  },
+  "6d4c39e6-1d25-4896-86ee-a3ffcf0a4410": {
+    "name": "rangefloor",
+    "dir": "research/rangefloor",
+    "status": "SUBMITTED",
+    "processed": false,
+    "ts": "2026-08-11T17:32:52.158942+00:00"
+  },
+  "b66d5009-41a7-4f84-a6a7-a1818c0e7018": {
+    "name": "switch1row",
+    "dir": "research/switch1row",
+    "status": "SUBMITTED",
+    "processed": false,
+    "ts": "2026-08-11T17:32:54.348715+00:00"
+  },
+  "38d84ac1-b470-412d-a8dc-0c2285c802ea": {
+    "name": "bilinearrank",
+    "dir": "research/bilinearrank",
+    "status": "SUBMITTED",
+    "processed": false,
+    "ts": "2026-08-11T17:34:06.349613+00:00"
+  }
+}

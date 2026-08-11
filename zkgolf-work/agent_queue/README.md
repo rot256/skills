@@ -22,3 +22,26 @@ Relaunch with the Agent tool (general-purpose) verbatim when slots free up.
   rsa-limb-fold-and-vandermonde, elliptic-nets-dead, certifying-algorithms-frame.
 
 RULE: do not let these decay into chat-only leads. That is what leads.json exists for.
+
+## Aristotle research jobs (a different mechanism from the subagent briefs above)
+
+`research/<name>/` holds a standalone Lean project stating a proof obligation, plus a
+`PROMPT.md`. Dispatch with `dispatch_research.py <name>`; tracking lives in
+`state_research.json`, deliberately SEPARATE from `state_jobs.json` because the watcher
+owns that file and concurrent writers corrupt it.
+
+THE COST IS A FLEET SLOT, NOT A FREE EXTRA. Aristotle caps concurrent projects per
+account, and the 5th research dispatch was rejected with "You have too many projects in
+progress" while the record-hunting fleet was at 20. So every research job displaces a
+record-hunting job until it finishes. Dispatch deliberately.
+
+Live: carrysave (the 3:2 carry-save identity, unblocks the 448 + 240 SHA-256 items),
+rangefloor (is 2 score per bit optimal for a range check — 81.4% of RSA's cost sits at
+that rate), switch1row (the one-row permutation switch and its Waksman composition),
+bilinearrank (is minimal row count exactly tensor rank — decides whether the bilinear
+complexity literature imports as row counts).
+
+PARKED, blocked only by the cap: `degreepack` — does multilinear degree 3 ever pack, and
+does degree 2 cap at exactly 2. Two independent derivations plus two exhaustive searches
+agree it does not, but nothing is proved, and proving it permanently closes a search
+space people keep re-entering. Dispatch it the moment a slot frees.
