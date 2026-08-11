@@ -69,11 +69,26 @@ DISPATCH = [s for s in CHALLENGES5 if s not in NO_DISPATCH]
 # The slot comes from gf2-sha256-compress-canonical, which is the weakest on the board: zero
 # submissions ever AND its own analysis caps the remaining gap at 1,182. Trading a <=1,182 lottery
 # ticket for a 122,880 port with the source in hand. Total stays 20.
+# *** 2026-08-11: SMALL-WIN SLOTS RETIRED, BY INSTRUCTION. Every slot is now big-win. ***
+# The four small-win slots were reassigned to big-win rather than removed, so the fleet stays at 20.
+# WHAT THIS GIVES UP, RECORDED SO THE TRADE CAN BE REVERSED KNOWINGLY: the small-win fleet was the
+# reliable-yield path. Today it produced seven variable-base records (304224 -> 304052, net -172) in
+# steps of -4, -2, -12, -6, -38 and -110, and none of them touched a tracked lead -- that is exactly
+# what a "certain, verified reduction, however small" fleet is for. Big-win slots convert far less
+# often; the measured rates that set these weights were 13.9% (fixed-base) and 12.8% (scalar-mul)
+# verified per processed job ACROSS BOTH PURPOSES, and the structural items have been sitting open
+# for days while the micro-wins banked steadily.
+# WHY IT IS STILL THE RIGHT CALL RIGHT NOW: the board's value has moved decisively into large items
+# that no small-win slot will ever take -- keccak's 122,880 port (the reference tree is already on
+# disk, so it is a port and not a discovery), the sha256 padding block at up to 2,062, the x4
+# telescope at 18,042 and the confirmed two-64-bit-folds-per-step at ~19,840. Those four alone are
+# worth more than a year of -4s.
+# TO REVERSE: give scalar-mul and fixed-base back {"small-win": 1} and drop each to 2 big-win.
 SLOTS = {
-    "secp256k1-scalar-mul":          {"big-win": 2, "small-win": 1},
-    "secp256k1-fixed-base-scalar-mul": {"big-win": 2, "small-win": 1},
-    "sha256-hash":                   {"big-win": 1, "small-win": 1},
-    "keccak-f1600":                  {"big-win": 1, "small-win": 1},
+    "secp256k1-scalar-mul":          {"big-win": 3, "small-win": 0},
+    "secp256k1-fixed-base-scalar-mul": {"big-win": 3, "small-win": 0},
+    "sha256-hash":                   {"big-win": 2, "small-win": 0},
+    "keccak-f1600":                  {"big-win": 2, "small-win": 0},
     "gf2-sha256-compress-canonical": {"big-win": 0, "small-win": 0},
 }
 def slot_plan(slug):
