@@ -367,14 +367,14 @@ Return a uniform external failure instead of leaking parser or equation details.
 fn seal<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
     rng: &mut R,
     key: &Key,
-    plaintext: &M,
-    associated_data: &A,
+    pt: &M,
+    ad: &A,
 ) -> Ciphertext;
 
 fn open<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
     key: &Key,
-    ciphertext: &Ciphertext,
-    associated_data: &A,
+    ct: &Ciphertext,
+    ad: &A,
 ) -> Result<M, CryptoError>;
 ```
 
@@ -387,18 +387,22 @@ or associated-data value fails with the same external error.
 ### Public-Key Encryption
 
 ```rust
-fn encrypt<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
-    rng: &mut R,
-    ek: &EncryptionKey,
-    plaintext: &M,
-    associated_data: &A,
-) -> Ciphertext;
+impl EncryptionKey {
+    pub fn encrypt<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
+        &self,
+        rng: &mut R,
+        pt: &M,
+        ad: &A,
+    ) -> Ciphertext;
+}
 
-fn decrypt<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
-    dk: &DecryptionKey,
-    ciphertext: &Ciphertext,
-    associated_data: &A,
-) -> Result<M, CryptoError>;
+impl DecryptionKey {
+    pub fn decrypt<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
+        &self,
+        ct: &Ciphertext,
+        ad: &A,
+    ) -> Result<M, CryptoError>;
+}
 ```
 
 As with symmetric encryption, both type separators are bound into authentication,
@@ -427,7 +431,7 @@ impl EncapsulationKey {
 impl DecapsulationKey {
     pub fn decaps<C: Tagged>(
         &self,
-        ciphertext: &KemCiphertext,
+        ct: &KemCiphertext,
         context: &C,
     ) -> Result<SharedSecret, CryptoError>;
 }

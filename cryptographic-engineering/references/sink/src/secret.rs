@@ -1,6 +1,7 @@
 //! Fixed-size secret bytes: zeroized on drop, constant-time comparison,
 //! redacted debug output.
 
+use rand_core::CryptoRng;
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -8,7 +9,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub struct Secret<const N: usize>([u8; N]);
 
 impl<const N: usize> Secret<N> {
-    pub fn gen<R: rand_core::CryptoRng>(rng: &mut R) -> Self {
+    pub fn generate<R: CryptoRng>(rng: &mut R) -> Self {
         let mut s = Self([0u8; N]);
         rng.fill_bytes(&mut s.0);
         s

@@ -2,12 +2,15 @@
 //! distinct tagged types, both separators are bound into authentication,
 //! and every failure collapses into one uniform decryption error.
 
-use chacha20poly1305::aead::{Aead, Payload};
-use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use chacha20poly1305::{
+    KeyInit, XChaCha20Poly1305, XNonce,
+    aead::{Aead, Payload},
+};
+use rand_core::CryptoRng;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use zeroize::Zeroizing;
 
-use crate::{to_boxed, CryptoError, Secret, Tagged};
+use crate::{CryptoError, Secret, Tagged, to_boxed};
 
 pub struct Key(Secret<32>);
 
@@ -30,25 +33,25 @@ impl<A: Tagged> Tagged for AeadContext<'_, A> {
 }
 
 impl Key {
-    pub fn gen<R: rand_core::CryptoRng>(rng: &mut R) -> Self {
-        Self(Secret::gen(rng))
+    pub fn generate<R: CryptoRng>(rng: &mut R) -> Self {
+        Self(Secret::generate(rng))
     }
 
-    pub fn seal<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
+    pub fn seal<M: Tagged, A: Tagged, R: CryptoRng>(
         &self,
         rng: &mut R,
-        plaintext: &M,
-        associated_data: &A,
+        pt: &M,
+        ad: &A,
     ) -> Ciphertext {
         let mut nonce = [0u8; 24];
         rng.fill_bytes(&mut nonce);
 
         let aad = AeadContext {
             seps: (M::SEPARATOR, A::SEPARATOR),
-            ad: associated_data,
+            ad,
         }
         .encode();
-        let pt = to_boxed(plaintext);
+        let pt = to_boxed(pt);
 
         let cipher = XChaCha20Poly1305::new(self.0.as_bytes().into());
         let ct = cipher
@@ -65,21 +68,21 @@ impl Key {
 
     pub fn open<M: Tagged + DeserializeOwned, A: Tagged>(
         &self,
-        ciphertext: &Ciphertext,
-        associated_data: &A,
+        ct: &Ciphertext,
+        ad: &A,
     ) -> Result<M, CryptoError> {
         let aad = AeadContext {
             seps: (M::SEPARATOR, A::SEPARATOR),
-            ad: associated_data,
+            ad,
         }
         .encode();
 
         let cipher = XChaCha20Poly1305::new(self.0.as_bytes().into());
         let pt = cipher
             .decrypt(
-                &XNonce::from(ciphertext.nonce),
+                &XNonce::from(ct.nonce),
                 Payload {
-                    msg: &ciphertext.ct,
+                    msg: &ct.ct,
                     aad: &aad,
                 },
             )
@@ -99,7 +102,7 @@ impl Key {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{msg, rng, Msg, OtherRole};
+    use crate::tests::{Msg, OtherRole, msg, rng};
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
     struct Ad {
@@ -122,7 +125,7 @@ mod tests {
     #[test]
     fn seal_open_roundtrip() {
         let mut rng = rng();
-        let key = Key::gen(&mut rng);
+        let key = Key::generate(&mut rng);
         let ct = key.seal(&mut rng, &msg(), &Ad { session: 1 });
         let back: Msg = key.open(&ct, &Ad { session: 1 }).unwrap();
         assert_eq!(back, msg());
@@ -131,7 +134,7 @@ mod tests {
     #[test]
     fn wrong_ad_value_fails() {
         let mut rng = rng();
-        let key = Key::gen(&mut rng);
+        let key = Key::generate(&mut rng);
         let ct = key.seal(&mut rng, &msg(), &Ad { session: 1 });
         assert_eq!(
             key.open::<Msg, _>(&ct, &Ad { session: 2 }),
@@ -142,7 +145,7 @@ mod tests {
     #[test]
     fn wrong_ad_type_fails() {
         let mut rng = rng();
-        let key = Key::gen(&mut rng);
+        let key = Key::generate(&mut rng);
         let ct = key.seal(&mut rng, &msg(), &Ad { session: 1 });
         assert_eq!(
             key.open::<Msg, _>(&ct, &AdOther { session: 1 }),
@@ -153,7 +156,7 @@ mod tests {
     #[test]
     fn wrong_plaintext_type_fails() {
         let mut rng = rng();
-        let key = Key::gen(&mut rng);
+        let key = Key::generate(&mut rng);
         let ct = key.seal(&mut rng, &msg(), &Ad { session: 1 });
         assert_eq!(
             key.open::<OtherRole, _>(&ct, &Ad { session: 1 }),
@@ -164,9 +167,9 @@ mod tests {
     #[test]
     fn wrong_key_fails() {
         let mut rng = rng();
-        let key = Key::gen(&mut rng);
+        let key = Key::generate(&mut rng);
         let ct = key.seal(&mut rng, &msg(), &Ad { session: 1 });
-        let other = Key::gen(&mut rng);
+        let other = Key::generate(&mut rng);
         assert!(other.open::<Msg, _>(&ct, &Ad { session: 1 }).is_err());
     }
 }

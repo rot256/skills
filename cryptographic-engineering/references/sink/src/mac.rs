@@ -4,6 +4,7 @@
 
 use digest::KeyInit as _;
 use hmac::Mac as _;
+use rand_core::CryptoRng;
 
 use crate::{Absorbing, CryptoError, Secret, Tagged};
 
@@ -15,8 +16,8 @@ pub struct MacKey(Secret<32>);
 pub struct Mac(Secret<32>);
 
 impl MacKey {
-    pub fn gen<R: rand_core::CryptoRng>(rng: &mut R) -> Self {
-        Self(Secret::gen(rng))
+    pub fn generate<R: CryptoRng>(rng: &mut R) -> Self {
+        Self(Secret::generate(rng))
     }
 
     pub fn mac<T: Tagged>(&self, msg: &T) -> Mac {
@@ -40,18 +41,18 @@ impl MacKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{msg, rng, Msg, OtherRole};
+    use crate::tests::{Msg, OtherRole, msg, rng};
 
     #[test]
     fn mac_check_roundtrip() {
-        let key = MacKey::gen(&mut rng());
+        let key = MacKey::generate(&mut rng());
         let tag = key.mac(&msg());
         assert!(key.check(&tag, &msg()).is_ok());
     }
 
     #[test]
     fn wrong_message_fails() {
-        let key = MacKey::gen(&mut rng());
+        let key = MacKey::generate(&mut rng());
         let tag = key.mac(&msg());
         let other = Msg {
             id: 8,
@@ -65,15 +66,15 @@ mod tests {
 
     #[test]
     fn wrong_key_fails() {
-        let key = MacKey::gen(&mut rng());
+        let key = MacKey::generate(&mut rng());
         let tag = key.mac(&msg());
-        let other = MacKey::gen(&mut rng());
+        let other = MacKey::generate(&mut rng());
         assert!(other.check(&tag, &msg()).is_err());
     }
 
     #[test]
     fn same_bytes_different_type_fails() {
-        let key = MacKey::gen(&mut rng());
+        let key = MacKey::generate(&mut rng());
         let tag = key.mac(&msg());
         let confused = OtherRole {
             id: 7,

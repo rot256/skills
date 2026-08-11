@@ -1,7 +1,7 @@
 [package]
 name = "sink"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -16,6 +16,14 @@ hkdf = "0.13"
 ed25519-dalek = "3"
 chacha20poly1305 = "0.11"
 ml-kem = { version = "0.3", features = ["zeroize"] }
+hpke = "0.14"
 
 [dev-dependencies]
 rand = "0.10"
+
+[lints.clippy]
+indexing_slicing = "warn"
+fallible_impl_from = "warn"
+wildcard_enum_match_arm = "warn"
+fn_params_excessive_bools = "warn"
+must_use_candidate = "warn"

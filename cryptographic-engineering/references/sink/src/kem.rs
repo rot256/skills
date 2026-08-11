@@ -4,13 +4,14 @@
 //! the encapsulation key and decapsulation only the ciphertext. The wrapper
 //! adds the missing context binding by deriving the output secret from the
 //! raw shared secret under a tagged context that also binds the
-//! encapsulation key and ciphertext, compensating for the varying binding
+//! encapsulation key and ct, compensating for the varying binding
 //! guarantees of the underlying KEM.
 
-use ml_kem::{Decapsulate as _, Encapsulate as _, Kem as _, KeyExport as _, MlKem768};
+use ml_kem::{Decapsulate as _, Encapsulate as _, Generate as _, KeyExport as _, MlKem768};
+use rand_core::CryptoRng;
 use serde::Serialize;
 
-use crate::{kdf::kdf, Secret, Tagged};
+use crate::{Secret, Tagged, kdf::kdf};
 
 pub struct EncapsulationKey(ml_kem::EncapsulationKey<MlKem768>);
 
@@ -21,7 +22,7 @@ pub struct KemCiphertext(ml_kem::kem::Ciphertext<MlKem768>);
 #[derive(Debug, PartialEq, Eq)]
 pub struct SharedSecret(Secret<32>);
 
-/// Binds the encapsulation key, ciphertext, and caller context into the
+/// Binds the encapsulation key, ct, and caller context into the
 /// derived secret; the context's own separator travels with its value.
 #[derive(Serialize)]
 struct KemContext<'a, C: Tagged> {
@@ -52,13 +53,8 @@ fn derive<C: Tagged>(
     ))
 }
 
-pub fn gen<R: rand_core::CryptoRng>(rng: &mut R) -> (DecapsulationKey, EncapsulationKey) {
-    let (dk, ek) = MlKem768::generate_keypair_from_rng(rng);
-    (DecapsulationKey(dk), EncapsulationKey(ek))
-}
-
 impl EncapsulationKey {
-    pub fn encaps<C: Tagged, R: rand_core::CryptoRng>(
+    pub fn encaps<C: Tagged, R: CryptoRng>(
         &self,
         rng: &mut R,
         context: &C,
@@ -70,30 +66,36 @@ impl EncapsulationKey {
 }
 
 impl DecapsulationKey {
-    /// ML-KEM decapsulation is implicit-rejection: a mismatched ciphertext
+    pub fn generate<R: CryptoRng>(rng: &mut R) -> Self {
+        Self(ml_kem::DecapsulationKey::generate_from_rng(rng))
+    }
+
+    #[must_use]
+    pub fn encapsulation_key(&self) -> EncapsulationKey {
+        EncapsulationKey(self.0.encapsulation_key().clone())
+    }
+
+    /// ML-KEM decapsulation is implicit-rejection: a mismatched ct
     /// yields a pseudorandom secret rather than an error, so a mismatch
     /// surfaces as one uniform failure at first use of the derived secret.
     /// Fallibility lives at the wire decode of [`KemCiphertext`].
-    pub fn decaps<C: Tagged>(&self, ciphertext: &KemCiphertext, context: &C) -> SharedSecret {
-        let raw = self.0.decapsulate(&ciphertext.0);
-        derive(
-            raw.as_slice(),
-            self.0.encapsulation_key(),
-            &ciphertext.0,
-            context,
-        )
+    pub fn decaps<C: Tagged>(&self, ct: &KemCiphertext, context: &C) -> SharedSecret {
+        let raw = self.0.decapsulate(&ct.0);
+        derive(raw.as_slice(), self.0.encapsulation_key(), &ct.0, context)
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::*;
-    use crate::tests::{msg, rng, OtherRole};
+    use crate::tests::{OtherRole, msg, rng};
 
     #[test]
     fn encaps_decaps_agree() {
         let mut rng = rng();
-        let (dk, ek) = gen(&mut rng);
+        let dk = DecapsulationKey::generate(&mut rng);
+        let ek = dk.encapsulation_key();
         let (ss_send, ct) = ek.encaps(&mut rng, &msg());
         assert_eq!(ss_send, dk.decaps(&ct, &msg()));
     }
@@ -101,7 +103,8 @@ mod tests {
     #[test]
     fn different_context_value_differs() {
         let mut rng = rng();
-        let (dk, ek) = gen(&mut rng);
+        let dk = DecapsulationKey::generate(&mut rng);
+        let ek = dk.encapsulation_key();
         let (ss_send, ct) = ek.encaps(&mut rng, &msg());
         let mut other = msg();
         other.id = 8;
@@ -111,7 +114,8 @@ mod tests {
     #[test]
     fn same_bytes_different_context_type_differs() {
         let mut rng = rng();
-        let (dk, ek) = gen(&mut rng);
+        let dk = DecapsulationKey::generate(&mut rng);
+        let ek = dk.encapsulation_key();
         let (ss_send, ct) = ek.encaps(&mut rng, &msg());
         let confused = OtherRole {
             id: 7,
@@ -123,7 +127,8 @@ mod tests {
     #[test]
     fn tampered_ciphertext_yields_different_secret() {
         let mut rng = rng();
-        let (dk, ek) = gen(&mut rng);
+        let dk = DecapsulationKey::generate(&mut rng);
+        let ek = dk.encapsulation_key();
         let (ss_send, mut ct) = ek.encaps(&mut rng, &msg());
         ct.0[0] ^= 1;
         assert_ne!(ss_send, dk.decaps(&ct, &msg()));

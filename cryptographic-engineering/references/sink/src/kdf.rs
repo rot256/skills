@@ -16,11 +16,11 @@ pub fn kdf<T: Tagged, const N: usize>(ikm: &Secret<32>, info: &T) -> Secret<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{msg, rng, OtherRole};
+    use crate::tests::{OtherRole, msg, rng};
 
     #[test]
     fn deterministic() {
-        let ikm = Secret::gen(&mut rng());
+        let ikm = Secret::generate(&mut rng());
         let a: Secret<32> = kdf(&ikm, &msg());
         let b: Secret<32> = kdf(&ikm, &msg());
         assert_eq!(a, b);
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn same_bytes_different_info_type_differ() {
-        let ikm = Secret::gen(&mut rng());
+        let ikm = Secret::generate(&mut rng());
         let a: Secret<32> = kdf(&ikm, &msg());
         let b: Secret<32> = kdf(
             &ikm,
@@ -42,8 +42,8 @@ mod tests {
 
     #[test]
     fn different_ikm_differ() {
-        let a: Secret<32> = kdf(&Secret::gen(&mut rng()), &msg());
-        let b: Secret<32> = kdf(&Secret::gen(&mut rng()), &msg());
+        let a: Secret<32> = kdf(&Secret::generate(&mut rng()), &msg());
+        let b: Secret<32> = kdf(&Secret::generate(&mut rng()), &msg());
         assert_ne!(a, b);
     }
 }

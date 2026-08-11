@@ -14,6 +14,7 @@ pub mod aead;
 pub mod kdf;
 pub mod kem;
 pub mod mac;
+pub mod pke;
 pub mod secret;
 pub mod sig;
 
@@ -239,10 +240,11 @@ impl<T: Tagged, const BLOCK: usize> Tagged for Padded<T, BLOCK> {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use rand_core::CryptoRng;
     use serde::Deserialize;
 
     /// Infallible CSPRNG for tests.
-    pub(crate) fn rng() -> impl rand_core::CryptoRng {
+    pub(crate) fn rng() -> impl CryptoRng {
         rand::rng()
     }
 
@@ -336,7 +338,10 @@ pub(crate) mod tests {
             let p: Padded<Vec<u8>, 32> = Padded(vec![0xab; len]);
             let outer = postcard::to_allocvec(&p).unwrap();
             let inner: Vec<u8> = postcard::from_bytes(&outer).unwrap();
-            assert!(inner.len() % 32 == 0 && !inner.is_empty(), "len {len}");
+            assert!(
+                inner.len().is_multiple_of(32) && !inner.is_empty(),
+                "len {len}"
+            );
         }
     }
 
