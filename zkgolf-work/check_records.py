@@ -34,6 +34,28 @@ for slug,inst in INST.items():
     if not any("computableWitness" in open(f,errors="ignore").read() for f in files):
         print(f"{slug}: new best {new} by {t['github_login']} lacks computableWitness — not reseeding"); continue
     soldir=f"projs/{slug}/Solution/{inst}"
+    # ARCHIVE THE OUTGOING TREE FIRST. It is about to be deleted, and when a rival takes the
+    # record the tree being deleted is OUR last verified one -- a different lineage that is known
+    # to elaborate inside the verifier budget, which is exactly what a timing-out slug needs to
+    # compare against. Stored .lean.txt under reference/ so jobs read it as context and never
+    # compile it, matching the rival-<author>-<score> convention. Only the most recent snapshot is
+    # kept, so this costs one tree of disk per slug and never grows.
+    try:
+        prev = sorted(glob.glob(soldir+"/*.lean"))
+        if prev:
+            pdir = f"projs/{slug}/reference/prev-{old}"
+            for stale in glob.glob(f"projs/{slug}/reference/prev-*"):
+                if stale != pdir: shutil.rmtree(stale, ignore_errors=True)
+            os.makedirs(pdir, exist_ok=True)
+            for f in prev: shutil.copy(f, os.path.join(pdir, os.path.basename(f)+".txt"))
+            open(os.path.join(pdir,"MANIFEST.txt"),"w").write(
+                f"score {old}\nheld_by {tg[slug].get('by')}\nreplaced_by {t['github_login']} at {new}\n"
+                f"This is the tree that held the record immediately before the current seed. If it was\n"
+                f"ours it is known to VERIFY, i.e. to fit the elaboration budget -- useful when the\n"
+                f"current seed keeps timing out. Context only; not compiled.\n")
+            print(f"NOTIFY: archived outgoing {slug} tree @{old} -> reference/prev-{old} ({len(prev)} files)")
+    except Exception as e:
+        print(f"NOTIFY: could not archive outgoing {slug} tree: {e}")
     for f in glob.glob(soldir+"/*.lean"): os.remove(f)
     for f in files: shutil.copy(f, soldir)
     # DO NOT rewrite prompt text here. A blind old->new replace also hits the workqueue header's
