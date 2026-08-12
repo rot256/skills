@@ -12,6 +12,15 @@
  },
  "leads": [
   {
+   "id": "score-is-not-the-hard-part",
+   "slug": "_common",
+   "price": 0,
+   "summary": "TWICE IN ONE DAY A COMPETITOR BANKED A SCORE WE HAD ALREADY REACHED AND BEEN REJECTED FOR. Both times our cost arithmetic was right and our SOUNDNESS ARGUMENT was wrong. Reaching the number is not the hard part; the certificate is.",
+   "source": "tekkac taking secp256k1-scalar-mul 303726 and sha256-hash 144327, 2026-08-12",
+   "witness": null,
+   "note": "*** CASE 1, sha256-hash 144,327, AND IT IS THE STARKEST POSSIBLE FORM. *** We submitted 144,327 as 71,875 allocations + 72,452 constraints (sub 08a9b637) and it was JUDGED AND REJECTED. tekkac then took the record at 144,327 with the IDENTICAL SPLIT \u2014 71,875 + 72,452, not merely the same total \u2014 by a different route: 12 files differ between their accepted tree and our rejected one, 794 changed lines, concentrated in the witness-side Computable* family plus SigmaSum (339 lines in ours, 483 in theirs), ScheduleLastPair, ScheduleStepLastPartial, FusedETailPack, CostPack, CostSparse and TailPairWidePack. SAME COST, SAME SPLIT, ONE SOUND AND ONE NOT.\n\n*** CASE 2, secp256k1-scalar-mul 303,726. *** We had the technique catalogued as vb-foldqinv and priced at 310 and left it open; they implemented it and took 150. Their soundness argument is the one we never supplied \u2014 the carry loop already proves equality over the bounded integer representatives, with the quotient's range check retained \u2014 while our five fixed-base attempts at the same family all argued the row is redundant GIVEN the affine quotient, which excludes no environments.\n\n*** THE OPERATIONAL CONSEQUENCE, WHICH IS THE POINT OF THIS ENTRY. *** A rejection at score S is evidence about OUR CERTIFICATE at S and nothing else. It is not evidence that S is unreachable, and the fleet should not treat a rejected score as a dead score \u2014 twice now the score was fine and reachable within hours by someone else. Conversely, arriving at the right (alloc, constr) is NOT most of the work: both of these had our arithmetic exactly right and lost on the proof. WHEN A SUBMISSION IS REJECTED, THE THING TO RE-DERIVE IS THE SOUNDNESS ARGUMENT, NOT THE COST. And when reporting, name the invariant your certificate leans on \u2014 'the carry loop pins the bounded integer equality' is a claim that can be checked; 'the quotient is affine in allocated wires' is a restatement of the substitution and proves nothing.\n\nBOTH THEIR TREES ARE NOW OUR SEEDS, so the techniques are available to build on rather than merely lost."
+  },
+  {
    "id": "vb-mux-selector-merge-canon-free",
    "slug": "_common",
    "price": 0,
