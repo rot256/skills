@@ -357,6 +357,25 @@ async def process_jobs():
             try: sid = json.loads(text).get("id")
             except Exception: sid = None
             print(f"NOTIFY: SUBMITTED {slug} score {score} (best {best}) http={code} sub={sid}")
+            # A SUBMISSION THAT NEVER REGISTERED IS NOT A PROCESSED JOB. zk.golf rate-limits
+            # (429) and can 5xx; both leave sid None, and marking the job processed there
+            # throws away a solution that BEAT the record, permanently and silently. Retry on
+            # the next tick instead, bounded so a genuinely rejected submission cannot spin.
+            # 4xx other than 429 means the submission itself is wrong (too many files, bad
+            # payload) and retrying it unchanged cannot help, so those fall through.
+            if sid is None and (code == 429 or (isinstance(code, int) and code >= 500) or not code):
+                j["submit_retries"] = j.get("submit_retries", 0) + 1
+                if j["submit_retries"] <= 5:
+                    print(f"NOTIFY: {slug} score {score} NOT REGISTERED (http={code}) — "
+                          f"leaving UNPROCESSED for retry {j['submit_retries']}/5")
+                    st[pid] = j; continue
+                print(f"NOTIFY: {slug} score {score} gave up after 5 submit retries (http={code}) — "
+                      f"THIS BEAT THE RECORD AND IS BEING DROPPED")
+            # Preserve the tree even when the submission did not register, for the same reason
+            # it is preserved on success: out/<slug>/ is overwritten by the next job.
+            if sid is None:
+                try: shutil.copyfile(tarp, os.path.join(outdir, f"unsubmitted-{score}.tar.gz"))
+                except Exception as e: print(f"STATUS: {slug} could not preserve unsubmitted tree: {e}")
             if sid:
                 subs = load("state_subs.json", {}); subs[sid] = {"slug": slug, "score": score, "status": "pending", "ts": NOW}
                 save("state_subs.json", subs); audit("submissions.jsonl", subs[sid] | {"submission_id": sid}); j["zk_id"] = sid
