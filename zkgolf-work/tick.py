@@ -135,9 +135,10 @@ def missing_required(soldir):
         if "/.lake/" in f: continue
         blob += open(f, errors="ignore").read()
     return [r for r in req if (f"theorem {r}" not in blob and f"{r} :" not in blob)]
-# Edits the zk.golf verifier has JUDGED AND REJECTED, so that we stop paying verifier time to
-# rediscover them. The workqueue already warns about each of these in prose; prose did not stop
-# the fleet from submitting the fixed-base one three times, so this is the enforcement copy.
+# Edit shapes the zk.golf verifier has JUDGED AND REJECTED. These are FLAGGED, NOT BLOCKED: a
+# rejection tells you a particular justification failed, not that the shape is unreachable, and
+# on 2026-08-12 a competitor banked this very family on another slug. Missing a record costs far
+# more than a wasted verifier run, so the asymmetry says warn and submit.
 # Entries are (label, filename, predicate-on-text). ONLY add an entry once the same edit has been
 # REJECTED (status=failed, judged) more than once under DIFFERENT proof routes -- a verifier
 # TIMEOUT is not evidence about the tree and must never land here. To retire an entry, delete it:
@@ -378,10 +379,20 @@ async def process_jobs():
                 j["processed"]=True; st[pid]=j; continue
             miss = missing_required(soldir)
             if miss: print(f"NOTIFY: aristotle {slug} MISSING {miss} — NOT submitting"); j["processed"]=True; st[pid]=j; continue
+            # WARN, DO NOT BLOCK. This started as a hard block after the stageO2 NoTop flip was
+            # rejected three times under three different proof routes. On 2026-08-12 a competitor
+            # landed the SAME TECHNIQUE FAMILY on variable-base (quotient inverted to an affine
+            # expression, range check retained, native row dropped because the carry loop already
+            # pins the bounded integer equality) and took the record with it. So the direction is
+            # viable and only our particular justification was wrong — and the predicate here
+            # cannot tell a correct implementation from the rejected one, because both put
+            # ll_effNT in two simp sets. Blocking therefore risks discarding a record to save a
+            # verifier run, and that trade is badly one-sided. Say it loudly and submit anyway.
             bad = known_rejected(slug, soldir)
             if bad:
-                print(f"NOTIFY: aristotle {slug} score {score} carries a KNOWN-REJECTED edit — NOT submitting: {bad}")
-                j["processed"]=True; j["known_rejected"]=bad; st[pid]=j; continue
+                print(f"NOTIFY: aristotle {slug} score {score} carries a PREVIOUSLY-REJECTED edit shape — "
+                      f"submitting anyway, but read this first: {bad}")
+                j["known_rejected"] = bad
             if score is None: print(f"NOTIFY: aristotle {slug} unparseable cost"); j["processed"]=True; st[pid]=j; continue
             if best is not None and score >= best: print(f"NOTIFY: aristotle {slug} score {score} does NOT beat best {best} — NOT submitting"); j["processed"]=True; st[pid]=j; continue
             files = sorted(glob.glob(os.path.join(soldir, "*.lean")))
