@@ -253,6 +253,27 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (144985, None, [
+  ("0 — THE -10 AT 144,343 HAS NEVER ONCE BEEN JUDGED, AND THE EXPENSIVE PART IS NAMED","*** EIGHT "
+   "SUBMISSIONS, EIGHT VERIFIER TIMEOUTS, ZERO VERDICTS. *** Two variants of one route both land on 144,343 = "
+   "71,883 alloc + 72,460 constr (-5/-5 from the 144,353 seed). Variant one was submitted SEVEN times "
+   "(dbe3eb9d, 5bbb2947, e7e8c2ca, 8ec2e71c, 55ea494e, 28c6d25f, 156ea28e) and timed out every time before the "
+   "resubmit budget was exhausted; variant two (927b52a1) timed out on its first attempt. Not one of the eight "
+   "was ever JUDGED — no soundness verdict, no rejection, nothing. *** THEY ARE NOT INDEPENDENT ATTEMPTS: they "
+   "change 25 of the same files against the seed (31 and 28 changed respectively), so this is ONE route with "
+   "implementation variation, and eight timeouts are weaker evidence than eight independent trees would be. *** "
+   "BUT SIZE IS NOT THE EXPLANATION, AND THAT IS THE USEFUL PART. A LARGER reduction on this same seed was "
+   "judged promptly: 144,337 (-16, 71,880 + 72,457, sub 74afb362) came back `failed score=None` — rejected on "
+   "the merits, not timed out. So the verifier handles trees of this size fine; something in the -10 route is "
+   "specifically expensive to elaborate. *** WHERE TO LOOK, AS A HYPOTHESIS RATHER THAN A FINDING. *** The "
+   "judged 144,337 touches 15 files; the timed-out route touches 25 shared ones. Fourteen files are in the "
+   "timed-out route and NOT in the judged one: CompressBlock5, CompressBlock5DPack, Cost, TailAdders, "
+   "TailPairTight, TailPairWide, and the deferred/tail computable-witness cluster ComputableDeferredBlocks, "
+   "ComputableMainSparseD, ComputableDCompressorsFull, ComputableDOutputAgreement, ComputableTailPairs, "
+   "ComputablePackTail, ComputableCompressBlock1Sparse, ComputableCompressBlockWideSparse. THAT CLUSTER IS THE "
+   "PRIME SUSPECT — it is witness-side machinery, which is where elaboration cost hides without changing a "
+   "single row. IF YOUR EDIT TOUCHES IT, buy elaboration headroom in the SAME submission or expect to spend "
+   "your slot on timeouts. IF YOUR EDIT AVOIDS IT, none of the above applies to you — 144,337 shows a bigger "
+   "reduction elsewhere gets a verdict on the first try."),
   ("0 — TODAY'S TWO ATTEMPTS, AND HOW TO IDENTIFY YOUR OWN EDIT","*** 2026-08-12, TWO SUBMISSIONS OFF THE "
    "144,353 SEED, OPPOSITE OUTCOMES, AND THE DIFFERENCE MATTERS. *** -16 (144,337 = 71,880 alloc + 72,457 "
    "constr, sub 74afb362) was JUDGED AND REJECTED — status=failed, score=null. -10 (144,343 = 71,883 + 72,460, "
