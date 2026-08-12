@@ -147,7 +147,7 @@ def _fb_stageo2_notop(txt):
     # PairAddFold.stageO2_scw flipped to GroupedFlex.circuitNoTop. The record tree legitimately
     # uses ll_effNT at ChainFold.stageX_scw and NOT at PairAddFold.stageO2_scw, so a tree with the
     # lemma in TWO simp sets rather than one has converted the second site. Measured on the record
-    # and on all three rejected trees: 1 non-definition occurrence vs 2.
+    # and on all four rejected trees: 1 non-definition occurrence vs 2.
     uses = [l for l in txt.splitlines()
             if "ll_effNT" in l and not l.lstrip().startswith("private lemma ll_effNT")]
     return len(uses) >= 2
