@@ -253,15 +253,16 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (144985, None, [
-  ("0 — THE -10 AT 144,343 HAS NEVER ONCE BEEN JUDGED, AND THE EXPENSIVE PART IS NAMED","*** EIGHT "
-   "SUBMISSIONS, EIGHT VERIFIER TIMEOUTS, ZERO VERDICTS. *** Two variants of one route both land on 144,343 = "
+  ("0 — THE -10 AT 144,343 TOOK TEN SUBMISSIONS AND THEN TOOK THE RECORD. READ THE WHOLE LEDGER","*** NINE VERIFIER TIMEOUTS AND THEN A "
+   "VERIFICATION ON THE TENTH (1433c4a5), WHICH TOOK THE RECORD. THE ROUTE IS EXPENSIVE TO ELABORATE AND "
+   "ENTIRELY SOUND — IF YOU READ A TIMEOUT AS A VERDICT YOU WILL ABANDON A WINNER. WHAT THE NINE WERE: *** Two variants of one route both land on 144,343 = "
    "71,883 alloc + 72,460 constr (-5/-5 from the 144,353 seed). Variant one was submitted SEVEN times "
    "(dbe3eb9d, 5bbb2947, e7e8c2ca, 8ec2e71c, 55ea494e, 28c6d25f, 156ea28e) and timed out every time before the "
    "resubmit budget was exhausted; variant two (927b52a1) timed out on its first attempt. Not one of the eight "
    "was ever JUDGED — no soundness verdict, no rejection, nothing. *** THEY ARE NOT INDEPENDENT ATTEMPTS: they "
    "change 25 of the same files against the seed (31 and 28 changed respectively), so this is ONE route with "
    "implementation variation, and eight timeouts are weaker evidence than eight independent trees would be. *** "
-   "BUT SIZE IS NOT THE EXPLANATION, AND THAT IS THE USEFUL PART. A LARGER reduction on this same seed was "
+   "SIZE WAS NEVER THE EXPLANATION, AND THAT PART STILL HOLDS. A LARGER reduction on this same seed was "
    "judged promptly: 144,337 (-16, 71,880 + 72,457, sub 74afb362) came back `failed score=None` — rejected on "
    "the merits, not timed out. So the verifier handles trees of this size fine; something in the -10 route is "
    "specifically expensive to elaborate. *** WHERE TO LOOK, AS A HYPOTHESIS RATHER THAN A FINDING. *** The "
@@ -270,10 +271,13 @@ WORKQUEUE={
    "TailPairTight, TailPairWide, and the deferred/tail computable-witness cluster ComputableDeferredBlocks, "
    "ComputableMainSparseD, ComputableDCompressorsFull, ComputableDOutputAgreement, ComputableTailPairs, "
    "ComputablePackTail, ComputableCompressBlock1Sparse, ComputableCompressBlockWideSparse. THAT CLUSTER IS THE "
-   "PRIME SUSPECT — it is witness-side machinery, which is where elaboration cost hides without changing a "
-   "single row. IF YOUR EDIT TOUCHES IT, buy elaboration headroom in the SAME submission or expect to spend "
-   "your slot on timeouts. IF YOUR EDIT AVOIDS IT, none of the above applies to you — 144,337 shows a bigger "
-   "reduction elsewhere gets a verdict on the first try."),
+   "EXPENSIVE PART — it is witness-side machinery, which is where elaboration cost hides without changing a "
+   "single row. *** WHAT TO DO, NOW THAT THE ROUTE HAS WON. *** Take it, and buy elaboration headroom in the "
+   "SAME submission — the per-run success probability is the only thing between this route and a record. DO NOT "
+   "read a timeout as a verdict on your tree, and DO NOT trade the reduction down for a safer one you merely "
+   "fear will time out: nine timeouts here were followed by a clean verification of the SAME score. IF YOUR EDIT "
+   "AVOIDS THE CLUSTER none of this applies — 144,337 got a verdict on its first try, and was rejected on the "
+   "merits, which is a real defect and a different problem."),
   ("0 — TODAY'S TWO ATTEMPTS, AND HOW TO IDENTIFY YOUR OWN EDIT","*** 2026-08-12, TWO SUBMISSIONS OFF THE "
    "144,353 SEED, OPPOSITE OUTCOMES, AND THE DIFFERENCE MATTERS. *** -16 (144,337 = 71,880 alloc + 72,457 "
    "constr, sub 74afb362) was JUDGED AND REJECTED — status=failed, score=null. -10 (144,343 = 71,883 + 72,460, "
@@ -367,7 +371,7 @@ WORKQUEUE={
    "for degree 3 explicitly and cannot compete. ONE GENUINE SMALL ITEM, not a dead end: on the FIRST block the "
    "state is the constant IV, so round 0's gadgets are compile-time constants and at round 1 both Maj and Ch have "
    "two constant arguments and collapse to free affine functions — about 2 rounds' worth, block 1 only."),
-  ("~474 — OPERATIONAL, THE MATH IS ALREADY DONE, BUT READ ITEM 0 FIRST: THIS ITEM SENDS YOU INTO THE ONE REGION OF THE TREE THAT HAS NEVER SURVIVED THE VERIFIER. *** The deferred family this item tells you to wire up IS the cluster that item 0 names: nine submissions built on it have timed out and NOT ONE has ever been judged, while a LARGER reduction elsewhere on this seed got a verdict on its first try. THREE SEPARATE JOBS have now followed this item to the identical 144,343 and all three timed out, so this is not bad luck, it is a property of the route. *** THE ITEM IS STILL WORTH DOING — the saving is real and nothing here says the route is unsound; it says the route is EXPENSIVE TO ELABORATE. So do it, but treat elaboration headroom as PART OF THE TASK rather than a nicety: buy it in the SAME submission, and if you cannot, say so in your summary and take a different item instead of shipping a tenth timeout. *** DO NOT GRIND THE SAME -10: landing on 144,343 with these files touched is the outcome that has failed nine times. If your work converges there, either buy the headroom or go elsewhere.","WIRE THE DEFERRED-CHAIN CONFIGURATION INTO THE "
+  ("~474 — OPERATIONAL, THE MATH IS ALREADY DONE, AND THIS ROUTE HAS NOW BANKED A RECORD THE HARD WAY. *** The deferred family this item tells you to wire up is EXPENSIVE TO ELABORATE AND ENTIRELY SOUND: three separate jobs followed this item to the identical 144,343, nine submissions timed out, and THE TENTH VERIFIED AND TOOK THE RECORD (1433c4a5). *** CORRECTION TO AN EARLIER VERSION OF THIS HEADLINE, AND IT WAS WRONG IN THE DIRECTION THAT COSTS RECORDS. It told you that if you could not buy elaboration headroom you should take a different item rather than ship a tenth timeout. The tenth was not a timeout. Persistence on this exact route is what banked the record, and the advice would have thrown it away. *** SO: DO THIS ITEM. Buy elaboration headroom in the SAME submission, because the per-run success probability is the only thing between this route and a record. And if you land on a score that has timed out before, SUBMIT IT ANYWAY — a timeout is evidence about a RUN, never about your tree.","WIRE THE DEFERRED-CHAIN CONFIGURATION INTO THE "
    "EXPORTED COST. Nineteen consecutive jobs proved a ~144,996 configuration in a side module and then submitted a "
    "tree whose Main-reachable cost still read 145,470, so every one of them scored NOTHING. Main.lean is a SINGLE "
    "IMPORT LINE, `import Solution.SHA256.MainSparse`, and MainSparse.lean:26-27 is where allocations := 72445 and "
