@@ -12,6 +12,18 @@
  },
  "leads": [
   {
+   "id": "vb-mux-selector-merge-canon-free",
+   "slug": "_common",
+   "price": 0,
+   "summary": "BANKED, -72 ON VARIABLE BASE, AND THE MECHANISM GENERALISES. Widen a mux's selector to the SUM of two mutually-exclusive flags and pick the ifTrue lane so the second branch produces the CANONICAL value for free \u2014 which deletes a whole downstream canonicalisation mux. Nine <4,4> muxes went away at zero cost.",
+   "source": "fleet submission 01f6e9a9, record 303948 -> 303876, 2026-08-12",
+   "witness": {
+    "file": "CompleteAdd.lean",
+    "pattern": "dxCanon"
+   },
+   "note": "*** THIS WAS FOUND BY THE FLEET, NOT BY THE LEDGER \u2014 CATALOGUING IT SO IT TRANSFERS. *** The old row was a plain mux `{ selector := Q.isInf, ifTrue := P.x, ifFalse := x3 }`. The new one keeps ONE mux but changes both the selector and the true-lane: the selector becomes `Q.isInf + cancel`, which is boolean because the two flags are MUTUALLY EXCLUSIVE, and the true-lane becomes the RAW LIMBWISE DIFFERENCE P.x - Q.x, which is a FREE affine form.\n\nWHY BOTH BRANCHES COME OUT RIGHT, WHICH IS THE WHOLE TRICK. On the Q = infinity branch, Q.x is the canonical zero, so the lane evaluates to P.x \u2014 exactly the old behaviour. On the CANCELLATION branch, sameX = 1 forces the two canonical x-limb vectors to be equal, so the lane evaluates to the ZERO VECTOR and the output x-coordinate is canonically zero FOR FREE. The second branch therefore no longer needs its own canonicalisation, and the nine-fold canonicalisation mux the GLV table build used to pay for is deleted outright: nine Mux subcircuits (t5x, t6x, t7x, t9x, t10x, t11x and siblings) at <4,4> each = <36,36> = 72, which is exactly the saving. glvBuildTableCost went <14843,14951> -> <14807,14915>.\n\n*** THE GENERAL SHAPE, WHICH IS WHAT TO LOOK FOR ELSEWHERE. *** Wherever two exceptional flags are mutually exclusive, their SUM is boolean at zero cost, so they can share one selector instead of two. Then choose the true-lane as a free affine expression that HAPPENS to collapse to the canonical value on the second flag's branch \u2014 a difference rather than a value is the natural candidate, because equality of the two operands makes it vanish. The payoff is not the merged selector itself but the DOWNSTREAM canonicalisation you stop needing.\n\nGREP SIGNATURE: any `Mux` whose ifTrue is a bare variable rather than an expression, sitting upstream of a separate mux or canonicalisation whose only job is to force a canonical zero on some exceptional branch. Look especially in table builds, where the same canonicalisation is repeated once per entry \u2014 that repetition is what turned one insight into nine deletions here."
+  },
+  {
    "id": "arbitrary-3bit-table-one-row",
    "slug": "_common",
    "price": 0,
