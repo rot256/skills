@@ -23,6 +23,25 @@ IDEAS={
 # job that only has budget for one item takes the one most likely to land.
 WORKQUEUE={
  "secp256k1-fixed-base-scalar-mul": (47435, 34030, [
+  ("0 — READ THIS BEFORE YOU DELETE A FOLD ROW","*** THE ROW-DELETION AT A FIVE-POSITION FOLD SITE WAS "
+   "JUDGED AND REJECTED, AND IT IS A REJECTION, NOT A TIMEOUT. *** A 47,413 carrying FoldLinIdent5.lean — which "
+   "proves GroupedFlex.LinIdent from an AFFINE qInv5 (P256^-1 * (lhsPoly5 - tailPoly4)) so that "
+   "GroupedFlex.circuitNoTop drops the native-field CRT row — was submitted 08:42:19Z and came back at 08:55:46Z "
+   "with status=failed, score=null. Thirteen minutes of verification and then a verdict: the verifier JUDGED it. "
+   "RESUBMITTING THAT EDIT UNCHANGED CANNOT PASS. The zk.golf submission API carries NO reason field, so do not "
+   "go hunting for an error string — there is none. WHAT IS ALREADY RULED OUT, by static check of the preserved "
+   "tree: zero native_decide / decide +native / bv_decide / bare axiom / sorry anywhere under Solution/, and "
+   "computableWitness present throughout. So it is NOT the usual banned-axiom or missing-witness rejection. "
+   "THE LIKELY DEFECT, AND TREAT IT AS A HYPOTHESIS: the row holds identically once qInv5 is WRITTEN as that "
+   "expression, but our obligation is unconditional over every env satisfying the REMAINING constraints, and an "
+   "identity true by construction of the deleted expression excludes nothing. If that row was what kept the "
+   "quotient bounded — and the CRT fold argument needs it bounded — deleting it is unsound. Reviving this means "
+   "showing the bound survives WITHOUT the row. *** CONDEMN THE EDIT, NOT THE NUMBER. *** Two independent jobs "
+   "landed on 47,413 with identical 23,660 alloc + 23,753 constr and DIFFERENT trees: the rejected one has "
+   "FoldLinIdent5.lean, the other has FoldQInvW.lean and differs in ChainFold, ChainFoldComplete, ChainFoldSound "
+   "and FinalAdd too. Nothing above condemns the FoldQInvW route. If you land on 47,413, identify YOUR file "
+   "before concluding anything. Deleting the quotient WIRE remains live and paying; it is deleting the ROW that "
+   "broke."),
   ("12404 — THE LARGEST ITEM ON THIS SLUG BY A FACTOR OF THREE","THE SQUARES TELESCOPE AT B=16. Re-derived against "
    "the live 47,435 tree: the per-window baseline is now ChainExtFold.extCost <855,860> = 1,715 (it was 1,734), the "
    "target stays 1,060, so the saving is 655 per window and 20*655 - 696 (terminal) = -12,404, landing about "
