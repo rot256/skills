@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """zkGolf/Aristotle loop tick. Runtime state is regenerable from the zk.golf + Aristotle
 APIs (see bootstrap.sh); only this tooling needs to persist. Location-independent."""
+import tempfile
 import os, sys, re, json, glob, time, tarfile, asyncio, datetime, subprocess, shutil
 import requests, aristotlelib
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)
@@ -533,11 +534,52 @@ def process_subs():
             print(f"STATUS: sub {sid[:8]} poll-error {e}"); continue
         stt = r.get("status"); score = r.get("score")
         if stt == "timeout" and score is None:
-            # the zk.golf verifier gave up, not the solution — a real improvement was dropped for
-            # infrastructure reasons. Mark it terminal so we stop polling, but say so loudly.
-            s["status"] = "failed"; s["verifier_timeout"] = True; subs[sid] = s
-            print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} -> failed (VERIFIER TIMEOUT, not a bad solution; "
-                  f"claimed {s.get('score')} — worth resubmitting)")
+            # The zk.golf verifier gave up, not the solution. Timeouts here are substantially
+            # STOCHASTIC — measured on sha256, an identical tree timed out three times and then
+            # verified and took the record on the fifth attempt — so the tree is not evidence
+            # against itself and the only way to find out is to send it again. Saying "worth
+            # resubmitting" and marking it terminal meant nobody did, and a record-beating
+            # solution sat in out/ untouched. Resubmit it here, bounded, and only while it still
+            # beats the live best (another job may have overtaken it in the meantime).
+            slug = s["slug"]; tries = s.get("timeout_resubmits", 0)
+            keep = os.path.join("out", slug, f"submitted-{sid}.tar.gz")
+            cur_best = leaderboard_best(slug)
+            if tries >= 3 or not os.path.exists(keep) or (
+                    cur_best is not None and s.get("score") is not None and s["score"] >= cur_best):
+                s["status"] = "failed"; s["verifier_timeout"] = True; subs[sid] = s
+                why = ("3 resubmits exhausted" if tries >= 3 else
+                       "tree not preserved" if not os.path.exists(keep) else
+                       f"no longer beats best {cur_best}")
+                print(f"NOTIFY: zkGolf {slug} {sid[:8]} -> failed (VERIFIER TIMEOUT, not a bad solution; "
+                      f"claimed {s.get('score')}) — NOT resubmitting: {why}")
+                continue
+            try:
+                tmp = tempfile.mkdtemp(prefix="resub-")
+                with tarfile.open(keep) as tf: tf.extractall(tmp)
+                sds = [d for d in glob.glob(os.path.join(tmp, "**", "Solution", SLUG2INST[slug]),
+                                            recursive=True) if "/.lake/" not in d]
+                if not sds: raise RuntimeError("no Solution dir in preserved tree")
+                a, c = parse_cost(sds[0]); files = sorted(glob.glob(os.path.join(sds[0], "*.lean")))
+                desc = (r.get("description") or f"{s.get('score')} resubmit")
+                if "[resubmit" not in desc: desc = f"{desc} [resubmit {tries + 1}/3 after verifier timeout]"
+                code2, text2 = zk_submit(slug, a, c, desc, files)
+                try: sid2 = json.loads(text2).get("id")
+                except Exception: sid2 = None
+                shutil.rmtree(tmp, ignore_errors=True)
+            except Exception as e:
+                print(f"STATUS: {slug} {sid[:8]} timeout-resubmit error {e}"); continue
+            if sid2:
+                s["status"] = "failed"; s["verifier_timeout"] = True; s["resubmitted_as"] = sid2; subs[sid] = s
+                subs[sid2] = {"slug": slug, "score": s.get("score"), "status": "pending", "ts": NOW,
+                              "timeout_resubmits": tries + 1, "resubmit_of": sid}
+                try: shutil.copyfile(keep, os.path.join("out", slug, f"submitted-{sid2}.tar.gz"))
+                except Exception as e: print(f"STATUS: {slug} could not preserve resubmitted tree: {e}")
+                print(f"NOTIFY: zkGolf {slug} {sid[:8]} VERIFIER TIMEOUT at {s.get('score')} — "
+                      f"RESUBMITTED unchanged as {sid2[:8]} (attempt {tries + 1}/3)")
+            else:
+                # leave this submission non-terminal so the next tick tries the resubmit again
+                print(f"NOTIFY: zkGolf {slug} {sid[:8]} timeout-resubmit did not register (http={code2}) — "
+                      f"will retry next tick")
             continue
         if stt in ("verified","failed","error") or score is not None:
             final = "verified" if (stt == "verified" or score is not None) else "failed"
