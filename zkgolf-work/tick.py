@@ -135,6 +135,35 @@ def missing_required(soldir):
         if "/.lake/" in f: continue
         blob += open(f, errors="ignore").read()
     return [r for r in req if (f"theorem {r}" not in blob and f"{r} :" not in blob)]
+# Edits the zk.golf verifier has JUDGED AND REJECTED, so that we stop paying verifier time to
+# rediscover them. The workqueue already warns about each of these in prose; prose did not stop
+# the fleet from submitting the fixed-base one three times, so this is the enforcement copy.
+# Entries are (label, filename, predicate-on-text). ONLY add an entry once the same edit has been
+# REJECTED (status=failed, judged) more than once under DIFFERENT proof routes -- a verifier
+# TIMEOUT is not evidence about the tree and must never land here. To retire an entry, delete it:
+# it is a record of what has failed, not a claim about what is impossible.
+def _fb_stageo2_notop(txt):
+    # PairAddFold.stageO2_scw flipped to GroupedFlex.circuitNoTop. The record tree legitimately
+    # uses ll_effNT at ChainFold.stageX_scw and NOT at PairAddFold.stageO2_scw, so a tree with the
+    # lemma in TWO simp sets rather than one has converted the second site. Measured on the record
+    # and on all three rejected trees: 1 non-definition occurrence vs 2.
+    uses = [l for l in txt.splitlines()
+            if "ll_effNT" in l and not l.lstrip().startswith("private lemma ll_effNT")]
+    return len(uses) >= 2
+KNOWN_REJECTED = {
+    "secp256k1-fixed-base-scalar-mul": [
+        ("PairAddFold.stageO2_scw -> circuitNoTop (the -1 at 47,413): rejected 3/3 under "
+         "FoldLinIdent5, FoldQInvW and FoldQInvC1", "ChainFoldCW.lean", _fb_stageo2_notop),
+    ],
+}
+def known_rejected(slug, soldir):
+    for label, fname, pred in KNOWN_REJECTED.get(slug, []):
+        p = os.path.join(soldir, fname)
+        if not os.path.exists(p): continue
+        try:
+            if pred(open(p, errors="ignore").read()): return label
+        except Exception: pass
+    return None
 def parse_cost(soldir):
     # Read the EXPORTED cost only. This used to glob every .lean and take the first hit, which meant an
     # `allocations` in some auxiliary or candidate cost file could be reported as the circuit's score.
@@ -349,6 +378,10 @@ async def process_jobs():
                 j["processed"]=True; st[pid]=j; continue
             miss = missing_required(soldir)
             if miss: print(f"NOTIFY: aristotle {slug} MISSING {miss} — NOT submitting"); j["processed"]=True; st[pid]=j; continue
+            bad = known_rejected(slug, soldir)
+            if bad:
+                print(f"NOTIFY: aristotle {slug} score {score} carries a KNOWN-REJECTED edit — NOT submitting: {bad}")
+                j["processed"]=True; j["known_rejected"]=bad; st[pid]=j; continue
             if score is None: print(f"NOTIFY: aristotle {slug} unparseable cost"); j["processed"]=True; st[pid]=j; continue
             if best is not None and score >= best: print(f"NOTIFY: aristotle {slug} score {score} does NOT beat best {best} — NOT submitting"); j["processed"]=True; st[pid]=j; continue
             files = sorted(glob.glob(os.path.join(soldir, "*.lean")))
