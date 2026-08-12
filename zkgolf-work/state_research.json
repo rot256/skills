@@ -46,5 +46,12 @@
     "sorries_in_solution": 0,
     "axioms": "[propext, Classical.choice, Quot.sound]",
     "result": "SETTLED AS AN INEQUALITY. minRows <= tensorRank (savings transfer); tensorRank <= 9*minRows^2 (converse only quadratic, so rank lower bounds do NOT give row lower bounds); one row buys exactly rank one."
+  },
+  "e3798694-961e-4d81-9c0b-8cd50b6950a0": {
+    "name": "degreepack",
+    "dir": "research/degreepack",
+    "status": "SUBMITTED",
+    "processed": false,
+    "ts": "2026-08-12T11:22:49.627673+00:00"
   }
 }

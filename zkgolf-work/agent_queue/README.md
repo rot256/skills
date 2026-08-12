@@ -3,7 +3,10 @@
 Launched at the 20-agent concurrency cap; these were rejected and parked here.
 Relaunch with the Agent tool (general-purpose) verbatim when slots free up.
 
-- `gf2_mult_complexity.md`  — GF(2) AND-gate-count constructions for sha256-compress
+A brief is only worth relaunching if the SLUG IT SERVES STILL HAS SLOTS. Check
+tick.py SLOTS before spending one.
+
+- ~~`gf2_mult_complexity.md`~~ — CLOSED 2026-08-12, DO NOT LAUNCH. GF(2) AND-gate-count constructions for sha256-compress
   and k12-compress. Highest-value item inside it: the quantum resource-estimation
   literature (Grover oracles for SHA-256 / Keccak report exact Toffoli counts, and a
   Toffoli count IS an AND count), plus the published multiplicative complexity of the
@@ -14,6 +17,16 @@ Relaunch with the Agent tool (general-purpose) verbatim when slots free up.
   Ch = g^(e&(f^g)) is <3,3>/bit against <1,1>/bit for g + e(f-g); Maj = (a&b)^(c&(a^b))
   is <4,4>/bit against <1,1>/bit for the MAJ3 row. Price every imported gate count in
   F_r rows before believing it.
+  WHY IT IS CLOSED, AND BOTH REASONS ARE INDEPENDENTLY SUFFICIENT. (1) Its own caution
+  note above is fatal to the premise: the brief's highest-value item is importing AND
+  counts from the quantum/MPC literature, and those counts are optimised for a metric
+  where XOR is free and ours charges a row for it, so the imported circuits are measured
+  WORSE than what we already run. Chasing a lower AND count actively moves us the wrong
+  way. (2) Both slugs it serves — gf2-sha256-compress-canonical and
+  gf2-k12-compress-canonical — are at 0 big-win and 0 small-win in tick.py SLOTS, so
+  there is no fleet capacity to act on an answer even if one arrived.
+  Reopening it requires reinstating slots AND a reason to believe some construction
+  survives repricing in F_r rows. Neither is true today.
 
 - ~~`verification_identities.md`~~ — DONE 2026-08-11. Results are in `leads.json` under
   ids: ecip-derandomized (rewritten with the derived answer),
