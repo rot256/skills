@@ -465,6 +465,24 @@ WORKQUEUE={
    "lowCarry per pair, so expected value is about +46 with low confidence. DO NOT SPEND A SLOT ON THIS ALONE."),
  ]),
  "keccak-f1600": (307200, 184320, [
+  ("UNPRICED, POSSIBLY LARGE — A PROVED BARRIER JUST TURNED OUT NOT TO APPLY TO CHI","*** THE RESULT THAT "
+   "EVERYONE HAS BEEN ASSUMING IS ONLY TRUE FOR DISJOINT INPUTS, AND CHI'S INPUTS ARE NOT DISJOINT. *** A "
+   "Lean-verified research job (research_out/degreepack/, axioms clean) proves that two non-affine gadgets on "
+   "DISJOINT input blocks can never pack a multilinear-degree-3 target into one row, which is why every "
+   "exhaustive search for a packed Maj/AND3 row has come back empty. It then REFUTES the same statement when the "
+   "gadgets SHARE input variables (Shared.lean, `shared_degree_three_packs`), with an explicit witness: the row "
+   "`(1 + x1 + x2) * z = x0` pins z UNIQUELY — no decoy root — because `1 + x1 + x2` never vanishes on the "
+   "boolean cube, and the pinned value `x0/(1 + x1 + x2)` is genuinely CUBIC, splitting as two non-affine gadgets "
+   "on overlapping triples. *** WHY THIS IS AIMED AT CHI. *** y_i = x_i XOR (NOT x_{i+1} AND x_{i+2}), so "
+   "CONSECUTIVE OUTPUTS OF A 5-LANE ROW SHARE TWO OF THEIR THREE INPUTS. That is exactly the regime where the "
+   "barrier does not hold, and chi is 3,200 of our 7,680 constraints per round. If two adjacent chi bits can "
+   "share ONE row, chi halves. *** THE TECHNIQUE TO TRY, CONCRETELY. *** Over F_p with bits in {0,1}: NOT a = "
+   "1-a, AND a b = a*b, XOR a b = a + b - 2ab, so y_i = x_i + (1-x_{i+1})x_{i+2} - 2 x_i (1-x_{i+1}) x_{i+2}. "
+   "Look for affine L,R over the five lane bits with L NOWHERE ZERO on {0,1}^5 such that L*z = R pins a wire "
+   "carrying two chi outputs in a free affine combination (e.g. y_i + c*y_{i+1} for a constant c you get to "
+   "choose). *** VERIFY BY BRUTE FORCE BEFORE BELIEVING IT — 2^5 is 32 points, it is instant, and a candidate "
+   "that fails on one point is worthless. *** REPORT A CLEAN NEGATIVE IF IT FAILS: an exhaustive search over a "
+   "stated coefficient range, with the range stated, is a real result and closes this permanently."),
   ("76800 FOR RUNG A, 122880 FOR THE WHOLE PORT — AN ORDERED PLAN, NOT A RESEARCH TASK","THE RECORD TREE AND YOURS "
    "ARE THE SAME TREE. Every file in projs/keccak-f1600/reference/ (byte-identical to the 184320 record) is either "
    "identical to yours or is YOUR FILE WITH `computableWitnesses` DELETED AND THE CIRCUIT SWAPPED. *** soundness, "
