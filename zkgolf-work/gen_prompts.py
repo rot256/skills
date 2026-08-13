@@ -323,6 +323,24 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (144985, None, [
+  ("0 — THE -6 AT 144,321 IS 0-FOR-3 AND ALL THREE TREES SHARE ONE EDIT. ANSWER A BOUND QUESTION BEFORE YOU TRY "
+   "A FOURTH","*** THREE INDEPENDENT TREES REACHED 144,321 = 71,872 alloc + 72,449 constr AND ALL THREE WERE "
+   "JUDGED AND REJECTED (1ee0c2b0, bad91b20, 635fa2cf). *** They are 12, 14 and 19 files apart from one another, "
+   "so they are genuinely different implementations — but intersecting their diffs against the seed leaves only "
+   "FOUR common files, two of which (CostSparseD, Main) are cost bookkeeping. THE SUBSTANTIVE SHARED EDIT IS TWO "
+   "FILES: CompressBlockWideSparseDPack and R1CSCompressorsD. *** WHAT IT DOES: *** swaps the wide round family "
+   "for a W4 variant — import SHA256RoundsW4 for SHA256RoundsW, call SHA256Rounds63.circuit62_pairedW4 for "
+   "circuit62_pairedW, use r1cs_sub_sha256Rounds62_pairedW4 and affineW_subOut_sha256Rounds62_pairedW4, pulling in "
+   "R1CSWidePrimitivesD4 — *** AND WEAKENS AN ASSUMPTION: RPShared.Numeric5W input.state[3] and input.state[7] "
+   "BECOME RPShared.Numeric4W. *** That bound weakening is where the -6 comes from and it is the prime suspect: if "
+   "state[3] or state[7] can exceed the Numeric4W bound the circuit is unsound, and it would be rejected "
+   "IDENTICALLY in every implementation of the same idea — exactly what happened. *** SO ANSWER THIS FIRST, AND IT "
+   "NEEDS NO CERTIFICATE: what are the true bounds on state[3] and state[7] entering circuit62 on this seed, and "
+   "do they fit Numeric4W? DERIVE THE BOUND, DO NOT ASSUME IT. *** If they fit, say why and the -6 should land. If "
+   "they do not, the W4 route is closed and saying so is worth a slot, because it stops a fourth, fifth and sixth "
+   "job rediscovering it. *** WHAT IS NOT CONDEMNED: THE SCORE. *** 144,321 by some route OTHER than the W4 swap "
+   "is untouched by any of this, and three rejections is well inside the range where persistence has paid here — "
+   "variable-base 303,328 took five trees and the fixed-base stageO2 deletion took seven."),
   ("0 — THE -10 AT 144,343 TOOK TEN SUBMISSIONS AND THEN TOOK THE RECORD. READ THE WHOLE LEDGER","*** NINE VERIFIER TIMEOUTS AND THEN A "
    "VERIFICATION ON THE TENTH (1433c4a5), WHICH TOOK THE RECORD. THE ROUTE IS EXPENSIVE TO ELABORATE AND "
    "ENTIRELY SOUND — IF YOU READ A TIMEOUT AS A VERDICT YOU WILL ABANDON A WINNER. WHAT THE NINE WERE: *** Two variants of one route both land on 144,343 = "
