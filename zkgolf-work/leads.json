@@ -12,6 +12,18 @@
  },
  "leads": [
   {
+   "id": "vb-tekkac-303052-anatomy",
+   "slug": "secp256k1-scalar-mul",
+   "price": 0,
+   "summary": "tekkac took variable-base 303,182 -> 303,052 with TWO things, and only one of them is a cost reduction. The other is ELABORATION ENGINEERING: the computable-witness proof split into six files with irreducible attributes and raised heartbeat limits. Their tree is our seed, so both are ours to build on.",
+   "source": "diff of tekkac's 303,052 tree against our archived 303,182, 2026-08-13",
+   "witness": {
+    "file": "GLVScalarMulCWU1.lean",
+    "pattern": "attribute [local irreducible]"
+   },
+   "note": "*** PART ONE, THE COST REDUCTION: QUOTIENT INVERSION EXTENDED TO THE DIVISION SITES. *** DivOrZeroF3 now imports MulModFoldTInv and calls MulModFoldT.circuitInv in place of the plain circuit, i.e. the same quotient-as-affine-expression family they used to take 303,726, now applied where a division happens rather than only at multiply sites. DivOrZeroN32 carries their own cost note: 'Cost 8 + 248/256 + 156/158 = 412/414, against the wider base-64 division' \u2014 so the division also moved to base-32 limbs. Also touched: Cost, FusedCost, GLVBuildTable, GLVBuildTableCostCW, GLVScalarMul, GLVScalarMulCostCW.\n\n*** PART TWO, AND IT IS THE PART WORTH STEALING: THEY PAID FOR ELABORATION HEADROOM EXPLICITLY. *** Six NEW files appear, all of them computable-witness plumbing rather than circuit: GLVScalarMulBase (1,359 lines), GLVScalarMulCWHelpers (255), GLVScalarMulCWU1, CWU2, CWV1, CWV2 (30-58 lines each) and GLVScalarMulCostCWBase (312). The four small ones are ONE PER FAKE-GLV SUB-SCALAR \u2014 u1, u2, v1, v2 \u2014 so the monolithic CW theorem was split into four independent per-scalar theorems. Each carries `attribute [local irreducible] main PointValid.main GLVScalarRelation.main GLVBuildTable.main GLVBuildTable.tableAt GLVMSM.main AssertInfinity.main` plus `set_option maxRecDepth 1000000` and `set_option maxHeartbeats 1000000`.\n\n*** WHY THAT MATTERS TO US. *** This is exactly the 'buy elaboration headroom in the same submission' move our own sha256 workqueue preaches, done systematically by someone else and visibly load-bearing: a -130 that would not otherwise elaborate. The recipe is concrete \u2014 SPLIT THE CW PROOF ALONG A NATURAL AXIS (here, one theorem per sub-scalar), MARK THE SUBCIRCUIT `main` DEFINITIONS IRREDUCIBLE SO THE ELABORATOR STOPS UNFOLDING THEM, AND RAISE maxRecDepth/maxHeartbeats. The irreducible attribute is the load-bearing half; CIRCONOMICON already recommends `irreducible` on heavy definitions and this is a worked example at scale.\n\nSINCE THEIR TREE IS NOW OUR SEED, both halves are available. The elaboration split in particular should transfer to any slug where timeouts are the binding constraint \u2014 which on sha256 they measurably are."
+  },
+  {
    "id": "sha-numeric4w-bound-suspect",
    "slug": "sha256-hash",
    "price": 0,

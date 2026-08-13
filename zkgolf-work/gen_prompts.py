@@ -323,6 +323,24 @@ WORKQUEUE={
    "ceiling here is now the whole relation at 1,754, of which <720,724> = 1,444 is the remaining MulModLoose."),
  ]),
  "sha256-hash": (144985, None, [
+  ("elaboration headroom — A COMPETITOR JUST SHOWED THE RECIPE, AND TIMEOUTS ARE MEASURABLY THE BINDING "
+   "CONSTRAINT ON THIS SLUG","*** THE -10 AT 144,343 NEEDED TEN SUBMISSIONS BECAUSE NINE TIMED OUT. Elaboration "
+   "time, not row count, is what has repeatedly cost this slug its records — so buying headroom IS part of the "
+   "task, and a competitor has now demonstrated exactly how at scale. *** ON secp256k1-scalar-mul, tekkac's "
+   "-130 shipped SIX NEW FILES THAT CONTAIN NO CIRCUIT AT ALL, only computable-witness plumbing: a 1,359-line "
+   "Base, a 255-line CWHelpers, a 312-line CostCWBase, and FOUR SMALL THEOREMS OF 30-58 LINES EACH — one per "
+   "fake-GLV sub-scalar (U1, U2, V1, V2). The monolithic CW theorem was SPLIT ALONG A NATURAL AXIS into four "
+   "independent per-scalar theorems. *** EACH ONE CARRIES: *** `attribute [local irreducible] main "
+   "PointValid.main GLVScalarRelation.main GLVBuildTable.main GLVBuildTable.tableAt GLVMSM.main "
+   "AssertInfinity.main`, plus `set_option maxRecDepth 1000000` and `set_option maxHeartbeats 1000000`. *** THE "
+   "IRREDUCIBLE ATTRIBUTE IS THE LOAD-BEARING HALF: *** it stops the elaborator unfolding subcircuit `main` "
+   "definitions it has no need to see inside, which is where the time goes. CIRCONOMICON already recommends "
+   "`irreducible` on heavy definitions; this is a worked example at scale, on a tree that would not otherwise have "
+   "elaborated. *** APPLY THE SAME SHAPE HERE. *** Find the natural axis in this tree's CW proof — the deferred "
+   "block family and the compressor family are the obvious candidates, and they are precisely the cluster that "
+   "times out — split the monolithic theorem along it, mark the subcircuit mains irreducible, and raise the "
+   "limits. That is cost-neutral in rows, so it CANNOT be submitted alone; carry it in the SAME submission as your "
+   "reduction, where it raises the per-run success probability."),
   ("0 — THE -6 AT 144,321 IS 0-FOR-3 AND ALL THREE TREES SHARE ONE EDIT. ANSWER A BOUND QUESTION BEFORE YOU TRY "
    "A FOURTH","*** THREE INDEPENDENT TREES REACHED 144,321 = 71,872 alloc + 72,449 constr AND ALL THREE WERE "
    "JUDGED AND REJECTED (1ee0c2b0, bad91b20, 635fa2cf). *** They are 12, 14 and 19 files apart from one another, "
