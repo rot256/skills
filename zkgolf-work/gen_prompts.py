@@ -56,7 +56,8 @@ WORKQUEUE={
    "rank-2 architecture reaches ~155, but 155 -> 106 is an OPEN CONSTANT IN COMPLEXITY THEORY (the same "
    "sqrt(2) unclosed for univariate polynomials since Paterson-Stockmeyer 1973) and the solver route to it is "
    "closed: no fast Groebner engine even accepts a 254-bit prime, and the SMALLEST instance of this family "
-   "defeats msolve across four attempts, every one aborting without output. Take the 179 and move on."),
+   "gets msolve OOM-KILLED — exit 137 after 1366 s on a 15 GB machine, on a system 1/900th the size of ours. "
+   "Memory binds immediately, so there is no partial result at any size either. Take the 179 and move on."),
   ("~8000 — NEVER MATERIALISE THE ACCUMULATOR x AT ALL. THE ALGEBRA IS VERIFIED NUMERICALLY; THE BOUNDS ARE "
    "YOUR JOB","*** FIRST, WHERE THE SCORE ACTUALLY IS, READ OUT OF THIS TREE'S OWN LEAN COST PROOFS — IT IS NOT "
    "WHERE MOST JOBS LOOK. *** 638 of the 855 allocations in a chain step are range/canonicity bits: stageX is "
