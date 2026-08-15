@@ -151,10 +151,29 @@ def _fb_stageo2_notop(txt):
     uses = [l for l in txt.splitlines()
             if "ll_effNT" in l and not l.lstrip().startswith("private lemma ll_effNT")]
     return len(uses) >= 2
+def _sha_numeric4w(txt):
+    # The W4 / Numeric4W message-schedule route. Unlike the fixed-base predicate this keys on the
+    # FILE EXISTING AT ALL, because the whole family arrives as a set of new modules rather than as
+    # an edit to an existing one. known_rejected() only calls this when the file is already present,
+    # so returning True unconditionally is the file-existence test.
+    #
+    # NEGATIVE CONTROL, RUN BEFORE SHIPPING THIS (the range-check discriminator earlier in this
+    # corpus was reverted precisely because it was never run): NEITHER the verified seed NOR the
+    # record tree carries Numeric4W.lean or any *W4*.lean -- both measured at 0 -- and of 19 locally
+    # preserved sha256 submissions only ONE distinct tree carries them (652278f6 plus its
+    # byte-identical timeout-resubmit 1608731a). So this flags no verified tree.
+    return True
 KNOWN_REJECTED = {
     "secp256k1-fixed-base-scalar-mul": [
         ("PairAddFold.stageO2_scw -> circuitNoTop (the -1 at 47,413): rejected 3/3 under "
          "FoldLinIdent5, FoldQInvW and FoldQInvC1", "ChainFoldCW.lean", _fb_stageo2_notop),
+    ],
+    "sha256-hash": [
+        ("the W4 / Numeric4W message-schedule route: this corpus records FOUR independent trees "
+         "reaching a score by weakening a numeric bound here and ALL FOUR judged and rejected, and "
+         "a competitor then went PAST that score without the technique at all. 1608731a is the "
+         "latest, rejected at 144,309. The seed and the record both carry ZERO W4 files.",
+         "Numeric4W.lean", _sha_numeric4w),
     ],
 }
 def known_rejected(slug, soldir):
