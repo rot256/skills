@@ -169,11 +169,17 @@ KNOWN_REJECTED = {
          "FoldLinIdent5, FoldQInvW and FoldQInvC1", "ChainFoldCW.lean", _fb_stageo2_notop),
     ],
     "sha256-hash": [
-        ("the W4 / Numeric4W message-schedule route: this corpus records FOUR independent trees "
-         "reaching a score by weakening a numeric bound here and ALL FOUR judged and rejected, and "
-         "a competitor then went PAST that score without the technique at all. 1608731a is the "
-         "latest, rejected at 144,309. The seed and the record both carry ZERO W4 files.",
-         "Numeric4W.lean", _sha_numeric4w),
+        # Keyed on FusedAAdderW4 rather than Numeric4W: a natural experiment settled which half of
+        # the family is at fault. 1608731a shipped the W4 modules PLUS Numeric4W.lean and was
+        # rejected; 8c9017c2 shipped the SAME W4 modules WITHOUT Numeric4W.lean, claimed the
+        # identical 144,309, and was ALSO rejected. Two trees differing by exactly the numeric-bound
+        # module, both judged and rejected, so the defect is in the W4 RESTRUCTURING and not in the
+        # bound weakening the corpus previously blamed. FusedAAdderW4.lean is present in both.
+        ("the W4 message-schedule restructuring: rejected on 1608731a (with Numeric4W) AND on "
+         "8c9017c2 (WITHOUT it), both claiming 144,309 — so the defect is the W4 rebuild itself, "
+         "NOT the numeric-bound weakening previously blamed. A competitor went past this score "
+         "with no W4 at all, and the seed and record both carry ZERO W4 files.",
+         "FusedAAdderW4.lean", _sha_numeric4w),
     ],
 }
 def known_rejected(slug, soldir):
