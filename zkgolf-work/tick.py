@@ -656,6 +656,25 @@ def process_subs():
             slug = s["slug"]; tries = s.get("timeout_resubmits", 0)
             keep = os.path.join("out", slug, f"submitted-{sid}.tar.gz")
             cur_best = leaderboard_best(slug)
+            # *** A `timeout` STATUS IS NOT AUTOMATICALLY STOCHASTIC, AND RESUBMITTING A DETERMINISTIC
+            # ONE BURNS SIX QUEUE SLOTS FOR NOTHING. *** Measured on fixed-base 359acd92: status was
+            # `timeout`, but the log ends in
+            #   error: .../CombElaborated.lean:181:0: (deterministic) timeout at `whnf`,
+            #          maximum number of heartbeats (200000) has been reached
+            # with the build only at step 2350/2354 and ~43 s of reported step time -- nowhere near
+            # the 1200 s wall clock. Lean says `(deterministic)` precisely to promise the same input
+            # gives the same result, so an unchanged resubmit fails identically, every time. Only a
+            # genuine wall-clock kill (no deterministic error in the log) is worth re-sending.
+            reasons = fetch_fail_reasons(sid)
+            deterministic = any("(deterministic)" in x for x in reasons)
+            if deterministic:
+                s["status"] = "failed"; s["verifier_timeout"] = True
+                s["fail_reasons"] = reasons; s["deterministic_timeout"] = True; subs[sid] = s
+                print(f"NOTIFY: zkGolf {slug} {sid[:8]} -> failed (timeout status but the log says "
+                      f"DETERMINISTIC heartbeat exhaustion, so an unchanged resubmit cannot help) — "
+                      f"NOT resubmitting. Fix the elaboration cost instead:")
+                for line in reasons: print(f"NOTIFY: zkGolf {slug} {sid[:8]} LOG: {line}")
+                continue
             if tries >= TIMEOUT_RESUBMITS or not os.path.exists(keep) or (
                     cur_best is not None and s.get("score") is not None and s["score"] >= cur_best):
                 s["status"] = "failed"; s["verifier_timeout"] = True; subs[sid] = s
