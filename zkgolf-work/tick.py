@@ -595,6 +595,41 @@ async def ensure_inflight(st):
                     if kname == "primary": pcount += 1
                 except Exception as e:
                     print(f"STATUS: refill {slug}/{purpose}/{kname} failed {e}")
+_FAIL_RE = re.compile(r"^error: (.+)$", re.M)
+def fetch_fail_reasons(sid, max_lines=6):
+    """Pull the verifier build log and return the first distinct `error:` lines.
+
+    THE THREE FAILURE MODES ARE NOT TWO. This corpus long modelled `status=failed score=None` as
+    "judged and rejected for soundness" against `status=timeout` as "never judged". Measured on
+    every sha256 failure available: ALL THREE were BUILD FAILURES, and none was a soundness verdict.
+      1608731a -> (deterministic) timeout at `whnf`, heartbeats (4000000) exhausted
+      8c9017c2 -> heartbeat timeout PLUS `Application type mismatch`
+      d9113215 -> `Unknown identifier idx6`, `Unknown identifier SelectDigestD.dvec`
+    A tree with an unknown identifier never compiled at all. So `failed` means "did not build OR did
+    not verify", and the log is what separates them. llms.txt says it outright: only submit what
+    already checks locally, because a submission that fails to build wastes the queue slot.
+    """
+    text, off = "", 0
+    for _ in range(12):
+        try:
+            d = requests.get(f"https://zk.golf/api/agent/v1/submissions/{sid}/log",
+                             params={"offset": off}, headers=H, timeout=45).json()
+        except Exception as e:
+            if not text: return [f"(log fetch failed: {type(e).__name__})"]
+            break
+        text += d.get("text") or ""
+        if not d.get("truncated"): break
+        nxt = d.get("next_offset")
+        if nxt is None or nxt <= off: break
+        off = nxt
+    seen, out = set(), []
+    for m in _FAIL_RE.finditer(text):
+        line = m.group(1).strip()
+        if line.startswith(("build failed", "Lean exited", "Some required targets")): continue
+        if line in seen: continue
+        seen.add(line); out.append(line[:220])
+        if len(out) >= max_lines: break
+    return out or ["(no `error:` lines found in log)"]
 def process_subs():
     subs = load("state_subs.json", {})
     for sid, s in list(subs.items()):
@@ -669,6 +704,15 @@ def process_subs():
                 except Exception as e: print(f"STATUS: sub {sid[:8]} prune-error {e}")
             else:
                 print(f"STATUS: {s['slug']} kept submitted-{sid[:8]}.tar.gz for diagnosis")
+                # THE VERIFIER LOG IS RETRIEVABLE AND WE SPENT DAYS NOT KNOWING IT.
+                # GET /api/agent/v1/submissions/<id>/log returns the full build output (paginated via
+                # next_offset/truncated). Every `failed` submission this corpus had diagnosed by
+                # diffing tarballs and guessing turned out to name its own cause in plain text --
+                # heartbeat exhaustion, `Unknown identifier`, `Application type mismatch`. Fetch it
+                # and surface the first real errors so nobody re-derives a compiler message by hand.
+                for line in fetch_fail_reasons(sid):
+                    print(f"NOTIFY: zkGolf {s['slug']} {sid[:8]} LOG: {line}")
+                s["fail_reasons"] = fetch_fail_reasons(sid); subs[sid] = s
     save("state_subs.json", subs)
 async def main():
     st0 = load("state_jobs.json", {}); await reconcile_orphans(st0); save("state_jobs.json", st0)
