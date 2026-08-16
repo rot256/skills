@@ -169,16 +169,22 @@ KNOWN_REJECTED = {
          "FoldLinIdent5, FoldQInvW and FoldQInvC1", "ChainFoldCW.lean", _fb_stageo2_notop),
     ],
     "sha256-hash": [
-        # Keyed on FusedAAdderW4 rather than Numeric4W: a natural experiment settled which half of
-        # the family is at fault. 1608731a shipped the W4 modules PLUS Numeric4W.lean and was
-        # rejected; 8c9017c2 shipped the SAME W4 modules WITHOUT Numeric4W.lean, claimed the
-        # identical 144,309, and was ALSO rejected. Two trees differing by exactly the numeric-bound
-        # module, both judged and rejected, so the defect is in the W4 RESTRUCTURING and not in the
-        # bound weakening the corpus previously blamed. FusedAAdderW4.lean is present in both.
-        ("the W4 message-schedule restructuring: rejected on 1608731a (with Numeric4W) AND on "
-         "8c9017c2 (WITHOUT it), both claiming 144,309 — so the defect is the W4 rebuild itself, "
-         "NOT the numeric-bound weakening previously blamed. A competitor went past this score "
-         "with no W4 at all, and the seed and record both carry ZERO W4 files.",
+        # *** LABEL CORRECTED ONCE THE VERIFIER LOG BECAME READABLE. NEITHER W4 TREE WAS EVER JUDGED
+        # UNSOUND -- BOTH FAILED TO BUILD. *** 1608731a exhausted heartbeats in
+        # ComputableDCompressorsFull (4,000,000 already set, still blown); 8c9017c2 hit the same
+        # heartbeat wall at line 799 plus an `Application type mismatch` at 830. So the earlier
+        # reading here -- "two trees differing by exactly the numeric-bound module, both judged and
+        # rejected, so the defect is the W4 restructuring" -- was inferring a soundness verdict from
+        # a build failure. THE SOUNDNESS OF W4 IS SIMPLY UNTESTED: no verifier has ever reached it.
+        # This entry therefore WARNS ABOUT COST, NOT CORRECTNESS, and W4 is REOPENED as a direction:
+        # if a tree can carry it and elaborate inside the budget, it has never actually been refuted.
+        ("W4 message-schedule restructuring has failed TWICE, BUT ON ELABORATION COST, NOT SOUNDNESS "
+         "— 1608731a and 8c9017c2 both died in ComputableDCompressorsFull on heartbeat exhaustion "
+         "(one also with an Application type mismatch), so no verifier has ever reached the "
+         "soundness question. W4 IS NOT REFUTED, IT IS UNAFFORDABLE AS BUILT. If you ship it, budget "
+         "the Computable* modules first: split the giant declarations, prefer irreducible_def, and "
+         "do NOT just raise maxHeartbeats — 4,000,000 was already set and still blew, and the "
+         "platform warns that raising it pushes the build into the 1200 s wall clock.",
          "FusedAAdderW4.lean", _sha_numeric4w),
     ],
 }
