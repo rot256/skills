@@ -1,13 +1,12 @@
 (set-option :incremental true)
 (set-logic QF_FF)
 (define-sort F () (_ FiniteField 21888242871839275222246405745257275088548364400416034343698204186575808495617))
-;; BN254 scalar field. Swap in your circuit's prime for a theorem about THAT field.
+;; BN254 scalar field.
+;; Swap in your circuit's prime for a theorem about THAT field.
 ;;
-;; Claim: NO single rank-1 row of the shape  (o + A)*R = O  -- A,R,O affine in the
-;; input bits, R a UNIT on the cube -- computes AND3 or OR3. Unknowns are the 12
-;; coefficients; the 8 cube points are constants with o := f(point) plugged in.
-;; unsat  =>  no such encoding exists over THIS field (a real F_p theorem, not a
-;; characteristic-0 / reals argument).
+;; Claim: NO single rank-1 row of the shape  (o + A)*R = O  -- A,R,O affine in the input bits, R a UNIT on the cube -- computes AND3 or OR3.
+;; Unknowns are the 12 coefficients; the 8 cube points are constants with o := f(point) plugged in.
+;; unsat  =>  no such encoding exists over THIS field (a real F_p theorem, not a characteristic-0 / reals argument).
 
 (declare-const a0 F)(declare-const a1 F)(declare-const a2 F)(declare-const ac F) ; A(x)=a0 x0+a1 x1+a2 x2+ac
 (declare-const b0 F)(declare-const b1 F)(declare-const b2 F)(declare-const bc F) ; R(x), the o-multiplier

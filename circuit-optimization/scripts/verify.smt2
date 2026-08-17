@@ -1,18 +1,17 @@
 (set-option :incremental true)
 (set-logic QF_FF)
 (define-sort F () (_ FiniteField 21888242871839275222246405745257275088548364400416034343698204186575808495617))
-;; BN254 scalar field. Swap in your circuit's prime to get a theorem about THAT field.
+;; BN254 scalar field.
+;; Swap in your circuit's prime to get a theorem about THAT field.
 ;;
-;; PROVE a candidate single-constraint gadget forces o = target on the boolean cube,
-;; AND that the premise is non-vacuous. Run directly:  cvc5 scripts/verify.smt2
+;; PROVE a candidate single-constraint gadget forces o = target on the boolean cube, AND that the premise is non-vacuous.
+;; Run directly:  cvc5 scripts/verify.smt2
 ;;
 ;;   forces:   unsat of (bits & row & o != target)  =>  the row pins o to target
-;;   non-vac:  sat   of (bits & row & o  = target)   =>  the honest o actually satisfies
-;;             the row (so the unsat above is a real proof, not an empty one)
+;;   non-vac:  sat   of (bits & row & o  = target)   =>  the honest o actually satisfies the row (so the unsat above is a real proof, not an empty one)
 ;;
-;; Over QF_FF this is a genuine F_p statement: the multiplier R need not be argued a
-;; unit "over the reals" -- cvc5 reasons in the field directly. (The encodings below
-;; happen to keep R in {+-1..+-4}, so they also hold in any field of char > 3.)
+;; Over QF_FF this is a genuine F_p statement: the multiplier R need not be argued a unit "over the reals" -- cvc5 reasons in the field directly.
+;; (The encodings below happen to keep R in {+-1..+-4}, so they also hold in any field of char > 3.)
 
 (declare-const a F)
 (declare-const b F)

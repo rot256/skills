@@ -5,22 +5,22 @@
 #
 #     (o + A(x)) * R(x) = O(x),    A, R, O affine in the boolean inputs x = (x0..x_{n-1})
 #
-# Solving for the output:  o = O/R - A.  So to compute target f on {0,1}^n we need
+# Solving for the output:  o = O/R - A.
+# So to compute target f on {0,1}^n we need
 #     O = R*(f + A),   O affine,  R a UNIT (nonzero) on the whole cube.
 #
-# Key fact: once R is FIXED, the per-point conditions are LINEAR in the coefficients of
-# A and O. So enumerate small INTEGER affine R that are units on the cube; for each,
-# solve the resulting linear system EXACTLY over QQ with Sage's native linear algebra.
-# Working over QQ (not a specific F_p) is deliberate: it yields small, prime-independent
-# constants -- often integers, but small-denominator fractions are equally fine -- valid
-# in EVERY field whose characteristic avoids a small finite set of primes (the values R
-# takes on the cube and any coefficient denominators), i.e. all sufficiently large fields.
-# That is the "char > bound" form the `clean` Lean proofs use.
+# Key fact: once R is FIXED, the per-point conditions are LINEAR in the coefficients of A and O.
+# So enumerate small INTEGER affine R that are units on the cube;
+# for each, solve the resulting linear system EXACTLY over QQ with Sage's native linear algebra.
+# Working over QQ (not a specific F_p) is deliberate:
+# it yields small, prime-independent constants -- often integers, but small-denominator fractions are equally fine --
+# valid in EVERY field whose characteristic avoids a small finite set of primes (the values R takes on the cube and any coefficient denominators),
+# i.e. all sufficiently large fields.
 # Every returned gadget is independently re-verified by recomputing o.
 #
-# A "NONE within grid" is NOT a proof of impossibility (the grid is bounded). For a
-# rigorous impossibility proof use cvc5 / QF_FF (scripts/impossible.smt2, exact over a
-# specific F_p) or a Groebner argument over QQ (scripts/cofactors.sage, all large char).
+# A "NONE within grid" is NOT a proof of impossibility (the grid is bounded).
+# For a rigorous impossibility proof use cvc5 / QF_FF (scripts/impossible.smt2, exact over a specific F_p)
+# or a Groebner argument over QQ (scripts/cofactors.sage, all large char).
 #
 # Run:   sage scripts/synthesize.sage
 # Lib:   load("scripts/synthesize.sage"); find(3, [0,1,1,0,1,0,0,1])   # parity

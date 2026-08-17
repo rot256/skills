@@ -1,17 +1,15 @@
 #!/usr/bin/env sage
-# Gröbner-basis tools for single-constraint gadgets.
+# Groebner-basis tools for single-constraint gadgets.
 #
 #  1. PROVE a constraint forces o = target on the boolean cube (ideal membership).
-#  2. FIND the cofactors for a Lean `linear_combination` / Coq `ring` soundness proof
-#     (ideal "lift").  The cofactors below reproduce Clean/Gadgets/SHA256/CarrySave.lean.
+#  2. FIND the cofactors for a soundness certificate (ideal "lift").
 #
-# Why it works: over the cube, the boolean relations x_i^2 = x_i hold, i.e. we work
-# modulo the ideal B = <x_i^2 - x_i>.  If  (o - target) * R - constraint  lies in B,
-# then constraint = 0 (and R != 0) forces o = target.  `lift` expresses that element
-# as  sum_i cofactor_i * (x_i^2 - x_i)  -- exactly the terms a `linear_combination`
-# proof needs.  Run over QQ (integer cofactors lift to any field of char > small).
+# Why it works: over the cube, the boolean relations x_i^2 = x_i hold, i.e. we work modulo the ideal B = <x_i^2 - x_i>.
+# If  (o - target) * R - constraint  lies in B, then constraint = 0 (and R != 0) forces o = target.
+# `lift` expresses that element as  sum_i cofactor_i * (x_i^2 - x_i).
+# Run over QQ (integer cofactors lift to any field of char > small).
 
-# --- concrete, tested instances (match CarrySave.lean exactly) -----------------
+# --- concrete, tested instances ------------------------------------------------
 R.<o,a,b,c> = PolynomialRing(QQ, order='lex')
 B = R.ideal(a^2 - a, b^2 - b, c^2 - c)
 
