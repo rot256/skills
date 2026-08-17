@@ -151,3 +151,17 @@ Before opening a PR, check recent merged PRs to match the repo's tone and struct
 gh pr list --state merged --limit 10
 gh pr view <number>
 ```
+
+## CI
+
+Audit GitHub Actions workflows with [zizmor](https://docs.zizmor.sh) whenever you touch `.github/`:
+
+```bash
+zizmor .github/workflows/                 # offline audits
+zizmor --gh-token $(gh auth token) .      # + online audits
+zizmor --fix .github/workflows/           # apply safe auto-fixes
+```
+
+Default persona is high-signal; `--persona=pedantic` adds code smells, `--persona=auditor` adds likely false positives.
+
+Fix findings rather than suppressing them with `# zizmor: ignore[...]`. Each finding links to its audit docs: https://docs.zizmor.sh/audits/
