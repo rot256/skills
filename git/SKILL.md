@@ -100,6 +100,13 @@ git diff --staged
 - **Never skip commit signing unless the user explicitly asks you to.** Do not pass `--no-gpg-sign`, and do not disable `commit.gpgsign` to work around a signing problem.
 - If signing fails because the hardware key is unavailable (not plugged in, not tapped, PIN/touch timeout, agent not running), **stop and wait for the user**. Surface the error and ask them to make the key available — do not retry silently, fall back to an unsigned commit, or disable signing.
 
+## Authentication
+
+- **Never work around an authentication failure.** If a push, fetch, or `gh` call fails to authenticate, stop and surface the error to the user.
+- This applies especially to hardware keys (FIDO2/YubiKey/smartcard): not plugged in, not tapped, or a PIN/touch timeout is a *wait for the user* condition, not something to route around.
+- In particular, **do not switch the remote from SSH to HTTPS** (or the reverse) to get a push through. Also do not: substitute a token found in the environment or a config file, generate new keys, disable host key verification, or edit `~/.ssh/config`, `~/.gitconfig`, or credential helpers.
+- Do not retry in a loop. Retry once after the user confirms the key is available.
+
 ## Branches
 
 - Use descriptive names: `fix/null-pointer-login`, `feat/oauth2-flow`
