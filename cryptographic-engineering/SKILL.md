@@ -158,7 +158,7 @@ NEVER construct an instance of a type for which its invariants do not hold, not 
 
 ## Domain-Separate With Semantic Types
 
-Require cryptographic inputs to implement a trait that combines canonical serialization with a stable purpose tag.
+Require cryptographic inputs to implement a trait that combines deterministic serialization with a stable purpose tag.
 Serialization streams into a sink (see the Sink section),
 so the encoding of secret material need not exist as an intermediate buffer:
 
@@ -226,8 +226,7 @@ Keep them pure byte layout;
 precompute any expensive representation in the type rather than during serialization,
 which also avoids paying for it twice.
 
-postcard is illustrative:
-any canonical, self-delimiting serialization serves.
+postcard is illustrative; see the Encoding section for what any replacement must satisfy.
 The point is building every cryptographic operation
 around signing, hashing, encrypting, and deriving from domain-separated types,
 not the particular serializer.
@@ -285,6 +284,75 @@ let transcript = MacTranscript {
 
 Preserve ordering when ordering is semantically meaningful.
 Sort or canonicalize sets before encoding when it is not.
+
+## Encoding
+
+Every hash, signature, MAC, KDF input, and transcript is computed over bytes,
+so the map from typed values to bytes is part of the cryptographic construction.
+Two requirements: the encoding must be proper, and it must be kept separate from transport.
+
+### Use a Proper Encoding
+
+postcard is only one example of an encoding:
+any proper encoding serves, such as DER.
+Proper means two things.
+The encoder is deterministic and identical on every platform and implementation:
+the same value always yields the same bytes,
+independent of map iteration order, float formatting, pointer width, or locale.
+And the encoder is injective, with a decoding algorithm that inverts it.
+
+A custom format that only dumps bytes, with no decoder,
+gives no evidence that the map is injective:
+two distinct instances of the type can serialize to the same bytestring,
+e.g. `("ab", "c")` and `("a", "bc")` concatenated without lengths,
+and then share a hash, a signature, or a transcript state.
+Writing the decoder forces every field boundary to be recoverable from the bytes,
+which is exactly the property that rules such collisions out.
+
+Nothing more is required.
+Because every hash, signature, and transcript is computed over the `absorb` output of a validated value,
+never over received bytes,
+the decoder does not need to reject alternative representations of the same value:
+any wire bytes that decode to the same value re-encode to the same bytes.
+Even JSON with one fixed serializer (fixed key order, number formatting, escaping)
+would satisfy the definition; it is a poor choice for other reasons,
+but the property that matters is a fixed injective encoder, not the format.
+Do not assume a generic JSON library or a language-specific debug representation is deterministic.
+
+### Cryptographic Encoding Is Not Transport Encoding
+
+The encoding that is hashed, signed, or absorbed into a transcript
+need not be the wire encoding.
+A message may travel as JSON, protobuf, or a legacy format
+and still be verified over its `Tagged` encoding:
+decode the wire bytes into the validated type,
+then re-serialize through `absorb` for the cryptographic operation.
+Only the cryptographic encoding must be proper;
+the wire encoding is a transport concern, reviewed separately.
+
+If JSON, Base64, hexadecimal, or another text wrapper can represent the same value multiple ways,
+decode to the validated type and hash or sign its `absorb` output;
+never sign a convenient textual rendering.
+Use a transport wrapper such as URL-safe unpadded Base64 only after binary serialization.
+Do not confuse text encoding with cryptographic domain separation.
+
+### Decoding Untrusted Input
+
+For all untrusted serialized input, binary or text:
+
+- Limit raw bytes or characters before parsing, and bound strings, collections, nesting, and recursion during decoding.
+- Bound decompressed output before parsing compressed input.
+- Consume exactly one complete value. Reject trailing binary bytes and extra text documents or tokens.
+- Define and enforce duplicate-field, unknown-field, missing-field, and default-value policies.
+- Validate numeric ranges, lengths, counts, identifiers, and cross-field invariants before allocation or cryptographic work.
+- Reject unknown versions unless forward compatibility is explicitly designed.
+- Use fixed-size encodings for fixed-size secrets, keys, signatures, scalars, and group elements.
+- Use canonical, checked deserialization for curve points and field elements.
+- Test exact encoded sizes for persisted formats.
+- Keep version tags in long-lived wire types.
+
+Decode textual formats into typed structs.
+Do not navigate security-sensitive input through generic JSON values or maps unless the schema is genuinely dynamic.
 
 ## Sink
 
@@ -364,7 +432,9 @@ Return a uniform external failure instead of leaking parser or equation details.
 ### Symmetric Encryption
 
 ```rust
-fn seal<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
+use rand_core::CryptoRng;
+
+fn seal<M: Tagged, A: Tagged, R: CryptoRng>(
     rng: &mut R,
     key: &Key,
     pt: &M,
@@ -387,8 +457,10 @@ or associated-data value fails with the same external error.
 ### Public-Key Encryption
 
 ```rust
+use rand_core::CryptoRng;
+
 impl EncryptionKey {
-    pub fn encrypt<M: Tagged, A: Tagged, R: rand_core::CryptoRng>(
+    pub fn encrypt<M: Tagged, A: Tagged, R: CryptoRng>(
         &self,
         rng: &mut R,
         pt: &M,
@@ -420,8 +492,10 @@ Add the missing context binding in the wrapper by deriving the output secret
 from the raw shared secret under a tagged context:
 
 ```rust
+use rand_core::CryptoRng;
+
 impl EncapsulationKey {
-    pub fn encaps<C: Tagged, R: rand_core::CryptoRng>(
+    pub fn encaps<C: Tagged, R: CryptoRng>(
         &self,
         rng: &mut R,
         context: &C,
@@ -577,7 +651,7 @@ its output is a deterministic public function of the transcript state.
 **Transcript-as-Reader (Halo2 style).**
 The proof is an opaque byte stream; its structure lives in the verifier's sequence of reads.
 The verifier obtains each value only by reading it through the transcript,
-which decodes it canonically, absorbs it, and then returns it.
+which decodes it into the validated type, absorbs it, and then returns it.
 Reads are generic over deserializable tagged types:
 
 ```rust
@@ -587,7 +661,7 @@ pub trait TranscriptRead: Transcript {
 }
 ```
 
-Reject non-canonical encodings during the read.
+Reject invalid values during the read; the absorbed bytes are the re-encoding of the validated value, not the raw proof bytes.
 The prover mirrors every read with a write that absorbs the same value before emitting it,
 so both sides maintain identical states.
 
@@ -757,7 +831,7 @@ verification_key.verify(
 
 Before accepting signed state:
 
-1. Parse with bounded, canonical decoding.
+1. Parse with bounded, checked decoding.
 2. Enforce structural bounds and supported versions.
 3. Reconstruct the complete expected transcript.
 4. Verify the signature or proof.
@@ -823,28 +897,6 @@ Confirm that a new reader accepts every supported old variant,
 an old reader rejects new variants cleanly, unknown/reserved tags fail,
 removed tags behave intentionally, and changing the tag changes every signature,
 MAC, hash, or ciphertext transcript that must bind it.
-
-## Separate Cryptographic Encoding From Transport Encoding
-
-Use one stable canonical encoding for cryptographic transcripts and a separately reviewed transport layer.
-Do not assume JSON object ordering or a language-specific debug representation is canonical.
-
-For all untrusted serialized input—binary or text:
-
-- Limit raw bytes or characters before parsing, and bound strings, collections, nesting, and recursion during decoding.
-- Bound decompressed output before parsing compressed input.
-- Consume exactly one complete value. Reject trailing binary bytes and extra text documents or tokens.
-- Define and enforce duplicate-field, unknown-field, missing-field, and default-value policies.
-- Validate numeric ranges, lengths, counts, identifiers, and cross-field invariants before allocation or cryptographic work.
-- Reject unknown versions unless forward compatibility is explicitly designed.
-- Use fixed-size encodings for fixed-size secrets, keys, signatures, scalars, and group elements.
-- Use canonical, checked deserialization for curve points and field elements.
-- Test exact encoded sizes for persisted formats.
-- Keep version tags in long-lived wire types.
-
-Decode textual formats into typed structs. Do not navigate security-sensitive input through generic JSON values or maps unless the schema is genuinely dynamic. If JSON, Base64, hexadecimal, or another text wrapper can represent the same value multiple ways, canonicalize to the protocol's binary form before hashing or signing; never sign a convenient textual rendering.
-
-Use a transport wrapper such as URL-safe unpadded Base64 only after canonical binary serialization. Do not confuse text encoding with cryptographic domain separation.
 
 ## Padding
 
@@ -929,14 +981,14 @@ Before finishing a cryptographic change, confirm:
 
 - Invalid encodings and unchecked primitives cannot inhabit validated protocol types.
 - Every operation has a unique, versioned purpose tag.
-- Every transcript is structured, canonical, and binds all interpretation-relevant context.
+- Every transcript is structured, deterministic, and binds all interpretation-relevant context.
 - Encryption authenticates both plaintext and associated-data types.
 - Every derived key has a single purpose.
 - Secrets, copies, and temporary buffers have explicit destruction behavior.
 - Secret values and authentication tags use dedicated newtypes with `subtle`-based constant-time comparison.
 - Signature and proof verification use reconstructed typed messages and strict library APIs.
 - Messages deserialize directly into one closed, data-carrying version enum with stable encoding and exhaustive dispatch.
-- Untrusted decoding is bounded, canonical, and rejects trailing data.
+- Untrusted decoding is bounded, checked, and rejects trailing data.
 - Verification failures do not become distinguishable oracles.
 - Secret-dependent branches, indexing, lookup, and early exits have been reviewed.
 - Negative tests cover type confusion, context confusion, replay, mutation, and malformed encodings.
