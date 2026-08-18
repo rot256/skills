@@ -79,3 +79,4 @@ Use both. See `references/smt.md`, `references/sage.md`.
 
 - https://zk.golf/llms.txt : circuit-golfing platform scored by witnesses + constraints -- challenge list and REST API.
   The measured prices in `references/r1cs-fp.md` were taken under that cost model.
+- https://github.com/usnistgov/Circuits/ : machine-readable AND-minimized circuits for the primitives tabulated in `r1cs-gf2.md` "Published AND-Gate Records for Standard Primitives".

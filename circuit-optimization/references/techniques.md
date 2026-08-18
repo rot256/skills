@@ -61,6 +61,8 @@ Full treatment, with two worked break-evens and the decision procedure: `degree.
 
 Compute the hard value out-of-circuit, verify it cheaply (inverse, division, sqrt, bit-decomposition).
 **Soundness rule, the #1 ZK bug:** every hint value reaching an output must be uniquely pinned by constraints -- pair each `<--` with a determining `===`; the precise condition is that no prover-chosen freedom reaches an output.
+A hardware designer completes don't-cares however makes the cover smallest, and the slack is free help; the same slack in a constraint system is prover freedom, and any of it that reaches an output is the soundness bug this section is about.
+The excitation table of a JK flip-flop is the canonical example: it is literally an advice mechanism with its unused combinations recorded as don't-cares.
 (sqrt pins only up to sign; add a canonicality constraint if the root itself is used downstream.) Taken to its limit this replaces the computation entirely: witness the answer and assert a verification identity (`r1cs-fp.md` "Verification Identity").
 Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *ungated* consumer is prover-chosen on disabled rows, and `a = b/c` checked as `b == a*c` makes `0/0` a free oracle (`air.md` "The Nondeterministic-Inverse Family").
 
@@ -72,6 +74,14 @@ Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *un
 - **Constraint-system optimizers as a trick catalogue.** Their passes are the mechanized versions of moves you should be doing by hand: inline any column that equals a low-degree expression of others (while the degree budget allows), delete a range check that a tighter known range implies, replace a small-domain lookup with a matched polynomial, forward a store to a later load at a provably-equal address (`air.md` "Redundant Range-Check Elimination", `degree.md` "Spending the Free Headroom").
 - **Mutation-test the constraints.** Evaluate every constraint on every row of a concrete trace, then flip one bit and assert something catches it.
   It is the only cheap way to discover that an "implicit range check" you assumed was there is not.
+
+## Search the Free-Affine Orbit
+
+Wherever affine maps are free -- the linear combinations feeding an R1CS row, anything affine in committed columns in an AIR, XOR and NOT over GF(2) -- the cost of f is the cost of the cheapest member of its orbit under free affine pre- and post-composition, not the cost of f as you wrote it.
+Normalize before synthesizing: find the orbit representative with the fewest monomials or the lowest degree, synthesize that, and compose the free affine maps back on.
+The orbit search dominates and is combinatorial: on six boolean variables there are 150,357 affine equivalence classes, and locating the right one is the most time-consuming phase of the pipeline that reports it.
+Where it stops: the orbit is free only while both compositions are free.
+It fails in any model that charges for the affine layer -- a hardware gate count, an AIR where the transformed value must occupy its own column, or a consumer that needs the value in a fixed encoding such as a lookup key, a bus term or a public input, since then the transform has to be materialized.
 
 ## Further Moves
 
@@ -97,7 +107,7 @@ $\mathbb{F}_p$ **wins on wide fan-in conjunctions.** $AND(x_1,\dots,x_n)$ is $s 
 Same for OR.
 
 GF(2) **wins on XOR**, free there and a row in the prime field.
-That single asymmetry is why a field-based SHA-256 needs $\sim 30{,}952$ nonlinear constraints while the boolean circuit needs $22{,}573$ AND gates.
+That single asymmetry is why a field-based SHA-256 needs $\sim 30{,}952$ nonlinear constraints while the NIST Circuit Complexity Project's published boolean circuit needs $22{,}385$ AND gates (`r1cs-gf2.md` "Published AND-Gate Records for Standard Primitives").
 
 **Practical rule for the prime field:** keep values integer-packed so XOR chains become free sums, and bit-split only when a genuinely bitwise operation forces it.
 
