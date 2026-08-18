@@ -71,16 +71,28 @@ The frozen price list is worth internalizing as calibration -- `Range 3`, `Byte 
 `Addi 30`, `Add 33`, `AluX0 34`, `Lt 44`, `Bitwise 51`, `Mul 82`, `ShaCompress 206`, `Global 241`, `DivRem 246`,
 `Poseidon2 348`, `KeccakPermute 2640` (`sp1/crates/core/executor/src/artifacts/rv64im_costs.json`).
 
-**But there are two ceilings, and they bind at different widths.** SP1 segments on whichever hits first:
+**But there are two ceilings, and they bind on different shapes.** SP1 cuts a shard on whichever hits first:
 
 ```rust
 pub const ELEMENT_THRESHOLD: u64 = (1 << 28) + (1 << 27);   // 402,653,184 cells
 pub const HEIGHT_THRESHOLD:  u64 = 1 << 22;                 // 4,194,304 rows
 ```
-(`sp1/crates/core/executor/src/opts.rs:11-15`).
-A pure-ADD shard is height-bound at $4.19\text{M} \times 33 = 138\text{M}$ cells -- **34% area utilization**.
-So: *wide chips are area-bound; narrow chips are height-bound, and narrowing a hot chip below
-$402\text{M}/4.19\text{M} \approx 96$ columns buys nothing at all.*
+(`sp1/crates/core/executor/src/opts.rs:11-15`), where `trace_area` is a **sum over chips** of width x rows and
+`max_height` is the **max over chips** (`vm/shapes.rs:88-243`). Writing the shard's *effective width* as
+
+$$W_{\text{eff}} \;=\; \frac{\sum_i w_i h_i}{\max_i h_i}$$
+
+the area ceiling binds iff $W_{\text{eff}} > 402\text{M}/4.19\text{M} \approx 96$, and the height ceiling binds otherwise.
+A pure-ADD shard has $W_{\text{eff}} = 33$: it is cut at 4.19M rows having spent $138\text{M}$ cells, **34% of its area budget**.
+
+**Read that carefully, because the obvious corollary is false.** In the height-bound regime, deleting a column does *not*
+buy shard capacity -- the cut still lands at 4.19M rows of the tallest chip, so you do not fit more instructions and you
+do not emit fewer shards. It does still buy **cells**, and cells are what the commitment is priced on (I.3): a
+$33 \to 25$ column Add is 24% less committed data in either regime. The correct reading is
+*which resource is binding has changed, so width work has stopped compounding* -- past that point the next real win is
+fewer rows (V.11, VI.1), fewer interactions (I.4), or a taller allowed shape, not another column.
+And note $W_{\text{eff}}$ is a property of the whole shard, not of one chip: a single narrow chip among many wide ones
+does not move it.
 
 OpenVM's oracle instead charges `total_width()`, which **includes** the permutation columns
 (`metered_cost.rs:20,77-82`), and its metrics doc names the gap explicitly: `main_cells_used`
