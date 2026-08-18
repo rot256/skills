@@ -1,10 +1,7 @@
 # R1CS Optimization Over a Prime Field
 
-*A field manual for rank-1 constraint systems.*
-
-Non-obvious techniques for making arithmetic circuits smaller, collected while golfing R1CS circuits to the smallest known size.
-Every entry carries the mechanism, the measured price, and the condition under which it stops working.
-Cross-arithmetization moves live in `techniques.md`; everything here assumes R1CS.
+Techniques for making arithmetic circuits smaller, each with its mechanism, its measured price, and the condition under which it stops working.
+Cross-arithmetization moves are `techniques.md`; the boolean cost model is `r1cs-gf2.md`.
 
 A row is $(A\cdot w)(B\cdot w) = (C\cdot w)$, and prices below are written $\langle witnesses, constraints\rangle$.
 
@@ -62,6 +59,7 @@ The native gate library is not $\{\wedge,\oplus\}$ -- it is three-quarters of al
 > For those, reach for the decoy-root form in "Out-of-Range Decoy Roots", which always exists.
 
 ## Consumer-Determined Lambda Packing
+
 The part that is easy to miss about lambda-packing: **lambda is not a free parameter you tune for separation -- it is determined by the consumer.** Choose $\lambda = \frac{\text{weight of slot 2}}{\text{weight of slot 1}}$ *in the sum that consumes both*, and the packed value unpacks itself for nothing.
 Two lanes two bit-positions apart in the same downstream field sum give $\lambda = 4$; two lanes entering at the same weight give $\lambda = 1$; two instances consumed by different rounds of a fused adder give $\lambda = 2^{40}$.
 
@@ -70,6 +68,7 @@ Where the two slots are genuinely independent, lambda is instead set by a headro
 A second identity worth having, because it avoids the cross term outright -- **difference of squares** packs a pair of two-input XORs into one row with one witness, with $\lambda = r^2$: $xor_2(a,b) + \lambda xor_2(c,d) = [2a - 2b + 2\lambda(c+d) - 1] - (r(c+d) - (1-a+b))(r(c+d) + (1-a+b))$.
 
 ## Out-of-Range Decoy Roots
+
 A row $(z - r_1)(z - r_2) = 0$ is one constraint but does not pin $z$ -- it admits two solutions, which is normally why the single-row form is preferred.
 The trick is to make the wrong solution *arithmetically unreachable* rather than excluding it with a second row.
 
@@ -92,6 +91,7 @@ At $active=1$ this is exactly booleanity; at $active=0$ it forces $b=0$.
 In a 255-byte variable-length padding check this covers all seven witnessed low bits of every byte at seven rows per byte with no masking rows at all -- it is what makes "every byte past the message length is zero" free.
 
 ## Derived Top Bit
+
 To prove $x < 2^n$: witness only $n-1$ bits, assert booleanity on each, then form the top bit as the *affine* expression $top := (2^{n-1})^{-1}(x - \sum_{i<n-1} b_i 2^i)$ and assert booleanity on that.
 **The linking row $x = \sum b_i 2^i$ never exists** -- it holds as a ring identity.
 Soundness: $top\in\{0,1\}$ and $low < 2^{n-1}$ force $x = low$ or $x = low + 2^{n-1}$, both $< 2^n$.
@@ -103,6 +103,7 @@ A 256-bit normalisation is $\langle 252,256\rangle$ rather than $\langle 256,260
 The same "define the last one affinely" move recurs whenever a small set of witnessed bits has a known sum: witness two of three borrow bits and *define* the third as $b_0 := s - 2b_1 - 4b_2$; the booleanity rows then pin all three, and both the linking row and one witness vanish.
 
 ## One-Sided Zero Test
+
 To assert $d = 0 \Rightarrow t = 0$, witness one field element $u$ and assert a single row: $t - du = 0$.
 
 If $d = 0$ the row forces $t = 0$; if $d \neq 0$ the prover sets $u = t/d$ and the row is vacuous.
@@ -113,6 +114,7 @@ But **most canonicality and comparison logic only ever needs the implication, ne
 Probably the most portable single item here: audit every zero-test in a design and ask whether the converse direction is ever used.
 
 ## Product Chain Disjunction
+
 To assert "at least one of $l_0,\dots,l_{k-1}$ is zero", do not witness $k$ selector bits, gate a row on each, and add a sum-to-one row.
 Just assert the product $l_0 l_1 l_2 l_3 l_4 = 0$, as 3 intermediate product cells and 1 terminal row.
 A product chain is $k-2$ cells and $k-1$ rows; a selector tree is $k$ bits, $k$ gated rows and one more.
@@ -123,6 +125,7 @@ It appears inside a 4096-bit comparison that comes to $\langle 73,155\rangle = 2
 The disjunction shape is far more common than it looks: any "one of these cases holds" is one, and so is every multiplexer whose branches you were about to prove mutually exclusive.
 
 ## Hyperbolic Pair Diagonalization
+
 The naive idiom accumulates $x_il_i(x)$ at $r$ rows and $r-1$ witnesses.
 Instead **diagonalise the form at compile time**.
 Over $\mathbb{F}_p$, Chevalley-Warning forces every form in $\geq 3$ variables to be isotropic, so $q$ splits into hyperbolic planes perpendicular to an anisotropic kernel of dimension $\leq 2$ -- and each hyperbolic plane is a product of two linear forms, hence one row.
@@ -142,6 +145,7 @@ The criterion is $(\frac{ab}{r}) = 1$, using $(\frac{-1}{r}) = 1$.
 > so generically there is nothing there, and finding one is MinRank.
 
 ## Baby-Step Giant-Step
+
 Baby-step/giant-step (Paterson-Stockmeyer 1973).
 To evaluate a degree-$N$ univariate $P$: compute $x^2,\dots,x^k$ in $k-1$ rows, then write $P = \sum_j B_j(x)(x^k)^j, \deg B_j < k$.
 
@@ -161,6 +165,7 @@ A matching lower bound survives nondeterminism -- parameter counting gives $s \g
 ## Where a Gadget Runs Twice
 
 ### Paired Gadget Packing
+
 One row per output bit looks like the floor.
 It is not, whenever you need the same function *twice*.
 A 32-bit value occupies 32 of the field's 254 bits, so pack two instances into one witness at a separating base $\lambda = 2^{40}$, $z_j = f(A)_j + \lambda f(B)_j$, and pin both with a single rank-1 row: $(-3e + 2f + 4g + 2\lambda u)(e - 2f + 4g - 2\lambda u) + (3e + (8\lambda+4)f - 8g + 4\lambda^2 u - 8z) = 0$.
@@ -177,6 +182,7 @@ Measured saving: 128 cost per round pair, 4,096 per 512-bit block.
 ## Non-Native Arithmetic
 
 ### Free CRT on a Split Modulus
+
 Multiplication in $F[u]/P$ with $\deg P = n$ and $k$ distinct irreducible factors needs $2n-k$ multiplications (Winograd 1977; Alder-Strassen 1981).
 Because the CRT change of basis is *linear*, hence free in R1CS, a fully split modulus gives $n$ rows.
 
@@ -204,6 +210,7 @@ They are values that never get written down.
 Every entry here is a way of noticing that something you are paying to construct is not actually needed in the form you are constructing it.
 
 ## Spec by Congruence Class
+
 A 256-bit scalar supplied as bits does not need a witnessed canonical remainder mod the group order.
 Packing the bits into limbs is a pure affine recombination, and the value it denotes is *already in the right congruence class*.
 
@@ -213,6 +220,7 @@ Avoided: a witnessed remainder plus quotient, with normalisation on both, plus a
 **The precondition is the whole trick.** Audit every normalisation and every comparison against the question "does any consumer need more than the congruence class?" Each one that turns out not to is worth hundreds of rows.
 
 ## Advice-Priced Range Checks
+
 The 2-per-bit charge applies only to values pinned to a finite set *by rows*.
 It does not apply to values whose bounds are **implied**.
 Convolution cells of already-bounded operands cost zero -- which is why a $2k-1$-point multiply witnesses 15 cells with no range check at all.
@@ -227,6 +235,7 @@ It is not merely cheaper.
 It is *free*.
 
 ## Affine Derivation of Tied Values
+
 Whenever $n$ values are tied by one affine relation, witness $n-1$ and *define* the last.
 The derived value still needs its own booleanity or range row, but the witness and the linking row both vanish.
 This is the same move as "Derived Top Bit", and once you see it, it is everywhere.
@@ -242,6 +251,7 @@ Grouped-equality carries follow it exactly -- the carry out of group $k$ is $c_{
 Zero carry witnesses, and the group-identity rows disappear entirely.
 
 ## Unreduced Words in Field Sums
+
 "Advice-Priced Range Checks" says the charge is on advice.
 Here is what that looks like in practice: **a word whose only consumer is an addition never needs its $\bmod 2^n$ reduction performed.** Not a cheaper reduction -- none.
 
@@ -256,6 +266,7 @@ Choosing among five candidate digests by witnessing **8 field words** and assert
 The bit-level version would be 256 witnesses and 1,280 rows.
 
 ## Closing Row Elimination
+
 A gadget that ends "...and therefore the accumulated identity holds" is asserting a row it could instead *make true by construction*.
 Solve the final equation for one coefficient and substitute the affine solution: $top := \frac{polyEval(lhs, 2^B) - polyEval(lowVec rhs, 2^B)}{2^{B(L-1)}}$.
 
@@ -266,6 +277,7 @@ Worth $-2$ per reduction on its own, which is why one ledger closes at 9,870 rat
 Its real value is that it composes: once the top coefficient is an expression rather than a witness, it can be spliced into a multiply that accepts a supplied coefficient vector, and the two savings stack.
 
 ## Verification Identity
+
 The largest structural lever in the collection, and the one most easily missed because it is not a gadget at all.
 **The output does not have to be computed.
 It has to be checked.** If a cheap relation characterises the right answer, witness the answer as pure advice and assert the relation.
@@ -279,6 +291,7 @@ The generalisable shape: find a *verification identity* whose cost is set by the
 Look for it wherever a function has an efficiently checkable inverse, a group law, or a lattice relation.
 
 ## Terminal Step Fusion
+
 Never materialise a value you are about to constrain to a public expression.
 
 For $e = 65537 = 2^{16}+1$, the naive chain is 16 squarings, one multiply, and an equality test against the padded target.
@@ -292,6 +305,7 @@ The pattern generalises past modular exponentiation: any computation ending in "
 ## Non-Native Arithmetic
 
 ### Deletable Certificate Targets
+
 A value that is only ever the **target** of a certificate can be deleted outright: nothing reads it, it merely has to satisfy an equation, so run the certificate directly against the target expression and the witness disappears.
 
 It **cannot** delete an operand.
@@ -306,6 +320,7 @@ So the audit question is not *"does anything read this value?"* but *"does anyth
 | **certificate-by-range** | *looks* deletable, is not | quotients $q_i$ are read by nobody, but removing their range checks is a forgery: the dimension count (171 free unknowns against 37 group equations) is what pins the reduction |
 
 ### Consumer Functional Rank
+
 The sharp, quantitative form of II.1.
 A multi-cell value costs in proportion to its number of cells in every gadget that builds it by selection -- but each consumer reads only a set of *linear functionals* of the cell vector.
 **The number of cells you must produce is $\dim span\{all consumers' functionals\}$, not the arity of the type.**
@@ -323,6 +338,7 @@ Positions 2 and 3 appear in no row but the single final polynomial-evaluation ro
 The audit rule: for every value produced by a selector, list its consumers, write down each consumer's functionals, and produce only a *basis* of their span.
 
 ### Free Limbwise Subtraction
+
 Do not reduce $a - b$ before feeding it to the next multiplication.
 Represent it limbwise as $a_k + borrow_k - b_k$, where $borrow$ is a *compile-time constant* limb vector encoding $2p$, chosen so every limb stays non-negative and the total stays below $3p$.
 That expression is affine, hence free.
@@ -337,6 +353,7 @@ The fused double-add contains *zero* explicit subtraction gadgets.
 It composes with sum-of-products: the same slack lets a fused $r = ab - s_1 - s_2$ put both subtrahends straight into the certificate target unreduced, so a multiply-subtract-two costs the same as a plain multiply.
 
 ### Cell-Level Polynomial Mux
+
 A Weierstrass slope must divide by either $x_2 - x_1$ (chord) or $2y$ (tangent), with numerator either $y_2 - y_1$ or $3x^2$.
 The naive route reduces $x^2$, scales by 3, muxes against $dy$, then runs a division certificate -- *two* reductions.
 
@@ -357,6 +374,7 @@ $$
 Only the final certificate pays for a reduction.
 
 ### Lazy Reduction
+
 Wherever a gadget performs several independent modular reductions only to combine the results into one final congruence, **every reduction but the last is waste**.
 Defer them into a single natural-number identity with one witnessed quotient and one carry chain.
 
@@ -370,6 +388,7 @@ Each extra product adds about 33.
 **The grep signature:** two or more mod-reduction subcircuits whose outputs feed a common assertion.
 
 ### Projected Squaring
+
 The sharpest instance of "Consumer Functional Rank" in the collection.
 A squaring produces 341 convolution coefficients -- but the grouped carry check downstream reads only **38 group sums** of them.
 So the projection the consumer needs has rank 38, and the gadget should be priced against 38, not 341.
@@ -387,6 +406,7 @@ Note the discipline this implies: the same tree uses the plain multiply in the o
 The choice is made per call site, from the consumer.
 
 ### Polynomials as Certificate Factors
+
 "Cell-Level Polynomial Mux" keeps a raw convolution as a certificate *target*, which is free.
 The next move is to keep one as a **factor**, which costs one extra fold level and is affordable only once the limb count is small.
 This is where you decide between materialising a value and raising a certificate's degree -- and the two prices are directly comparable:
@@ -414,6 +434,7 @@ A step goes from four materialisations to three.
 ## Short-Weierstrass Curves
 
 ### Fused Double-And-Add
+
 Compute $2R + T$ as $(R+T)+R$ through a shared slope chain, so that the $y$-coordinate of the intermediate $S = R+T$ is *never a wire* (Eisentrager-Lauter-Montgomery, read as a circuit optimization rather than a speedup):
 
 $$
@@ -436,6 +457,7 @@ Since $A^2$ is sign-insensitive, the $y$-coordinate then needs no multiplier-ope
 Each of these is a place where a standard gadget gets reached for and the answer was already sitting in the circuit as a linear combination.
 
 ## Shared Bit Decomposition
+
 Any value that must be proved canonical is already bit-decomposed.
 If the interface wants it as bytes, build each byte as an affine combination *of the very bits the range check allocated*.
 A standalone serialiser for one 256-bit coordinate is 256 witnesses and 260 constraints; folded into the validator it is $0/0$.
@@ -447,6 +469,7 @@ The strongest form of this is a **free radix change**: repacking already-certifi
 That is what lets a circuit use one limb width for its main chain and a different one for a final step whose coefficients would otherwise overflow.
 
 ## Affine Constant Comparison
+
 Given boolean bits and a compile-time constant $k$, the *mismatch count* $\sum_i (if bit_i(k) then 1 - b_i else b_i)$ is a purely affine expression, lies in $[0,256]$ so it cannot wrap, and is zero exactly when the bits encode $k$.
 It costs nothing -- no witness, no row.
 Only the zero *test* costs anything, and two tests can share one: materialise the product and run a single zero-check for $\langle 3,3\rangle$.
@@ -458,6 +481,7 @@ The generalisable pattern is *enumerate the finitely many bad inputs, detect the
 Push all constant-comparison logic into that form before reaching for a comparator.
 
 ## Free Low Bits from Constant Addends
+
 In $z = b + C \bmod 2^{32}$ with $C$ constant there is no carry into bit 0, so $z_0 = b_0 \oplus C_0$ -- affine.
 If $C \equiv 2 \pmod 4$ the low *two* bits are affine; if $C \equiv 4 \pmod 8$, the low three.
 Witness only the remaining high bits and start the affine carry chain there.
@@ -474,6 +498,7 @@ Applied to a SHA-256 chaining add against the IV: $H_1, H_6, H_7$ odd give 31 ea
 Check the 2-adic valuation of *every* constant addend -- round constants, length words, IVs.
 
 ## One-Hot by Binomial Moments
+
 To prove a length-$n$ flag vector is the indicator of a witnessed index $L$, do not decompose $L$ and do not emit $n$ equality gadgets.
 The moments $M_d = \sum_k F_k \binom{k}{d}$ are *free affine combinations*, because the binomials are compile-time constants.
 Assert Pascal's recurrence: $(L - d)M_d - (d+1)M_{d+1} = 0, d = 1,\dots,n-2$.
@@ -488,6 +513,7 @@ The flags are then reusable as free affine selectors everywhere downstream.
 > This is the different -- and cheaper -- problem of pinning a one-hot to a *field element*.
 
 ## Constant Tables and Sub-Linear One-Hots
+
 **Part A -- the payload costs nothing.** If the table entries are compile-time constants and $e$ is a one-hot vector of variables, then $out = \sum_i e_i c_i$ is affine: $\langle 0,0\rangle$ per output column, *independent of payload width*.
 Only building $e$ costs anything.
 
@@ -503,6 +529,7 @@ Contrast the *variable*-table case, where none of this applies: 16 entries x 9 f
 > See VI.4.
 
 ## Orthogonal Idempotent Table Reads
+
 For a one-hot $e$ (so $e_a e_b = \delta_{ab} e_a$) and two constant tables, $(\sum_a e_a u_a)(\sum_a e_a v_a) = \sum_a e_a (u_a v_a)$ -- **affine in $e$, with compile-time coefficients.** A quadratic form in table lookups is therefore free.
 Exploit it with $(P_0 + V_1)(P_1 + V_0) = P_0P_1 + P_0V_0 + P_1V_1 + V_0V_1$.
 
@@ -514,6 +541,7 @@ Getting to 2 requires seeing that products of *constant-table reads* collapse.
 Worth 672 cost across 21 windows in one tree.
 
 ## Recoding as Free Re-Indexing
+
 Booth and NAF recoding are normally implemented as arithmetic on the scalar, costing rows per digit.
 Instead, **choose the digit convention so the recoded digit is literally a bit of the input.** With $w$-bit windows and digits $2\cdot window + 1 - 2^w$ -- always odd, always signed -- the recoded bit vector is just $bits[254-c]$, with a constant at the top position.
 
@@ -524,6 +552,7 @@ Generalises to any windowed or signed decomposition of a witnessed integer.
 The move is to let the *convention* absorb the work rather than the circuit.
 
 ## Compile-Time Invariants on Table Data
+
 Before adding witnesses, ask whether a compile-time invariant of your *precomputed tables* makes them unnecessary.
 
 Worked instance: every entry in a fixed-base table satisfies $y \bmod 2^{64} \leq p \bmod 2^{64}$.
@@ -533,6 +562,7 @@ Negation therefore becomes plain limbwise constant subtraction -- no packed-borr
 The invariant is discharged once, at compile time, against data you generated yourself.
 
 ## Preconditions Given by the Interface
+
 The least mathematical entry here and one of the most valuable.
 The interface or specification you are given may already *give* you the well-formedness of public inputs as a hypothesis.
 If it does, every byte you range-check is cost spent proving something you were handed.
@@ -543,6 +573,7 @@ The byte-unpacking and the entire PKCS#1 padding construction emit no operations
 Cost of not reading it: 1,056 input bytes at $\langle 7,8\rangle$ each is **15,840 cost**, about 5% of that circuit, for nothing.
 
 ## Constant Folding
+
 In the first rounds of a hash, most of the state still equals the initialisation vector.
 $Ch(e,f,g)$ with $f$ and $g$ constant is, per bit, either a constant or $e_j$ or $1-e_j$ -- **affine, hence free.** Same for $Maj$ with two constant arguments.
 
@@ -558,6 +589,7 @@ Several constants can also be *folded together* at compile time -- three constan
 The answer is rarely zero, and every constant argument collapses part of the truth table into affine wiring.
 
 ## Radix-Packed Wide Comparison
+
 A wide comparison is not a wide circuit if you pack first.
 Bytes are already known to be bytes ("Preconditions Given by the Interface"), and packing is affine, so it is free: $512 bytes \longrightarrow 90 chunks of 6 bytes (48 bits) \longrightarrow 18 groups of 5 chunks (240 bits)$ both widths safely under the native prime.
 Then witness 17 prefix flags "groups $0..g-1$ all equal", witness $\delta - 1$ range-checked to give strictness, and close the five-way case split with **one product chain** ("Product Chain Disjunction") rather than five selector-gated rows.
@@ -568,6 +600,7 @@ The three layers are independent and each is worth stealing on its own: pack int
 ## Non-Native Arithmetic
 
 ### Certificate Inversion
+
 You want $r = ca \bmod p$ with $c$ a compile-time constant, and you want to run the certificate in a cheaper limb view than the one $a$ arrives in.
 Naively you must re-limb $a$, which costs a normalisation.
 Don't -- **certify the equation the other way round.**
@@ -586,6 +619,7 @@ In any non-native circuit, a quiet fraction of the cost is decided not by the al
 This is the least glamorous part of the subject and among the most reliably profitable.
 
 ## Folding into Spare Arity
+
 If your XOR gadget takes three operands per row and a consumer is currently using two, an intermediate that is a pure affine combination of things that consumer already reads is **free to fold in**.
 
 In Keccak's $\theta$ the value $D[x] = C[x-1] \oplus ROT(C[x+1],1)$ is never materialised: it is folded into the very XOR3 that already had to consume $A[x,y]$.
@@ -605,6 +639,7 @@ This is the cheapest kind of win to find and the easiest to leave on the table, 
 ## Structured Modulus
 
 ### Pseudo-Mersenne Folding
+
 The single biggest lever in non-native arithmetic.
 For $p = 2^{256} - c$ with $c$ small, $2^{256} \equiv c \pmod p$.
 Fold the high convolution positions back onto the low ones by $d_k = c_k + c\cdot c_{k+m}$ -- **a free affine recombination**, because $c$ is a compile-time constant.
@@ -619,6 +654,7 @@ The textbook non-native modmul witnesses $q$ as a full-width integer and pays a 
 > For a generic modulus -- an RSA modulus, say -- the quotient is irreducibly wide, and the cost goes back to being dominated by certifying its bits.
 
 ### Sparse-Prime Canonicality
+
 Two savings, and the second is larger than the first.
 
 **Exploit the modulus's binary shape.** Do not normalise and then run a generic comparison against $p$ -- that decomposes 256 bits and then allocates another 256-bit difference, 520/529.
@@ -634,6 +670,7 @@ Auditing a tree against that single question is worth hundreds of rows per site,
 ## Non-Native Arithmetic
 
 ### Limb-Aligned Fold Constants
+
 The fold constant enters the carry width *linearly*, so its representation in your chosen base is a first-class cost decision.
 With $c = 2^{32} + 977$:
 
@@ -652,6 +689,7 @@ Place a 64-bit operand's limbs at the *even* 32-bit positions with the literal z
 Half the positions are structurally zero, so the cap analysis charges the smaller bound -- mixed-base multiplication with no conversion at all.
 
 ### Balanced Signed Limbs
+
 Subtract a compile-time shift from every limb -- affine, hence free -- so digits carry magnitude $\approx 2^{B-1}$ instead of $2^B - 1$.
 Each convolution coefficient loses about two bits, so each carry width loses one: $\sum W_f$ goes 1170 -> 1152 and the peak width 33 -> 32.
 
@@ -662,6 +700,7 @@ Here one byte-level constant is read at three different limb widths, which is wh
 Its digits are genuinely mixed-radix -- the correct cap at one width is $8{,}421{,}504$, where the tempting $2^{23}$ is strictly smaller and *unsound*, and $2^{24}$ wastes a full bit.
 
 ### Exact Mixed-Radix Bounds
+
 A bound written as $2^a$, or as a sum of two powers of two, is an *over-estimate* of a quantity whose true value is a small integer multiple of a power of two.
 Carry width is $W_f = \lceil \log_2(OFF_L + OFF_R)\rceil$, so rounding each addend up can push the ceiling across an integer boundary -- and a bit is 2 cost at *every site sharing the parameter*.
 
@@ -682,6 +721,7 @@ The check is cheap and mechanical: for every bound constant in every parameter f
 Any file whose entries are bare powers of two is a candidate.
 
 ### Triangular Convolution Bounds
+
 A convolution's per-position term count is $1,2,\dots,n,\dots,2,1$ -- not a uniform maximum.
 Declaring the bound as a constant function of position at the maximum cell count over-charges every position but the middle, and the width tables should be visibly tent-shaped.
 $qnCap(m,k) = \min(k+1,\ m,\ 3m-1-k), triCap(m,k) = \min(\tbinom{k+2}{2},\ \tbinom{3m-1-k}{2})$.
@@ -709,6 +749,7 @@ One graduated schedule runs 9, then 13, 12, 13, 6, 1 across 767 positions.
 The tents also *chain*: a square's per-position bound should feed the next product's convolution directly rather than being flattened to a scalar maximum first.
 
 ### Splitting the Fold Polynomial
+
 When a circuit multiplies limb vectors and immediately folds, it never consumes the full $2m-1$ convolution -- it consumes only $z \bmod (X^m - c_F)$.
 Multiplication in the residue ring has bilinear rank $\sum_i (2\deg f_i - 1) over the irreducible factors f_i$, which beats $2m-1$ **whenever the modulus splits**.
 The gadget: witness the $m$ folded coefficients $F$, and for each root $\rho$ emit one row $(\sum_i a_i \rho^i)(\sum_i b_i \rho^i) = \sum_k F_k \rho^k$, one product per row, every coefficient a compile-time constant hence affine-free.
@@ -725,6 +766,7 @@ Proving a gadget is at its floor is worth as much as another optimization, becau
 These are the only three tools that work, and each has a sharp edge.
 
 ## The Krull Height Bound
+
 Each row is one hypersurface, so by Krull's height theorem every component of the solution variety has codimension $\leq k$.
 If soundness demands the witness be determined by the inputs, then $k \geq m - \dim V$, and $cost \geq 2m - \dim V$.
 
@@ -750,6 +792,7 @@ Conversely $k > m - \dim V$ *proves* redundancy exists.
 The compile-time companion is specific to R1CS: the degree-2 part of every row is $(a_w\cdot w)(b_w\cdot w)$ with $a_w, b_w$ *compile-time constants*, so every fibre's asymptotic cone lies in one fixed variety known before running anything.
 
 ## The Bezout Degree Bound
+
 Each row at most doubles degree, so $k \geq \log_2 \deg(graph of the certified relation)$.
 Sanity checks: $y = x^5$ needs $k \geq 3$, so a 3-row S-box is optimal and no nondeterministic trick shaves it; $y = 1/x$ has graph $xy = 1$ of degree 2, so $k \geq 1$ -- correctly *not* penalising the witnessed-inverse trick.
 
@@ -763,6 +806,7 @@ When a 256-bit value's acceptor lives in $\mathbb{F}_r^8$ rather than $\mathbb{F
 Check the ambient dimension before quoting a floor.
 
 ## The Parameter-Counting Bound
+
 A $k$-row, $m$-wire system is described by $3k(m+1)$ field elements, so with $s = k+m$, $s \geq 2\sqrt{\frac{\log_p |F|}{3}} - 1$.
 
 This gives $s \geq 295$ for an arbitrary 16-bit table -- **a rigorous proof that lookup-free table emulation is expensive**, and the reason the $\sqrt N$ law of "Baby-Step Giant-Step" is the right tool rather than a workaround.
@@ -792,6 +836,7 @@ Each of these is a real failure mode, not a hypothetical one.
 They are included because the failure mode is invisible from inside the design.
 
 ## Ledger-Derived Cost Constants
+
 If the cost you report is a constant maintained by hand alongside the circuit rather than derived from the ledger the circuit emits, the two drift apart the moment you shrink anything, and a real improvement ships as either a build failure or an unchanged number.
 
 Two failure modes, both seen: an improvement landed with the internal ledger correctly advanced and the exported constant still holding an older value, so the build failed outright and the improvement was invisible; and an improvement made in a module that nothing imported, so every later build reported the old number even when it built.
@@ -800,6 +845,7 @@ The rule: after any cost change, re-derive the exported constant from the intern
 The diagnostic: extract every cost constant from both versions and diff them; if the top-level pair differs from its container's pair, that is the bug.
 
 ## Assumed Patterns and Proxy Metrics
+
 After the exact-bounds lever ("Exact Mixed-Radix Bounds") paid off twice, it was assumed the remaining instances were still set from the uniform bound.
 They were not -- two of them were already exactly triangular, and applying the lever there again was worth zero.
 
@@ -824,10 +870,12 @@ The actual saving is downstream, in the narrower quotient and carry ("Limb-Align
 **The $2k-1$-point multiply is textbook Toom-style evaluation.** What is R1CS-specific -- and the only part worth writing down -- is that the evaluation points being *compile-time constants* is what keeps each row rank-1 and therefore legal. Its transferable variants are the *mixed-width* form, which multiplies an $n_1$-vector by an $n_2$-vector at $\langle n_1+n_2-1, n_1+n_2-1\rangle$ instead of padding both to the longer length, and the *split-assert* form, which separates witnessing the coefficients from asserting the points so a caller holding its own coefficients pays only $\langle 0, n-1\rangle$.
 
 # Baseline Moves and Their Side Conditions
+
 Standard R1CS practice, not new results, kept here because each one carries a condition that is easy to violate silently.
 The parts above sharpen several of them; the pointers say where.
 
 ## Affine Cost Versus Prover Time
+
 Products cost a row; affine combinations are free *as the `A/B/C` inputs to a row, or as an inlined wire definition* -- the "affine is free" axiom.
 Two things that axiom hides.
 A standalone asserted affine equality still costs one (degenerate) row unless eliminated by substitution, which is what "Closing Row Elimination" does systematically.
@@ -836,6 +884,7 @@ Defer reductions: accumulate `a+b+c+d` as one field value and bit-decompose/rang
 No analogue in PLONK's fixed-fan-in gate (`techniques.md` section 5).
 
 ## Multi-Operand Add with One Decomposition
+
 For `(sum op_j) mod 2^w`: witness the `w` output bits and `cw` carry bits, add booleanity, and impose **one** linear row `sum value(op_j) = value(z) + 2^w * sum 2^i * c_i`.
 Chaining binary adds re-witnesses outputs and carries each step; one multi-operand reduction does it once.
 Minimal carry width: the sum is `< n*2^w`, so `cw` bits suffice when `n <= 2^cw` (a 4-operand add needs `cw=2`).
@@ -844,6 +893,7 @@ The field equation lifts to the natural numbers only if **both sides** stay belo
 Cheaper still where the entries above apply: derive the top carry affinely instead of witnessing it ("Affine Derivation of Tied Values"), skip the reduction entirely when the only consumer is a field sum ("Unreduced Words in Field Sums"), and charge $32 - v_2(C)$ rather than 32 when an addend is constant ("Free Low Bits from Constant Addends").
 
 ## Synthesizing a Single-Row Encoding
+
 "The Single-Row Non-Vanishing Multiplier" gives the shape and the sweep that says 192 of 256 ternary functions admit it.
 This is the workflow that produces one and proves it, with the tooling in `scripts/`.
 

@@ -1,8 +1,5 @@
 # Deferring Work to Another Proof
 
-*Emit an operation instead of executing it.
-Co-processors, specialized machines, and the reconciliation you must budget for.*
-
 **This is an optional reference.** It is the one family of optimization that is not local to a constraint system: it moves work out of the circuit entirely, into a second proof over a domain where the work is native.
 Reach for it only after `techniques.md`, `air.md` / `plonkish.md` and `gates.md` are exhausted -- the fixed cost is large and the break-even is measured in thousands of operations.
 
@@ -34,16 +31,19 @@ The coordinate bindings cost zero gates because they are copy constraints on alr
 > obligation, and if you do not discharge it somewhere you have created a gap, not an optimization.**
 
 ## A Stripped-Down Deferred Type
+
 If the host's general foreign-field type carries reduction state, bound tracking and range obligations, using it for the emission re-introduces exactly the machinery you are trying to delete.
 Define a separate, stripped-down type for deferred operands so the compiler *cannot* accidentally emit the general path.
 
 **Anything the host still checks is cost you failed to move.**
 
 ## A Single Uniform Queue Primitive
+
 Make even the trivial cases -- adding the identity, multiplying by zero, the terminating equality -- go through the same queue primitive.
 Uniformity is what lets the co-processor's relations be branch-free.
 
 ## Free Width Discrimination
+
 If the operand decomposition is data-dependent, discriminate on it for free:
 
 ```
@@ -58,6 +58,7 @@ The row tracker then counts one narrow operation instead of two.
 > co-processor's *size* data-dependent, which is an information leak unless the trace is padded to a constant ("The Fixed-Size Co-Processor").
 
 ## Witnessed Flags for Degenerate Cases
+
 An operation with an identity operand or a zero scalar contributes **no** rows at all: a boolean column bears witness to the fact and the work is skipped.
 
 > The motive is not only saved work. It *"dramatically simplifies the actual computations, by throwing out circumstances
@@ -68,6 +69,7 @@ Price: extra boolean columns plus the relations gating on them -- width traded f
 # The Co-Processor
 
 ## The Marginal Row-Cost Function
+
 Write the row-count function down explicitly; it is six lines and it determines every design decision downstream:
 
 ```
@@ -91,6 +93,7 @@ precompute_rows     = 8 * m
 > batchable ones terminates the batch and starts a new fixed charge. **Ordering your emissions is an optimization.**
 
 ## Disjoint Tables Wired by Multiset Equality
+
 A machine trace has no copy constraints, so three logically separate tables -- transcript, precompute, main -- become **disjoint column groups of one trace**, communicating by emitting matching tuples into a shared grand product with an explicit domain-separation tag per tuple family.
 Without the tags, tuples from different families with identical packed values produce identical fingerprints and can be substituted across families (`air.md` "Bus Aliasing").
 
@@ -102,10 +105,12 @@ Price: the set relation's grand-product subrelation reaches degree 22 -- by far 
 > would be better.
 
 ## Coinciding Loop Bounds
+
 Choosing `ADDITIONS_PER_ROW == DIGIT_BITS` (both 4) is not an accident: the equality lets the same row structure serve the accumulation and the digit decomposition, and several parts of the implementation exploit it.
 **Pick constants that make two unrelated loop bounds coincide, and a whole class of index arithmetic disappears** (`air.md` "Packing Multiple Steps per Row").
 
 ## Range Checks as Low-Degree Identities
+
 A 2-bit range check as a quartic identity, not a table read:
 
 ```
@@ -122,6 +127,7 @@ Price: twice the slice columns, one degree-4 subrelation each.
 > lost to a lookup. Under a degree-8 budget the crossover is at 2 bits (`degree.md` "The Window-Size Cap").
 
 ## Counters Pinned by the Multiset Argument
+
 A round counter in $\{0..7\}$ that is *never* range-constrained, with the argument written out:
 
 > *"note that we don't actually range-constrain `round` (expensive if we don't need to!). We nonetheless can correctly
@@ -137,6 +143,7 @@ A companion micro-move: make the operation counter **count down** rather than up
 > maintenance cost.
 
 ## Column Concatenation for Lower Degree
+
 Permuting ~64 columns simultaneously means committing to all of them and a relation of degree $1 + 64 = 65$.
 Instead, concatenate 16 logical columns into one polynomial and build 5 such polynomials; each group performs an independent permutation check at degree $1 + 5 = 6$.
 
@@ -150,6 +157,7 @@ Measured: a $2^{13}$ mini-circuit becomes $2^{17}$; 5 commitments instead of 64;
 > this trade inverts** (`degree.md` "Budgeting by Multiplication Count").
 
 ## Selector-Gated Relation Splitting
+
 Decompose a 51-subrelation, degree-8 monolith into three 6-subrelation pieces plus a remainder, each with its own `skip()` predicate on a mutually exclusive selector.
 Roughly 2/3 of the work is skipped per row.
 No change to the AIR's meaning and no change to the verifier -- a purely prover-side reorganization.
@@ -161,6 +169,7 @@ No change to the AIR's meaning and no change to the verifier -- a purely prover-
 # The Reconciliation, and the Bet
 
 ## Encoding Equality by Random Evaluation
+
 The reconciling proof must never re-do the semantics.
 It proves one scalar identity:
 $$\text{acc} \;=\; \sum_i x^{\,n-1-i}\bigl(\text{op}_i + v\,a_i + v^2 b_i + v^3 c_i + v^4 d_i\bigr) \bmod q$$
@@ -176,6 +185,7 @@ Because the co-processor's field is larger than the host's, the identity is non-
 > flags. And the batched-evaluation trick is sound only because $x, v$ are drawn **after** both tables are committed.
 
 ## Commitments in Place of Hashing
+
 Passing data between circuits as public inputs forces in-circuit hashing of the whole payload.
 Passing **commitments** instead makes the verification $O(1)$, independent of data size.
 Dynamic reads into the data column go through a log-derivative lookup at **one row per read, no copy constraint back**, so prover cost scales with the number of *reads* rather than the total data size.
@@ -188,6 +198,7 @@ Price: per data column, a value column, a read-count column, an inverses column 
 > **Where it stops.** The data still occupies columns of the producing circuit; you save the *hash*, not the *storage*.
 
 ## The Fixed-Size Co-Processor
+
 | component | fixed size |
 |---|---|
 | co-processor trace | $2^{15}$ rows, 86 wires / 88 witness / 119 total entities |

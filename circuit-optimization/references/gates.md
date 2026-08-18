@@ -1,7 +1,5 @@
 # Designing a Bespoke Relation (Custom Gates, sub-AIRs, Precompiles)
 
-*When to add one, what it costs before it is used once, how they are actually invented, and when the answer is "no gate".*
-
 A **bespoke relation** is a constraint you add to the *system* rather than to a circuit: a PLONKish custom gate, an AIR sub-AIR or chip, a precompile, a flavor extension.
 The economics are the same in all of them and differ from ordinary circuit golfing in one respect:
 
@@ -32,6 +30,7 @@ See I.7.
 # What a Bespoke Relation Actually Costs
 
 ## The Marginal Selector
+
 Marginal price of one additional selector, by backend shape:
 
 | backend shape | where the selector lives | marginal price of one more |
@@ -56,6 +55,7 @@ Production gate sets are small, and that is the budget you are asking to extend:
 > is a migration across every reimplementation of the verifier, not a code change.
 
 ## The Degree Step Function
+
 Degree never costs "a bit more" (`degree.md` "What a Unit of Degree Costs").
 Three concrete shapes:
 
@@ -80,6 +80,7 @@ Whether that is worth it is an empirical question about hash volume.
 > "Trading Degree for Width"'s degree-for-width trade.
 
 ## Routed and Unrouted Wires
+
 Every gate-based system splits its width into cells the permutation can reach and cells it cannot.
 Only routed cells receive values from elsewhere; unrouted ("advice") cells must be produced *and* consumed inside the relation.
 
@@ -95,6 +96,7 @@ Unrouted width is why a hash gate can occupy 135 wires without requiring 135 per
 > first cells *are* routable ("Two-Row Relation Shapes").
 
 ## The Selector-Group Tax
+
 Where gates are bin-packed into selector *groups*, the packing invariant is
 $$|G| + \max_{g\in G}\deg(g) \;\le\; \text{cap}$$
 and the filter that zeroes a gate outside its own rows is a **product over the rest of the group**, so **effective degree = gate degree + $|G| - 1$**, plus one more if there is more than one selector polynomial.
@@ -136,6 +138,7 @@ Adding **one** Poseidon row to a circuit whose next-largest relation has ~21 con
 > common data before and after.
 
 ## Selector Compression
+
 Where the frontend compresses selectors automatically, $\ell$ mutually row-disjoint selectors share one fixed column with member $k$ recovered as
 $$s_k \;\mapsto\; q\prod_{1\le h\le \ell,\ h\ne k}(h - q),$$
 so **combining $\ell$ selectors adds $\ell - 1$ to the degree of every gate in that combination**, subject to $\max_i(d_i - 1) + \ell \le D$.
@@ -181,6 +184,7 @@ If your toolchain ships one, run it; if it does not, count the same four things 
 # Getting the Relation Without Paying for It
 
 ## The Four Prepaid Resources
+
 Before proposing anything, exhaust the four resources already paid for.
 
 1. **Idle degree.** If the cap is 9 and your identity is degree 4, five degrees are sitting there.
@@ -195,6 +199,7 @@ Before proposing anything, exhaust the four resources already paid for.
 > reach for the same slack will find it gone, and whoever writes it will not know why.
 
 ## Two-Row Relation Shapes
+
 Most gate-based systems give one rotation nearly free, and AIRs give the next row outright (`air.md` "The Next Row as Copy Constraint").
 Lay the relation out so the value a constraint needs "afterwards" *is* the next row's cell, and the copy disappears.
 Three real shapes:
@@ -211,6 +216,7 @@ Three real shapes:
 > are *wide* rather than *tall*. Do not port a two-row design into one; port the packing idea instead.
 
 ## The Degree-for-Wires Dial
+
 The general dial: a relation that computes a degree-$N$ object inline can instead introduce non-routed intermediates and run at a bounded degree $\ge 2$.
 The move worth stealing is the *second* step: after fixing the intermediate count, go back and **re-minimize the degree** as far as the same wire count permits, purely so the relation joins a bigger selector group ("The Selector-Group Tax").
 
@@ -224,6 +230,7 @@ The relation lands at **degree 6, not 8** -- two degrees handed back at zero wir
 At cap 2 it would need 14 intermediates, i.e. 48 extra wires per row.
 
 ## Small-Integer Selector Multiplexing
+
 Instead of $k$ boolean selectors, use one selector taking values $0..k$ and build each variant's indicator algebraically:
 
 ```
@@ -242,6 +249,7 @@ The hard limit follows immediately: a degree-3 consistency identity under a cap 
 > scalars differing. A variant needing a fifth wire cannot join. See "De-Multiplexing" for what to do then.
 
 ## Selectors Without New Columns
+
 **Form A -- bitpattern over selectors you already have.** Under one master selector, encode the sub-type in the *existing* arithmetic selectors.
 Six memory-gate types in one relation:
 
@@ -272,6 +280,7 @@ Form B: the derived selector is degree 2 where a plain one is degree 1.
 > anyway. For arbitrary labels, a compressible selector plus the compressor does better.
 
 ## De-Multiplexing
+
 Splitting one multiplexed selector into two costs one entity -- 32 bytes of proof, one VK point, one verifier scalar-mul -- and buys degree headroom plus skip granularity.
 It is the right move when the shared row shape stops being shared: one deployed system split a single auxiliary selector covering RAM/ROM *and* non-native field into two relations, and split a five-way hash multiplex where its predecessor had two.
 
@@ -280,6 +289,7 @@ It is the right move when the shared row shape stops being shared: one deployed 
 # Relation or Lookup
 
 ## The Table-Amortization Crossover
+
 A table occupies rows.
 Widening from $b$ to $2b$ bits halves the lookups per operation but *squares* the table height.
 The crossover is a straight line in operation count:
@@ -297,6 +307,7 @@ The knob is worth exposing: a table parameterized by `TABLE_BITS` with base $B$ 
 > operations you do. **Check the floor before the crossover.**
 
 ## Log-Derivative Against Sorted Copy
+
 A consistency argument needing an auxiliary sorted copy of the trace costs two rows per access; a log-derivative argument costs one row per *table entry* plus one per *read*.
 When reads outnumber entries, the sorted scheme loses -- it roughly doubles the trace footprint of single-value reads.
 
@@ -310,6 +321,7 @@ Both arguments can live in the *same* relation under the *same* master selector,
 > system.**
 
 ## Unmaterialized Structured Tables
+
 "The Table-Amortization Crossover"--"Log-Derivative Against Sorted Copy" assume the table occupies committed rows.
 In a sumcheck backend with a structured-table argument it does not: the "table" is the full set of $2^n$ evaluations of the operation, and it is never written down.
 All the verifier needs is that the table's multilinear extension be *quickly evaluable*; the prover exploits prefix-suffix structure to compute its round messages, but that decomposition is used only in the prover's own head and is not part of the protocol.
@@ -323,6 +335,7 @@ All the verifier needs is that the table's multilinear extension be *quickly eva
 # How Relations Are Actually Invented
 
 ## Substituting Out Intermediates
+
 The single most productive move.
 Take the naive constraint program, find every witness that exists *only* to be consumed by the next line, and inline its definition.
 
@@ -342,6 +355,7 @@ In code $Y_A$ is a *function returning an expression*, not a column -- **one mat
 > re-derive it, which is why such designs witness the value explicitly in one boundary row so it can leave the region.
 
 ## Lowest-Degree Equivalent Identity
+
 Five techniques, in increasing sophistication:
 
 1. **Roots product for small sets.** One constraint with a root at each permitted value: $a(1-a)(2-a)(3-a)(4-a) = 0$ for $a \in [0,5)$, or $(7-c)(13-c) = 0$ for $c \in \{7,13\}$.
@@ -364,6 +378,7 @@ Five techniques, in increasing sophistication:
 > verify with an SMT solver over the real prime (`smt.md`) or a Groebner cofactor certificate (`sage.md`).
 
 ## The Design-Search Log
+
 Relation design is search, and the search record is the most useful artifact.
 One published design log for a rotation gate lists six candidates and why each failed:
 
@@ -383,6 +398,7 @@ One published design log for a rotation gate lists six candidates and why each f
 > Establish the scarce metric first.
 
 ## Automatable Passes
+
 Four of the moves above already exist as compiler passes, and knowing which are automatable tells you where to spend attention.
 
 - **Substitution under a degree budget ("Substituting Out Intermediates"), automated.** A solver that finds variables a constraint determines, substitutes them everywhere, deletes the defining constraint and iterates to a fixpoint -- refusing any substitution that would exceed a declared bound.
@@ -401,6 +417,7 @@ Four of the moves above already exist as compiler passes, and knowing which are 
 # When the Answer Is "No Relation"
 
 ## Optionality and the Exit Budget
+
 The maxima of "The Circuit-Wide Maxima" and the selector counts of "The Marginal Selector" are paid only if the relation is *present*, so mature systems keep unused relations out of circuits that do not need them:
 
 - **Feature-flagged expressions**: each optional relation wrapped as *if feature then expr else zero*, with the verification key holding an `Option` per optional selector.
@@ -420,6 +437,7 @@ The maxima of "The Circuit-Wide Maxima" and the selector counts of "The Marginal
 > **Budget the exit when you propose the entry.**
 
 ## Trading Degree for Width
+
 Where the cap is enforced rather than priced ("The Degree Step Function"), the correct response is a width trade, and it is usually already a compile-time parameter.
 For an S-box parameterized by (degree, registers):
 

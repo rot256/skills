@@ -1,9 +1,6 @@
 # AIR Optimization
 
-*A field manual for trace-based constraint systems.*
-
-Non-obvious techniques for making an execution trace smaller, collected by reading the constraint systems of the trace-based systems: general-purpose zkVMs, special-purpose STARK machines, and AIR compilers.
-Every entry carries the mechanism, the price, and the condition under which it stops working.
+Techniques for making an execution trace smaller, each with its mechanism, its price, and the condition under which it stops working.
 Gate-based systems are `plonkish.md`; constraint degree is `degree.md`; bespoke relations are `gates.md`; R1CS is `r1cs-fp.md`; cross-arithmetization moves are `techniques.md`.
 
 $$\text{cost} \;=\; \underbrace{(w_{\text{pre}} + w_{\text{main}} + w_{\text{perm}})}_{\text{width}} \times \underbrace{\lceil h \rceil_{\text{pad}}}_{\text{height}} \qquad\text{scaled by}\qquad \text{blowup} \approx d - 1$$
@@ -47,6 +44,7 @@ Calibration, traps, and knowing when to stop apply to both; where a trick crosse
 The single most common way to waste a week is to optimize the wrong term of the product.
 
 ## The Area Law and Its Two Ceilings
+
 The optimand is cells.
 One implementation collapses a chip to one scalar and stores it in a table:
 
@@ -85,6 +83,7 @@ A different oracle instead charges `total_width()`, which **includes** the permu
 > permutation trace understates interactions by the largest single term. Always ask which of the three widths your backend commits.
 
 ## Two-Term Gas Metering
+
 One metering scheme prices programs with two independently-calibrated per-AIR weights:
 
 ```rust
@@ -100,6 +99,7 @@ The two disagree in exactly the interesting places: `Byte` = 13 area / **0** com
 > warns that changing it demands re-running the calibration first. A different memory-bandwidth profile re-weights it.
 
 ## Per-Chip vs. Stacked Padding
+
 One family of backends pads every AIR to `next_power_of_two_or_zero` individually.
 Another pads to `n.next_multiple_of(32).max(16)`.
 At 1000 uses both cost 1024 rows.
@@ -120,6 +120,7 @@ let main_area = chips.iter().map(|air| air.width() * air.num_rows(record)).sum::
 > reasoning about "a chip used 1000 times".
 
 ## Four Tiers of Free Columns
+
 Not all free columns are free in the same currency.
 Cheapest first:
 
@@ -148,6 +149,7 @@ The multilinear analogue is the *structured* column, whose MLE is closed-form --
 > so the hash trace must be laid out to land on them.
 
 ## Static Cost Oracles
+
 Every mature framework has a static cost oracle; use it before guessing.
 What to look for in your toolchain:
 
@@ -163,6 +165,7 @@ What to look for in your toolchain:
 ## With a Bus
 
 ### Hard Interaction Ceilings
+
 One segmenter cuts on interaction count with the ceiling set to the **field order**: `max_interactions: <Val as PrimeField32>::ORDER_U32`, enforced at segment close.
 Beyond it multiplicities wrap and the argument is unsound, not merely expensive.
 Interaction cells are metered per row per interaction: `interaction_cells += padded_height * interactions`.
@@ -189,6 +192,7 @@ These are a **max** and a **sum over the whole shard**: one chip with a 17-field
 The unit of cost is a column, so every entry here is a way to have one fewer of them.
 
 ## Virtual Columns for Linear Maps
+
 The rule, as stated in the column documentation of one shipping Poseidon2 AIR:
 
 > *"Because the matrix multiplications are linear functions, we need only keep auxiliary columns for the S-box computations."*
@@ -206,6 +210,7 @@ Some frameworks state the same rule as their entire cost model: a linear `add_co
 > where degree 1 is required, materialize it.
 
 ## Derived Value from a Pinned Total
+
 If $n$ values are tied by a constraint that something else already enforces, witness $n-1$ and let the last be an expression.
 
 A jump-and-link that stores only the 3 high limbs of `rd` derives the low limb as `least_sig_limb = from_pc + DEFAULT_PC_STEP - composed`, and its correctness is enforced **by the range check alone**:
@@ -223,6 +228,7 @@ Measured instances of the same move: deleting `prev_timestamp` from every memory
 > If the check is on a *pair* and the partner slot is loose, the argument collapses silently.
 
 ## Half-Committed Limb Split
+
 To split $a$ at bit $r$, commit only the high part and define the low part as an expression:
 
 ```rust
@@ -243,6 +249,7 @@ A `U16toU8Operation` is the same move at word scale: only the *low* byte of each
 > discharges the obligation.
 
 ## Borrow-Bit Comparison
+
 Do not build a comparator.
 Decompose the shifted difference into range-checked limbs and read the answer off the top:
 
@@ -291,6 +298,7 @@ And signed comparison is unsigned comparison after an *arithmetic* sign flip: `b
 > **wrong if you want to read off the differing index**.
 
 ## Selector Encodings
+
 Five encodings of "which of $n$ cases is this row", in increasing column-thrift and increasing degree.
 
 **(a) One-hot whose sum *is* `is_valid`.** Zero columns for `is_valid` and zero for the opcode:
@@ -328,6 +336,7 @@ Crossover against one-hot: use binary when $|T|$ is large and the tag gates *few
 > (e) needs explicit exclusion gates when $|T|$ is not a power of two, or the prover invents a tag no branch handles.
 
 ## Constants from One-Hot Flags
+
 Once a one-hot flag vector exists, any per-row constant is a linear combination of it, for zero columns.
 
 Keccak needs a different 64-bit round constant per round and stores **neither** a constant column nor a preprocessed one:
@@ -347,6 +356,7 @@ The generalization is an `Encoder::flag_with_val` helper producing $\sum_r \text
 > periodic column ("Four Tiers of Free Columns").
 
 ## Column Aliasing on Disjoint Rows
+
 Two variants, both real savings.
 
 **Union layouts.** A `Sha2RoundCols` and a `Sha2DigestCols` share their first three fields byte-for-byte and reinterpret the tail; the AIR borrows whichever view it needs from the same slice.
@@ -363,6 +373,7 @@ The classic version rides on an ISA that declares a field's value undefined: on 
 > "Undefined Behavior".
 
 ## Outputs as Expressions
+
 A gadget's *output* often needs no storage at all.
 One design hands its adapter `Word::extend_var(bit)` = $(bit,0,0,0)$ for SLT, and builds a full sign-extended 64-bit load result from **one byte column and one bit column**: `limb0 = byte + (2^16-2^8)*msb`, `limb1..3 = (2^16-1)*msb`.
 A `less_than` core writes `[cmp_result, 0, 0, 0]` with three literal zeros; the adapter/core split exists precisely so reads and writes cross the boundary as `AB::Expr`.
@@ -374,11 +385,13 @@ Measured: hardcoding provably-zero upper limbs inside the bus expression removed
 > zeros but stores non-zero values, verification fails". Lift it out of that setting and it proves nothing.
 
 ## Prescaling Away a Known-Zero Bit
+
 A jump target whose LSB is zero by spec should be stored as the limbs of `to_pc * 2`: `/// These are the limbs of to_pc * 2.` The low limb is then range-checked to **15 bits instead of 16** -- the zero bit is free -- and the genuinely-discarded bit is captured in a separate `to_pc_least_sig_bit` because `rs1 + imm` may have it set.
 
 > **Where it stops.** The truncated bit must be discarded by *semantics*, not merely usually zero.
 
 ## Polarity Folding
+
 Rather than compute a comparison and then negate it, define the gadget's target as the *polarity-adjusted* expression:
 
 ```rust
@@ -392,6 +405,7 @@ Another machine does the same for its four comparison opcodes with a single `out
 > opcode flags are separately boolean *and* mutually exclusive. Drop the `assert_bool` on the flag sum and `cmp_eq` can be 2.
 
 ## The Nondeterministic-Inverse Family
+
 Two columns, degree 3, no lookup:
 
 ```rust
@@ -413,6 +427,7 @@ Variants worth knowing: an array version puts one inverse-marker per limb and cl
 > it per-limb and AND the results in a **balanced tree** to stay at degree 3.
 
 ## Overlooked Free Storage Classes
+
 **Instance-level values cost no rows.** Where the AIR DSL offers `airval` / `proofval` (and the equivalent public-value slots elsewhere) each holds one field element per AIR instance, not per row.
 Uses that pay for themselves: continuation state across segments, padding counts ("Selector Gating and Its Escapes"), register reload at segment boundaries, and "this memory region is unused in this execution" switches.
 A quantity that is constant over a whole instance should never be a column.
@@ -425,6 +440,7 @@ Use this form universally, and pair it with `SEGMENT_L1 * (airval - 'x) + 'x` as
 ## Small-Limb
 
 ### Carries as Boolean Expressions
+
 Do not witness the carry.
 Define it by dividing by the base (a field constant) and constrain only that it is boolean:
 
@@ -447,6 +463,7 @@ With more addends the carry stops being boolean and gets a *range check* instead
 > 1 the max-degree constrain could be at least 4."*
 
 ### Zero Test on the Limb Sum
+
 `sum limbs = 0 <=> all limbs = 0` collapses $n$ `IsZero` gadgets into one.
 One machine uses it for `addr == 0` (the RISC-V `x0` invariant) with the bound stated in-source:
 
@@ -464,6 +481,7 @@ An EVM-circuit library gets `eq` for **one extra cell** by summing the diff byte
 ## One-Hot Dispatch
 
 ### Opcode Prefix Helper Columns
+
 Under one-hot dispatch the governing identity is brutal and exact:
 $$\deg(\text{flag}) + \deg(\text{rule}) \;\le\; \text{budget}$$
 If the opcode is encoded as $k$ bits, the one-hot flag for a single opcode has degree $k$, so with 7 opcode bits and a constraint budget of 9, operation-specific constraints cannot exceed degree 2.
@@ -496,6 +514,7 @@ And build all the flags from a *shared nest* of partial products: `b32 -> b321 -
 ## Small Field (M31 / BabyBear / KoalaBear)
 
 ### Constant Division and Carry-Chain Depth
+
 **Division by a power of two is a constant multiply.** In a Mersenne field $2^{-k} \equiv 2^{31-k}$ exactly, so the constant `M31_4194304` *is* $2^{-9}$; a BLAKE round declares `const INV16: BaseField = from_u32_unchecked(1 << 15)` for $2^{-16}$.
 This is the engine behind "Carries as Boolean Expressions": **a carry is an expression, never a column**, and 252-bit addition costs **1 witness column plus 9 degree-3 carry constraints** against a naive 27 carry columns + 27 booleanity constraints.
 
@@ -518,6 +537,7 @@ For a test against a *nonzero* constant, square the differences to restore non-n
 # The Window: What Two Rows Can Do
 
 ## The Next Row as Copy Constraint
+
 An AIR has no permutation argument over its own columns, and does not need one: a value produced at step $i$ and consumed at step $i+1$ is simply read as `next`.
 
 ```rust
@@ -540,6 +560,7 @@ with the accompanying note *"Each row is self-contained, so no next-row columns 
 > Re-audit the override on every constraint change.
 
 ## Row-Cycle Flags by Rotation
+
 Rotation gives a one-hot round counter in **two boundary constraints and one transition constraint**, with no booleanity check and no "exactly one is set" check -- the invariant propagates:
 
 ```rust
@@ -558,6 +579,7 @@ builder.when_transition().assert_zeros(array::from_fn(|i|
 > inherited from the rotation invariant rather than asserted.
 
 ## Packing Multiple Steps per Row
+
 Concatenate the two rows' arrays and index into the combined array; a dependency of depth $\le$ (window width) crosses the row boundary for free:
 
 ```rust
@@ -570,6 +592,7 @@ The extreme version, where the row is wide enough: 5 Poseidon rounds per row, 5 
 > **Where it stops.** Exactly 2 rows. Dependencies deeper than $2 \times$ (rounds per row) need III.5.
 
 ## Combine-Then-Pipeline Shift Registers
+
 SHA's message schedule needs $w_{t-16}$, far outside any window.
 Three column banks pipeline it forward 4 rows at a time:
 
@@ -585,6 +608,7 @@ pub intermed_4, intermed_8, intermed_12
 > something that will be consumed bitwise has to stay wide.
 
 ## Ungated Row-Local Identities
+
 From the binding constraint of one LogUp implementation:
 
 > *"The identity is cyclic in the trace domain, so it does not need a transition gate. Forcing it on every row also pins
@@ -598,6 +622,7 @@ Even though `when_transition` is degree-free, dropping it removes a multiplicati
 ## FRI-quotient
 
 ### The Boundary-Selector Asymmetry
+
 In the symbolic cost model:
 
 ```rust
@@ -616,6 +641,7 @@ So `when_transition()` is **degree-free** and there is no excuse to omit it ("Ro
 ## With a Bus
 
 ### A Bus Instead of Adjacency
+
 When the two rows are 17 apart, or in different chips, or in no fixed order, use an interaction and a **disambiguating tag**:
 
 ```rust
@@ -648,6 +674,7 @@ The instructive exception is a Poseidon2 AIR configured `SBOX_DEGREE = 7, SBOX_R
 **Round the declared budget up to the nearest $2^j+1$, then go looking for what to spend the slack on.**
 
 ## Degree Costs per Backend
+
 | backend | the mechanism | the price of degree $d$ |
 |---|---|---|
 | **FRI-quotient AIR** | quotient degree $d(N-1)$, split into chunks | $2^{\lceil \log_2(d-1)\rceil}$ quotient chunks; FRI blowup $\ge d-1$ |
@@ -666,6 +693,7 @@ Second, degree buys **height**: raising `max_constraint_degree` from 3 to 7 cost
 > explicitly on the degree hint itself.
 
 ## Degree Matching
+
 **Once `max_degree = D` is fixed, every constraint of degree $< D$ is unused headroom.** You can fold a selector, inline an intermediate column, or switch to a higher-degree identity *at zero marginal cost*.
 Conversely one degree-$(D{+}1)$ constraint re-prices the entire system.
 
@@ -706,6 +734,7 @@ Two more places the slack goes, both worth real columns: **accumulator and bus c
 > should target $2^j$, not $2^j+1$, or it doubles its quotient chunk count on the day someone flips the flag.
 
 ## Selector Gating and Its Escapes
+
 `FilteredAirBuilder` has exactly one job:
 ```rust
 fn assert_zero<I: Into<Self::Expr>>(&mut self, x: I) {
@@ -738,6 +767,7 @@ One machine removes even that column where padding rows claim a *true* fact: its
 > And if your selector is a product of flags, hoist it into a degree-1 committed column instead of recomputing it ("Selector Encodings").
 
 ## Degree Reduction with an Intermediate Column
+
 The escape hatch: commit the partial product, continue from there.
 One column and one constraint per split, cutting degree by (arity $-1$).
 
@@ -759,6 +789,7 @@ If something else in the AIR is already at the cap, the extra column is pure los
 > name a subexpression for CSE.
 
 ## The Degree-Width Dial
+
 **Worked example 1 -- `SBOX_REGISTERS`.** `eval_sbox` computes $x^D$ either inline or via committed intermediates, and the shipped degree table is `(3,0)->3, (5,0)->5, (7,0)->7, (5,1)|(7,1)|(11,2)->3`.
 For BabyBear, $W=16$, $HF=4$, $P=13$, $D=7$, with row width $W + 2 \cdot HF \cdot W(1+R) + P(1+R)$:
 
@@ -778,6 +809,7 @@ That is the cheapest version of the dial: **choose a field whose smallest $\alph
 > per-AIR maximum, so lowering one gadget below it buys nothing ("Degree Matching").
 
 ## Vanishing-Set Constraints
+
 When a quantity is known to land in a small set, assert the *root polynomial* instead of building the operation.
 
 - **5-way XOR in degree 3.** For booleans, $\sum_{y} a'[y] - c' \in \{0,2,4\}$, so `diff * (diff - 2) * (diff - 4) = 0`.
@@ -797,6 +829,7 @@ When a quantity is known to land in a small set, assert the *root polynomial* in
 > **cannot be multiplied by any selector at all**.
 
 ## Cheaper Algebraic Identities
+
 Same truth table, different degree:
 
 | function | naive | cheap | why |
@@ -813,6 +846,7 @@ Same truth table, different degree:
 > The add-based identities are integer identities holding in $\mathbb F_p$ only while $x + y < p$.
 
 ## Backends That Invert the Dial
+
 The FRI-quotient pricing of "Degree: The Master Budget" is not universal.
 
 - **Sumcheck / multilinear / GKR backends** (HyperPlonk and its descendants): there is no quotient polynomial to blow up.
@@ -850,6 +884,7 @@ Drops 1--2 degrees on every constraint they gate, and they gate the whole stack-
 ## With a Bus
 
 ### Interaction Degree Budget
+
 Sub-AIRs in one framework each document their degree as $\deg(\text{count}) + \max(1, \deg(x), \deg(y))$, and the backend prices it:
 
 > *"per AIR: it gets the max degree across all `fields` and max degree across all `count` across all interactions.
@@ -868,6 +903,7 @@ Nothing here is about how a lookup argument is proved.
 It is about what a row can buy with one.
 
 ## Dual-Purpose Lookups
+
 The best lookups do two jobs.
 
 - **Spread / interleaved bits** (a SHA-256 design).
@@ -888,6 +924,7 @@ The best lookups do two jobs.
 > The single-bit-mask XOR trick does not extend to multi-bit masks unless $x \wedge m$ is already a witness.
 
 ## Redundant Range-Check Elimination
+
 One optimizer mechanises this and the procedure is the interesting part: strip every *pure* range-check interaction out of the system, re-run the solver on the **remainder**, and keep a check only if it still adds information:
 
 ```rust
@@ -907,6 +944,7 @@ Related passes worth applying by hand:
 > *and* adds the polynomial rather than risk it.
 
 ## The Limits of Lookup Tables
+
 Three honest counterexamples.
 
 - **Fixed cost per shard.** A `BYTE_NUM_ROWS = 2^16` and `RANGE_NUM_ROWS = 2^17` are paid **in every shard**, even one that does a single byte lookup: $2^{16}\cdot13 + 2^{17}\cdot3 = \mathbf{1{,}245{,}184}$ cells of floor.
@@ -918,6 +956,7 @@ Three honest counterexamples.
 ## With a Bus
 
 ### Multiplicity as an Expression
+
 There is no separate "enable".
 The count is just another expression: a flag; a **sum** of flags (`opcode_mulh_flag + opcode_mulhsu_flag`); a **difference** (`is_valid - special_case`; `is_real - imm_c` to skip a register read on immediate rows); a **running prefix sum**; a **product** (`is_begin * next.is_terminate`).
 
@@ -935,6 +974,7 @@ A memory boundary chip can use a signed count in $\{-1,0,1\}$, pinned by the cub
 > must update the RangeChecker's multiplicities even on dummy padding rows"*.
 
 ### One Table, Many Operations
+
 The shape is a preprocessed table of $2^{16}$ rows holding **all** byte results side by side, with one multiplicity column per operation:
 
 ```rust
@@ -954,6 +994,7 @@ Another design does the identical thing with *no* preprocessed trace, generating
 > plus a *monotone* quantity connecting first row to last, or the anchor alone is insufficient.
 
 ### Paired and Tuple Lookups
+
 The byte table's two key slots both carry information, so a range check gets two values per interaction:
 
 ```rust
@@ -978,6 +1019,7 @@ Two corollaries worth internalizing:
 > and callers must size the carry dimension for the worst case.
 
 ### The Variable-Width Range Table
+
 Make the width part of the key: the table enumerates every $(v, b)$ with $v < 2^b$, $b \in [0, b_{\max}]$.
 
 ```rust
@@ -1000,6 +1042,7 @@ Three things it unlocks that a fixed table cannot:
 > intended -- it must be pinned by another constraint. Constant callers are safe.
 
 ### Reshaping a Range Check
+
 - **Scale up to check a narrower bound on a wider table.** If $x$ is already known $< 2^k$, then $x\cdot2^{k-b} < 2^k$ iff $x < 2^b$ -- a free constant multiplication inside the interaction field.
   **This absolutely requires the prior $x<2^k$ fact**, which one implementation justifies explicitly: "since limbs are read from memory we already know that limb[i] < 2^CELL_BITS".
 - **Shift and double-lookup when you have no prior bound.** $x < \text{max}$ and $x + (\text{max}-2^b) < \text{max}$ together give $x < 2^b$: 2 interactions of 1 field, and **the only variant that presupposes nothing** (needs $2\cdot\text{max} < p$).
@@ -1016,6 +1059,7 @@ The same idiom certifies `clk == 1 (mod 8)` **and** 16-bit-ness in one message, 
 > *exactly* cover the original -- otherwise you have proven a weaker statement than you think.
 
 ### Non-Zero by Range Check
+
 $v - 1 \in [0, 2^8)$ implies $v \ge 1$.
 The unused second slot takes the constant 0:
 
@@ -1053,6 +1097,7 @@ Two mitigations from the field: split one wide message into two tagged messages 
 > Packing is injective only if the packed pieces are independently range-checked -- otherwise it is a value forgery.
 
 ### Bus Aliasing
+
 A bus is a namespace, and namespaces collide.
 
 - **Distinct relations need distinct challenge sets.** A BLAKE AIR defines five separate `XorElements{12,9,8,7,4}` precisely because one shared relation would let a 4-bit XOR tuple be satisfied by a 12-bit table entry.
@@ -1071,6 +1116,7 @@ The general rule that generates all four: **if a value steers a message, it belo
 > brushes the bound.
 
 ### Chip Specialization
+
 Moving a computation to a dedicated chip is worth it when the receiving chip's rows are fewer or narrower, and the arithmetic is explicit.
 
 - **Deduplicate by content.** A Poseidon2 periphery chip has height = number of *distinct* $(\text{input}, \text{output})$ pairs, because identical tuples collapse into one row with `mult > 1`.
@@ -1085,6 +1131,7 @@ Moving a computation to a dedicated chip is worth it when the receiving chip's r
 > And the control chip pays $\ge 1$ extra interaction per row of the wide chip.
 
 ### Message-Shape Tricks
+
 Five moves from a machine-generated AIR whose components come out of a cost model -- so every shape in it is an optimizer's output rather than a preference.
 
 **One challenge set for every relation, separated by a hard-coded tag.** There is exactly one `relation!` type in the whole AIR, with 128 alpha powers; each logical relation prepends a constant ID as tuple entry 0.
@@ -1123,6 +1170,7 @@ This part is the layer where chips are created and destroyed.
 The decision to add a chip *type* to the machine -- rather than to reshape one that exists -- is priced in `gates.md`, which treats a sub-AIR the way this file treats a column.
 
 ## Chip Splitting and Merging
+
 **Split.** One production zkVM ships a chip specialised to the ALU instructions whose destination is the always-zero register: since that register is hardwired to zero, the arithmetic result is discarded, so the chip only verifies the instruction against the program table and performs the register accesses -- nothing else.
 A `DIV` with `rd = x0` costs **34 cells instead of 246 -- 86% off.** Measured elsewhere: splitting a combined add/subtract chip into add/subtract plus a dedicated add-immediate chip (the distribution was 75% immediate) took the immediate chip to **width 25 (-26%), 16 interactions (-20%)** from 34/20, and removed **1B of 6.8B cells** on a full block-execution benchmark.
 Row-type specialization inside one trace did even better: a FRI reduced-opening chip carrying several row shapes went **64 -> 26 columns (-59%)**, with leaf cells -6.9%/-13.3%/-16.0% across three benchmarks.
@@ -1136,6 +1184,7 @@ Row-type specialization inside one trace did even better: a FRI reduced-opening 
 > *not* merge its two memory-boundary chips.
 
 ## Read-Only Data as a Lookup Bus
+
 The single biggest structural saving in the memory layer.
 A program table can be a **lookup bus**, not a permutation bus: the key is $(pc, \text{opcode}, \text{operands})$ with a multiplicity and nothing else -- no timestamp, no previous value -- backed by a preprocessed trace whose only main column is `exec_freq`.
 **0 memory columns, 0 timestamp, 1 lookup per fetch**, against $\approx 7$ columns + 2 interactions + 2 range lookups if the ROM were modelled as memory ("The Two-Interaction Memory Access").
@@ -1147,6 +1196,7 @@ A program table can be a **lookup bus**, not a permutation bus: the key is $(pc,
 > **non-strict** one, $(cycle - loadCycle)\cdot2$, so many fetches can share a cycle.
 
 ## ISA Design as Constraint Design
+
 The cheapest constraint is the one you never write.
 Five documented instances:
 
@@ -1173,6 +1223,7 @@ They are worked in "Two Measured Failures", because they are calibration rather 
 ## With a Bus
 
 ### The Adapter/Core Split
+
 Width is additive:
 ```rust
 fn width(&self) -> usize { self.adapter.width() + self.core.width() }
@@ -1192,6 +1243,7 @@ The flip side is that a 2-read/1-write adapter carries $\approx 15$--20 columns 
 ## Recursive Systems
 
 ### Chip Clusters and the Shape Catalogue
+
 In a machine with a precompiled verifier per configuration, "shape" means *which chips exist*, not how tall they are:
 ```rust
 pub fn smallest_cluster(&self, chips) -> Option<&BTreeSet<Chip<F,A>>> {
@@ -1208,6 +1260,7 @@ The design response is visible in the source: instead of the power set of 6 exte
 ## Sharded
 
 ### Shard-Boundary Cost and Locality
+
 One sharded machine charges each address touched across a boundary **one local-memory row and two global rows**: $20 + 2\times241 = \mathbf{502}$ cells per touched address -- 15$\times$ a whole `Add`, 2$\times$ a `DivRem`.
 And its shard checker assumes all 32 registers are re-touched every shard, i.e. 16,064 cells of unavoidable tax per shard.
 A paged machine expresses the same law as Merkle re-hashing: per page fault, $2\cdot2^{\text{PAGE\_BITS}}$ boundary rows plus $2\cdot\text{nodes\_per\_page}$ merkle rows plus the corresponding Poseidon2 -- every factor of 2 being "init tree + final tree".
@@ -1235,6 +1288,7 @@ The fence must be on *every* chip that computes an address.
   That only works because the timestamp is unique per (cycle, slot); it *depends on* "Free and Derived Timestamps"'s spacing.
 
 ## Block Granularity and Lazy Normalization
+
 **Block granularity.** The bus carries a `BLOCK`-sized data vector, not one cell: fixing `DEFAULT_BLOCK_SIZE = 4` even though `lb`/`lh` need fewer bytes amortizes the `prev_timestamp` and lt-aux overhead over the block.
 Sub-block access must then be decoded *outside* the bus and the alignment constrained, which costs exactly one lookup ("Reshaping a Range Check").
 
@@ -1251,6 +1305,7 @@ if carry_bits > a.max_carry_bits { a.save(); }   // max_carry_bits = MODULUS_BIT
 ## With a Bus
 
 ### The Two-Interaction Memory Access
+
 Every logical access is a *receive* of the old tuple and a *send* of the new one on the same bus:
 
 ```rust
@@ -1283,6 +1338,7 @@ These rows come from **different machines**, so read them as points in a design 
 > "read and sign-extend in place" shortcut silently becomes a write of the extended value.
 
 ### Free and Derived Timestamps
+
 **Free.** A machine can decline to store the current timestamp at all -- it is `cycle*2` for reads and `cycle*2+1` for writes, and only `prevCycle` is a column.
 **Constant-offset slots.** Give each access within an instruction a compile-time slot: `clk_low + MemoryAccessPosition`, zero columns.
 **Derived limbs.** For registers, witness only the *low* limb of $t - t_{\text{prev}} - 1$; the high limb is an expression, range-checked directly -- $-1$ column and $-1$ constraint per access.
@@ -1301,6 +1357,7 @@ And per-access checks are worthless without a *global* bound: range-check the se
 > silently stops being enforced.
 
 ### One Bus for Every Address Space
+
 Key the tuple on $(\text{address\_space}, \text{pointer})$ and the register file, RAM, public-values space and native space all share one chip and one argument -- 1 extra field element per interaction, saving an entire duplicated chip and boundary machinery per space.
 Reserving space 0 as "not memory" then deletes a constraint outright:
 
@@ -1340,6 +1397,7 @@ $n=32$ gives 126 columns per modular multiply, with **no bit decomposition anywh
 > $2^{30}$ -- but the bound is what caps $n$, and it is what forces chunking ("Four Operations from One Gadget").
 
 ## The Witness Offset Bound
+
 The witness coefficients are running polynomial carries, computed by a Horner-from-the-top pass with `debug_assert_eq!(pol_carry, 0)` -- which *is* the statement $V(B)=0$.
 Hence
 $$W_j = V_{j+1} + B\,W_{j+1} \quad\Longrightarrow\quad |W_j| \;\le\; \frac{\max_k|V_k|}{B-1}$$
@@ -1357,6 +1415,7 @@ The same bias trick appears in a `check_carry_to_zero` gadget, with its own hard
 > $-63 \gg 2 = -16$ versus $-63/4 = -15$.
 
 ## Four Operations from One Gadget
+
 Sub and Div are never computed forward; they are checked in reverse, reusing the *same* vanishing polynomial with $a$ and `result` swapped:
 
 ```rust
@@ -1416,6 +1475,7 @@ This part is the same job encoded twice, with the measured delta, so you can rec
 Every row of that table is the same move: **stop materialising a value that something else already pins.**
 
 ## Four Encodings Done Right
+
 **A return-opcode component -- 16 columns, 4 relation uses.** Full instruction decode costs nothing because the component exists only for one instruction variant, so the entire instruction word is a constant in the lookup tuple.
 Compare the *generic* opcode component of the same machine at **243 columns and 22 relation uses**.
 That 15x is the price of generality, and it is why 17 specialised `decode_instruction_<hash>` subroutines exist.
@@ -1431,6 +1491,7 @@ The ISA encoding is a degree-budget allocation.
 Cost: 32 of 128 opcodes are unusable.
 
 ## Four Reliably Bad Patterns
+
 **Optimising width while the height ceiling binds, or vice versa.** I.1.
 Know which of your two ceilings is live before deleting a column.
 
@@ -1444,6 +1505,7 @@ The widely shipped `(7,0)` Poseidon2 configuration is the standing example.
 Spending the last degree buys the constraint and sells your ability to condition it.
 
 ## Two Measured Failures
+
 These are the ones worth remembering, because both looked like wins on paper.
 
 **Width is not the objective.** Deleting 12 specialised pairing opcodes *"removed 16527 columns"* -- and total cells went **25.4M -> 92.6M, 3.65x**, with the app proof 2.5x slower, because the work reappeared as many more rows in generic chips.
@@ -1544,6 +1606,7 @@ Note from "The Boundary-Selector Asymmetry" that first/last-row selectors are th
 # Knowing When to Stop
 
 ## Irreducible Cost Floors
+
 Unlike R1CS (`r1cs-fp.md` "Knowing When to Stop"), there is no clean geometric floor on trace area -- the trace is a *layout*, not a variety.
 What you do have:
 
@@ -1555,6 +1618,7 @@ What you do have:
 - **The padding floor.** Under power-of-two padding, a chip used $n$ times costs $2^{\lceil\log_2 n\rceil}$ rows, and no column reduction changes that ("Per-Chip vs. Stacked Padding").
 
 ## Three Checks Worth Demanding
+
 - **Evaluate every constraint on every row of a concrete trace**, then **mutate the trace and assert something catches it**.
   Demand a constraint checker that runs the AIR over a witness trace row by row, plus property-based mutation tests that flip one bit and assert a constraint fires.
   It is the only cheap way to discover that an "implicit range check" you assumed was there ("Half-Committed Limb Split", "Range, Limbs, and Small-Field Overflow") is not.
@@ -1567,6 +1631,7 @@ What you do have:
 > Treat every "optimal" as "not beaten yet", and every "sound" as "not broken yet".
 
 ## Re-Deriving the Reported Cost
+
 The same trap as `r1cs-fp.md` "Ledger-Derived Cost Constants", with sharper teeth here because there are three numbers.
 A width improvement that padding eats ("Two Measured Negative Results"), a column saving that adds an interaction, an interaction saving that adds a degree -- each shows up as a win in one counter and a loss in another.
 **Report the triple (columns, interactions, degree) and the measured cells, or you have not measured anything.**

@@ -87,3 +87,19 @@ Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *un
 - **Degree reduction:** introduce intermediate witnesses to split a high-degree gate into low-degree ones -- the inverse of "Custom / Higher-Degree Gates, and the Degree Budget", when rows are cheaper than degree.
   It pays **only if the split constraint is the global maximum** (`degree.md` "The Committed-Column Split").
 - **Shape the machine, not just the algebra.** The cheapest constraint is the one you never write: deleting the register file, counting instructions instead of bytes, bounding state motion to one item per step, allowing only power-of-two structure, and choosing an operand encoding whose lookup table decomposes are all constraint-system decisions made in the ISA (`air.md` "ISA Design as Constraint Design").
+
+## Choosing Between a Prime Field and GF(2)
+
+The two models are not ordered; each wins somewhere, and the boundary is a packing rule rather than a slogan.
+
+$\mathbb{F}_p$ **wins on wide fan-in conjunctions.** $AND(x_1,\dots,x_n)$ is $s = \sum x_i - n$ -- free, affine -- followed by a two-row zero test.
+**Two rows independent of $n$**, against $n-1$ AND gates over GF(2), which is tight there by Schnorr's degree bound.
+Same for OR.
+
+GF(2) **wins on XOR**, free there and a row in the prime field.
+That single asymmetry is why a field-based SHA-256 needs $\sim 30{,}952$ nonlinear constraints while the boolean circuit needs $22{,}573$ AND gates.
+
+**Practical rule for the prime field:** keep values integer-packed so XOR chains become free sums, and bit-split only when a genuinely bitwise operation forces it.
+
+**Ceiling on the whole question:** the counting bound over a 254-bit field is weaker than the GF(2) bound by a factor $\frac{\sqrt{3\log_2 p}}{2} \approx 14$ so information-theoretically a large field can buy at most $\sim 14$-$16\times$ over the best boolean circuit.
+Published AND-gate records are a realistic if modestly loose guide to what is reachable.
