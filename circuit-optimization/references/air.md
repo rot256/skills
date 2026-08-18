@@ -360,7 +360,7 @@ comparison in that machine.
 > because the "negative" case puts $y-x-1$ in $[p - 2^{b}, p-1]$, which must stay disjoint from $[0, 2^{b})$ --
 > a bound worth asserting in source next to the gadget.
 > `out` must be asserted boolean **unconditionally**, or a non-boolean `out` shifts the window.
-> And the gadget *assumes* its inputs are already range-checked -- see VIII.22 for the [High] that cost.
+> And the gadget *assumes* its inputs are already range-checked -- see X.4 for what that cost.
 
 ## II.6 The prefix-sum "first differing limb" family
 
@@ -1891,7 +1891,7 @@ Universal
 
 Every row of that table is the same move: **stop materialising a value that something else already pins.**
 
-## IX.2 Four AIRs that are worth reading as examples of good
+## IX.2 Four encodings worth studying as examples of good
 
 Universal
 
