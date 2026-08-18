@@ -1,4 +1,4 @@
-# SMT (cvc5 / SMT-LIB) for constraint golfing
+# SMT (cvc5 / SMT-LIB) for Constraint Golfing
 
 `cvc5` does two jobs: **verify** a candidate encoding and **prove impossibility**.
 It speaks the SMT-LIB finite-field theory `QF_FF` directly, so you reason in the *actual* field `F_p` -- no "over the reals plus a unit side condition" detour.
@@ -6,7 +6,7 @@ Run it on the file (`cvc5 scripts/verify.smt2`); write SMT-LIB by hand or genera
 
 `scripts/verify.smt2` and `scripts/impossible.smt2` are worked examples; this file explains the SMT-LIB so you can adapt them.
 
-## When SMT is the right tool
+## When SMT Is the Right Tool
 
 | Goal | SMT verdict | Reliable? |
 |------|-------------|-----------|
@@ -18,7 +18,7 @@ Run it on the file (`cvc5 scripts/verify.smt2`); write SMT-LIB by hand or genera
 Rule of thumb: **cvc5 for the `unsat` direction (exact per-field proofs), Sage for the `sat` direction (search + prime-independent certificates).**
 `QF_FF` can find models too, but Sage's `QQ` search gives small constants valid across all large fields, which is usually what you want.
 
-## The two guarantees: pick what you need
+## The Two Guarantees: Pick What You Need
 
 - **`QF_FF` over a specific `p`** -- an exact theorem about *that* field.
   No side conditions: cvc5 reasons in `F_p`, so a multiplier that is a unit there just *is* a unit.
@@ -28,7 +28,7 @@ Rule of thumb: **cvc5 for the `unsat` direction (exact per-field proofs), Sage f
 
 A `QF_FF` query at one large prime is a strong sanity check, **not** an all-fields statement; for that, use the `QQ` route.
 
-## Modeling the field in QF_FF
+## Modeling the Field in QF_FF
 
 ```smt2
 (set-logic QF_FF)
@@ -42,7 +42,7 @@ A `QF_FF` query at one large prime is a strong sanity check, **not** an all-fiel
 - A constraint row is `(= (... ) (as ff0 F))` -- keep it in `= 0` form to mirror `assertZero` rows and avoid sign mistakes.
 - Disequations (`(not (= R (as ff0 F)))`) model "R is a unit on this point" directly.
 
-## Verify a candidate row forces o = f
+## Verify a Candidate Row Forces O = F
 
 Check the negation is unsatisfiable, then confirm the premise is non-vacuous (else the `unsat` is empty).
 Use `(push)/(pop)` for the two queries in one file; enable incrementally so plain `cvc5 file.smt2` works:
@@ -74,7 +74,7 @@ Useful arithmetic forms of boolean targets (3 bits):
 - parity / XOR3: `a+b+c -2(ab+bc+ca) +4abc`
 - majority: `ab+bc+ca -2abc`
 
-## Prove a shape is impossible
+## Prove a Shape Is Impossible
 
 For `(o + A)*R = O` with `A,R,O` affine and `R` a unit: the **coefficients** are the field unknowns, the `2^n` cube points are constants with `o = f(point)` plugged in.
 Assert the per-point equation and `R(point) != 0`, then `(check-sat)`.
@@ -88,7 +88,7 @@ Instructive: for Maj a symmetric encoding *does* exist over a field (`(o - s/4)(
 Scope the claim to the coefficient ring: "no symmetric *integer* encoding", not "no symmetric encoding".
 This is the kind of overclaim SMT catches.
 
-## Synthesis (use sparingly)
+## Synthesis (Use Sparingly)
 
 `QF_FF` *can* return a model of the synthesis query (drop `o`, make the coefficients unknowns, ask `(check-sat)` + `(get-value (...))`).
 But the model is whatever the solver lands on -- often ugly, field-specific constants.

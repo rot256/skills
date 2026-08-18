@@ -1,4 +1,4 @@
-# Surveyed corpus
+# Surveyed Corpus
 
 The references state laws and prices without naming the systems they were measured in, so that the corpus can grow
 without the documents turning into a survey. This file is the bookkeeping that makes that possible: **what has already
@@ -6,7 +6,7 @@ been read**, so a future pass can skip it or deliberately re-read it.
 
 Nothing here belongs in `references/`. Do not cite it from a technique.
 
-## Read in full
+## Read in Full
 
 | system | what was mined from it |
 |---|---|
@@ -27,12 +27,12 @@ Nothing here belongs in `references/`. Do not cite it from a technique.
 | Plonky2 | selector groups, routed vs advice wires, gate packing, degree self-minimisation, circuit-wide maxima |
 | Barretenberg | selector multiplexing and bitpatterns, delta-range gate, memory/ROM relations, bigfield lazy-reduction bounds, lookup-table design, co-processor deferral |
 
-## Read in part
+## Read in Part
 
 Nexus, Ligetron, zkEVM circuits, Risc0 recursion, Lasso/Shout papers, HyperPlonk, Sangria, ProtoGalaxy, Nova, ethSTARK,
 LogUp, Plookup.
 
-## Not yet read
+## Not yet Read
 
 Anything not listed above. When you add a system, add a row here and fold what it teaches into the existing sections --
 **a new system should mostly produce new *conditions* on existing laws, not new sections.** If it produces a genuinely

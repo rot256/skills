@@ -1,4 +1,4 @@
-# SageMath (Groebner basis) for constraint golfing
+# SageMath (Groebner Basis) for Constraint Golfing
 
 Sage covers the algebra that SMT does not: **proving an output is uniquely determined**, **extracting cofactors**, **CRT/RNS** bound arithmetic, and **computing the constants a circuit hard-codes** (curve/field parameters, FFT roots of unity, round constants).
 `scripts/cofactors.sage` is the tested entry point; this file explains the methods.
@@ -8,7 +8,7 @@ Startup is a few seconds.
 Work over `QQ` for search and cofactor extraction: the constants come out small and prime-independent -- integers, or small-denominator fractions -- and lift to any field whose characteristic avoids those small denominators and the multiplier's cube-values (i.e. all sufficiently large fields).
 Use `GF(p)` only when a specific prime genuinely matters.
 
-## Mental model
+## Mental Model
 
 R1CS constraints generate a polynomial ideal `I` in `F[x..., o]`.
 On the boolean cube we also have the relations `x^2-x = 0`, generating a boolean ideal `B`.
@@ -19,7 +19,7 @@ Two key queries:
   Check by reducing modulo a Groebner basis of `B`; residue `0` => proven.
 - **Certificate (cofactors):** express that membership as `(o-f)*R - constraint = sum_i g_i*(x_i^2 - x_i)`.
 
-## Prove a constraint determines the output, and get the cofactors
+## Prove a Constraint Determines the Output, and Get the Cofactors
 
 ```python
 R.<o,a,b,c> = PolynomialRing(QQ, order='lex')
@@ -41,14 +41,14 @@ For XOR3 the same script yields `[-4bc+2b+2c-3, -4ac+2a+2c-3, 16ab-8a-8b+32]`.
 Sign/ordering note: `lift` returns *a* valid cofactor tuple; many exist (the ideal is not a free module).
 The relation is just `constraint + sum_i g_i*(x_i^2 - x_i) = (o-f)*R`.
 
-## Prove no smaller / symmetric encoding exists
+## Prove No Smaller / Symmetric Encoding Exists
 
 Set up the coefficients as symbolic unknowns and the 2^n point conditions as polynomial equations,
 then ask whether the system has a solution (e.g. via a Groebner basis of the elimination ideal, or by `solve`).
 Adding symmetry relations (e.g. `a`- and `b`-coefficients equal) and getting an *empty* variety proves "no symmetric single-constraint `maj` encoding exists".
 For pure existence/impossibility over a *specific* field, cvc5 / `QF_FF` (`scripts/impossible.smt2`) is often easier; use Sage when you want the algebraic certificate or a statement that holds across **all** large fields at once.
 
-## CRT / RNS bound checking (foreign-field arithmetic)
+## CRT / RNS Bound Checking (Foreign-Field Arithmetic)
 
 When proving `a*b = r (mod p)` non-natively via `a*b = q*p + r` checked mod `n` (native) and mod `2^t` (limbs), the soundness hinges on a bound.
 Sage is the place to *prove* it before you trust the circuit:
@@ -70,7 +70,7 @@ assert Dmax < n * 2^t           # CRT lift of D is unambiguous  =>  equality hol
 Also use Sage to pick limb sizes, count required range checks, and sanity-check carry propagation symbolically.
 RNS: `CRT_list([r1,r2,...],[m1,m2,...])` reconstructs and `crt` bounds help reason about when you must leave RNS (comparisons/range checks are the expensive exits).
 
-## Computing constants (elliptic curves, fields, gadget parameters)
+## Computing Constants (Elliptic Curves, Fields, Gadget Parameters)
 
 Sage is also the right place to *compute the constants a circuit hard-codes* -- curve parameters, FFT roots of unity, Montgomery factors, hash round constants, GLV scalars.
 Getting these right out-of-circuit (and checking them) prevents a whole class of "wrong constant" bugs.
@@ -107,7 +107,7 @@ Either supply a known generator, factor once and cache (`(r-1).factor()` with hi
 or compute on a small friendly field (e.g. Goldilocks `2^64-2^32+1`, 2-adicity 32) when you only need to validate the *method*.
 `valuation`, modular arithmetic, and `EllipticCurve(...).order()` for standard curves are fast.
 
-## Other handy Sage tools
+## Other Handy Sage Tools
 
 - `resultant` / `elimination_ideal` -- eliminate an intermediate witness to see the direct input->output relation a gadget enforces.
 - `R.<...> = PolynomialRing(GF(p))` then `I.variety()` -- enumerate all solutions of a small constraint system over a (small) field; good for exhaustive soundness checks.

@@ -1,18 +1,18 @@
 ---
 name: circuit-optimization
-description: Optimizing arithmetic circuits / constraint systems (R1CS, PLONKish, AIR) for zero-knowledge proofs -- minimizing multiplication constraints, rows, witnesses, trace cells, interactions, and gate degree. Use when reducing constraint/witness/column counts, designing or golfing R1CS/PLONK/AIR gadgets (boolean ops, adders, range checks, hashes like SHA-256/Keccak/Poseidon), designing AIR chips, buses, lookups or memory arguments, deciding whether to add a custom gate / sub-AIR / precompile and pricing its selector, budgeting constraint degree, doing foreign-field/non-native or CRT/RNS arithmetic, choosing lookups vs arithmetic, or using SMT (cvc5) and SageMath (Groebner basis) to synthesize, verify, and certify constraint encodings.
+description: Optimizing arithmetic circuits and constraint systems (R1CS, PLONKish, AIR) for zero-knowledge proofs.
 ---
 
-# Circuit optimization
+# Circuit Optimization
 
-Reduce the cost of an arithmetic circuit / constraint system without breaking soundness.
+Reduce the cost of an arithmetic circuit / constraint system.
 A toolbox and a method, not a fixed playbook: `references/techniques.md` primes known moves but is deliberately incomplete -- the largest wins come from composing tricks or from structure specific to your circuit.
 Arithmetization-specific moves live in their own reference: `references/r1cs.md`, `references/air.md` and `references/plonkish.md`.
 Two resources are priced separately because they are *global* rather than local: constraint degree (`references/degree.md`),
 which is almost always under-spent, and a bespoke relation added to the system itself -- a custom gate, a sub-AIR, a
 precompile -- which is charged once against every circuit whether it is used or not (`references/gates.md`).
 
-## Know what is free
+## Know What Is Free
 
 Every optimization moves work into what the proof system charges nothing for and minimizes what it charges for.
 
@@ -31,7 +31,7 @@ The two most common ways to waste a week: optimizing width while padding eats th
    Ask the user which resource is scarce, or take it from its formal definition -- the scoring function, the cost model in the proof system's documentation, or the counter the toolchain actually reports.
    Witnesses, constraints, columns, interactions and degree are not interchangeable, and a metric that charges only rows reorders every trade-off in the references, so a change that looks like a win under a guessed metric can measure as a loss.
 2. Measure the scarce resource; find the dominating hotspot.
-   Trace-based systems ship static cost oracles -- use them (`air.md` I.6).
+   Trace-based systems ship static cost oracles -- use them (`air.md` "Measure with the Tool the System Already Ships").
 3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`, `references/air.md`, `references/plonkish.md`, `references/degree.md`),
    then look for structure the catalogue misses -- usually the bigger win.
    If the candidate is a new relation for the *system* rather than an encoding inside one circuit, price it with `references/gates.md` first: it will usually say no.
@@ -39,13 +39,13 @@ The two most common ways to waste a week: optimizing width while padding eats th
    Small boolean gadgets: search exactly with `scripts/synthesize.sage` (fix the multiplier `R`, solve a linear system over `QQ`).
 5. Verify soundness before trusting it: `scripts/verify.smt2` (cvc5 `QF_FF`) proves the constraint forces the output over a real `F_p`;
    `scripts/impossible.smt2` proves a shape impossible when the search is empty.
-   For a trace-based system, also evaluate every constraint on every row of a concrete trace and mutation-test it (`air.md` XI.2).
+   For a trace-based system, also evaluate every constraint on every row of a concrete trace and mutation-test it (`air.md` "The Three Checks That Actually Catch Things").
 6. Certify if needed: `scripts/cofactors.sage` extracts the cofactors proving the output is uniquely determined.
 7. Re-measure; track the bounds each trick relies on (field size, carry width, characteristic, trace length).
 
 ## Tools
 
-Two tools on PATH, no Python glue: **Sage** for algebra (search + certificates), **cvc5** for SMT (`QF_FF`, run directly on `.smt2`).
+**Sage** for algebra (search and certificates), **cvc5** for SMT over finite fields (`QF_FF`, run directly on `.smt2`).
 
 ```bash
 sage scripts/synthesize.sage     # single-constraint encoding of a 3-bit function (exact over QQ)
@@ -73,3 +73,8 @@ Use both. See `references/smt.md`, `references/sage.md`.
   Self-checking.
 - `CORPUS.md` -- bookkeeping only: which systems have already been read. The references deliberately do not name them, so
   this is the record that lets the corpus grow without duplicated effort. Never cite it from a technique.
+
+## Useful Resources
+
+- https://zk.golf/llms.txt : circuit-golfing platform scored by witnesses + constraints -- challenge list and REST API.
+  The measured prices in `references/r1cs.md` were taken under that cost model.
