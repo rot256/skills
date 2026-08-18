@@ -711,9 +711,9 @@ Self::IsTransition | Self::Constant(_) => 0,
 The reason: boundary selectors are $Z_H(x)/(x-1)$, degree $N-1$,
 while the transition selector is $x - g^{-1}$ and the quotient bound $d(N-1)+1$ has the $+1$ reserved for it exactly.
 
-So `when_transition()` is **degree-free** and there is no excuse to omit it (VIII.1), while `when_first_row()` /
+So `when_transition()` is **degree-free** and there is no excuse to omit it (X.1), while `when_first_row()` /
 `when_last_row()` cost $+1$ -- and *that asymmetry is precisely why the expensive boundary checks are the ones that get
-skipped*, which is where the cross-shard bugs live (VIII.30).
+skipped*, which is where the cross-shard bugs live (X.6).
 
 > **Where it stops.** This is a uni-STARK fact. Under multilinear/zerocheck provers the arithmetic differs
 > (`transition = 1 - last`).
@@ -1135,7 +1135,7 @@ initial-state send and the final-state receive** -- and then gets two more selec
 the same column: $d^2$ = "row is live", $d(d+1)$ = "$d=1$".
 
 > **Where it stops.** Three conditions, each of which has been a real finding.
-> (i) The count must be **provably zero on padding rows** or the padding row emits a real request (VIII.6).
+> (i) The count must be **provably zero on padding rows** or the padding row emits a real request (X.2).
 > (ii) It must be **provably boolean** where the argument assumes it -- "Caller must constrain that `enabled` is boolean"
 > -- a non-boolean count silently multiplies the request; `is_real - imm_c` needs
 > `when_not(is_real).assert_zero(imm_c)` or a padding row emits a **negative** multiplicity.
@@ -1646,7 +1646,9 @@ The saving that falls out: reads need no `prev_data` columns.
 `MemoryReadAuxCols { base }` vs `MemoryWriteAuxCols { base, prev_data: [T; N] }` -- with $N=4$ and `AUX_LEN=2`,
 **3 columns versus 7**.
 
-The measured cost sheet, worth memorizing as calibration:
+The measured cost sheet, worth memorizing as calibration. These rows come from **different machines**, so read them as
+points in a design space, not as one system's menu -- the spread between 3 and 9 columns for "one access" is the whole
+lesson:
 
 | | columns/access | interactions | lookups |
 |---|---|---|---|
@@ -1683,7 +1685,7 @@ adding in a 'shadow' read"* -- **9 columns saved on every ALU row**.
 $\text{max\_bits} \le 29$ on BabyBear, which means the **whole trace's timestamp span** must fit in 29 bits.
 And per-access checks are worthless without a *global* bound: range-check the segment's final timestamp in two
 limbs for 1 column and 2 lookups, without which a prover sets the initial timestamp *above*
-the final one and reorders memory freely ([High], VIII.30).
+the final one and reorders memory freely ([High], X.6).
 
 > **Where it stops.** Slot offsets need $\#\text{slots} \le \text{CLK\_INC}$; one implementation sets `CLK_INC = 8` with 5
 > slots and *proves* the lattice with one lookup ($(clk-1)/8 < 2^{13}$ certifies both $clk \equiv 1 \bmod 8$ and
