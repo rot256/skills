@@ -1,10 +1,8 @@
 #!/usr/bin/env sage
-"""Exact GF(2) AND count and XAG construction for one quadratic function.
+"""Polar-rank XAG construction for one quadratic GF(2) function.
 
-For the polar (alternating) matrix B_f of a degree-at-most-two Boolean
-function, multiplicative complexity is rank(B_f)/2.  The construction below
-performs a symplectic elimination and emits exactly that many XAG gates, then
-exhaustively verifies the resulting truth table.
+The construction performs symplectic elimination on the polar matrix B_f,
+emits rank(B_f)/2 XAG gates, and verifies the resulting truth table.
 
 Truth-table index ``i`` uses ``x[j] = (i >> j) & 1``.
 """
@@ -84,7 +82,7 @@ def polar_matrix(function, num_inputs=None):
 
 
 def quadratic_and_count(function, num_inputs=None):
-    """Return the exact multiplicative complexity rank(B_f)/2."""
+    """Return the rank(B_f)/2 factor count used by the construction."""
     rank = int(polar_matrix(function, num_inputs).rank())
     if rank % 2:
         raise AssertionError("an alternating matrix over GF(2) has even rank")
@@ -118,7 +116,7 @@ def _symplectic_factors(rows):
 
 
 def synthesize_quadratic(function, num_inputs=None):
-    """Emit and exhaustively verify a minimum-AND XAG for ``function``."""
+    """Emit and exhaustively verify a polar-factorized XAG."""
     n, table = _truth_table(function, num_inputs)
     _, coefficients = anf_coefficients(table, n)
     polar = polar_matrix(table, n)
@@ -150,7 +148,6 @@ def synthesize_quadratic(function, num_inputs=None):
         metadata={
             "construction": "quadratic-polar-rank",
             "polar_rank": int(polar.rank()),
-            "minimum_and_count_proved": True,
             "verified_exhaustively": True,
         },
     )

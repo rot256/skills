@@ -24,7 +24,7 @@ There is no loophole, only a trap.
 
 ### Scope
 
-Everything here is the large prime field ($\mathbb{F}_r$, $r \approx 2^{254}$), and every price, identity and floor assumes it.
+Everything here is the large prime field ($\mathbb{F}_r$, $r \approx 2^{254}$), and every price and identity assumes it.
 The boolean cost model is `r1cs-gf2.md`, where most of what follows is void.
 
 # What One Row Can Do
@@ -113,6 +113,9 @@ But **most canonicality and comparison logic only ever needs the implication, ne
 
 Probably the most portable single item here: audit every zero-test in a design and ask whether the converse direction is ever used.
 
+For already-boolean $x_1,\ldots,x_n$, compute an $n$-input AND by applying the ordinary two-row zero test to the affine form $\sum_i x_i-n$; use $\sum_i x_i$ for OR.
+This keeps wide conjunctions and disjunctions at two rows without bitwise product trees.
+
 ## Product Chain Disjunction
 
 To assert "at least one of $l_0,\dots,l_{k-1}$ is zero", do not witness $k$ selector bits, gate a row on each, and add a sum-to-one row.
@@ -133,7 +136,6 @@ Over $\mathbb{F}_p$, Chevalley-Warning forces every form in $\geq 3$ variables t
 The move that makes it tight: **let the last row's $C$-slot absorb the running sum**, which is affine and therefore free: $l_{2t-1}l_{2t} = z - u_1 - \cdots - u_{t-1}$.
 
 Cost $\lceil r/2\rceil$ rows $+\ \lceil r/2\rceil - 1$ witnesses.
-Optimality is matching: rank is subadditive and each row contributes rank $\leq 2$.
 A sum of eight squares is 7, against 15 naive.
 
 Over the BN254 scalar prime, one row each: $x^2+y^2$, $x^2-y^2$, $x^2+2y^2$, $x^2+3y^2$, $x^2+6y^2$, $x^2+13y^2$.
@@ -160,13 +162,12 @@ Optimum at $k \approx \sqrt{N}$.
 | 4096 | 271 | 8189 |
 
 This applies wherever a table, an S-box, a piecewise function, or "membership in an arbitrary set of $N$ elements" appears.
-A matching lower bound survives nondeterminism -- parameter counting gives $s \gtrsim 0.58\sqrt{N}$ -- so $2\sqrt{N}$ is within $\sim 3.5\times$ of optimal and **you should stop there**.
 
 ## Where a Gadget Runs Twice
 
 ### Paired Gadget Packing
 
-One row per output bit looks like the floor.
+One row per output bit is the unpaired baseline.
 It is not, whenever you need the same function *twice*.
 A 32-bit value occupies 32 of the field's 254 bits, so pack two instances into one witness at a separating base $\lambda = 2^{40}$, $z_j = f(A)_j + \lambda f(B)_j$, and pin both with a single rank-1 row: $(-3e + 2f + 4g + 2\lambda u)(e - 2f + 4g - 2\lambda u) + (3e + (8\lambda+4)f - 8g + 4\lambda^2 u - 8z) = 0$.
 
@@ -226,9 +227,9 @@ It does not apply to values whose bounds are **implied**.
 Convolution cells of already-bounded operands cost zero -- which is why a $2k-1$-point multiply witnesses 15 cells with no range check at all.
 So the invariant is: $cost \approx 2\times(bits of nondeterministic advice not polynomial in prior advice)$.
 
-This reframing is not cosmetic; it relocates most of the supposed floor.
+This reframing changes which values need rows.
 In one scalar-multiplication step the genuine advice is only the two division outputs.
-Three further 256-bit values are *polynomial* in that advice and are therefore materialised by choice, not necessity -- 94,302 cost of a 160,146 "floor" turned out to be a representation decision.
+Three further 256-bit values are *polynomial* in that advice and are therefore materialised by choice, not necessity -- 94,302 of 160,146 cost turned out to be a representation decision.
 
 It also answers a question worth posing directly: is a value known to be a sum of products of bounded things cheaper to range-check?
 It is not merely cheaper.
@@ -508,10 +509,6 @@ With $M_0 = \sum F = 1$ and $M_1 = \sum k F_k = L$, this forces $M_d = \binom{L}
 At $n = 256$ that is 254 rank-1 rows -- and **the two normalisation equations cost zero**, because only 254 flags are witnessed and the last two are *defined* to make them hold identically.
 The flags are then reusable as free affine selectors everywhere downstream.
 
-> **Don't confuse this with the other one-hot bound.**
-> The proved $2^w - w - 1$ lower bound is for building a one-hot from $w$ *boolean bits*.
-> This is the different -- and cheaper -- problem of pinning a one-hot to a *field element*.
-
 ## Constant Tables and Sub-Linear One-Hots
 
 **Part A -- the payload costs nothing.** If the table entries are compile-time constants and $e$ is a one-hot vector of variables, then $out = \sum_i e_i c_i$ is affine: $\langle 0,0\rangle$ per output column, *independent of payload width*.
@@ -759,76 +756,6 @@ Measured: $c_F = 2^{32} + 977$ is a fourth power mod the BN254 scalar field, so 
 
 **Before pricing a limb multiply, ask what the consumer actually reads.** If it reads a residue, the fold polynomial is a free design choice and you should choose it to split.
 Note the counterweight: splitting *most* is not the same as being best, because coefficient size is priced too -- at one base there were two admissible degree-8 moduli and the smaller-coefficient one won despite splitting less.
-
-# Knowing When to Stop
-
-Proving a gadget is at its floor is worth as much as another optimization, because it redirects every future hour.
-These are the only three tools that work, and each has a sharp edge.
-
-## The Krull Height Bound
-
-Each row is one hypersurface, so by Krull's height theorem every component of the solution variety has codimension $\leq k$.
-If soundness demands the witness be determined by the inputs, then $k \geq m - \dim V$, and $cost \geq 2m - \dim V$.
-
-> **Corrected, and the correction matters.**
-> The argument above assumes every witness is uniquely pinned.
-> Soundness only requires the *output* to be pinned, so intermediates may have positive-dimensional fibres.
-> With $d$ the generic fibre dimension the honest bound is $k \geq m - d, cost \geq 2m - d$ and since $0 \leq d \leq m$ this bottoms out at $cost \geq m$, where $m$ is a *design parameter*.
-> **As a floor on a relation, Krull says nothing.**
-> Treat it as a per-circuit bookkeeping identity, never as a floor.
-
-**The strategic consequence survives, for a better reason.** A free dimension is worth 1 to keep (drop the row, keep the witness) but **2 to remove** -- solve an affine functional for one wire and substitute, which is free, and shrinking a fibre cannot break output-constancy so soundness is automatic.
-So $d > 0$ is not an opportunity: **it is a defect report naming $d$ deletable witnesses.** Verified on 33,288 random systems with zero counterexamples.
-
-The dichotomy is exhaustive: either the freedom is *unused*, and it normalises away; or it is *used*, and the fibre was not positive-dimensional in that direction.
-There is no third case.
-The deepest reason is Lang-Weil: a positive-dimensional fibre over $\mathbb{F}_r$ is automatically *nonempty*, so it carries no soundness content at all -- the rows you would "save" were never doing soundness work.
-**Dimension is soundness-inert over a finite field.**
-
-So: you still cannot shave rows by cleverness in the constraint layer, only by shaving witnesses.
-Conversely $k > m - \dim V$ *proves* redundancy exists.
-
-**The auditor this yields.** $d$ is the corank of the Jacobian $\partial(rows)/\partial w$ at a generic honest witness -- a mechanical check naming exactly how many witnesses are free to delete.
-The compile-time companion is specific to R1CS: the degree-2 part of every row is $(a_w\cdot w)(b_w\cdot w)$ with $a_w, b_w$ *compile-time constants*, so every fibre's asymptotic cone lies in one fixed variety known before running anything.
-
-## The Bezout Degree Bound
-
-Each row at most doubles degree, so $k \geq \log_2 \deg(graph of the certified relation)$.
-Sanity checks: $y = x^5$ needs $k \geq 3$, so a 3-row S-box is optimal and no nondeterministic trick shaves it; $y = 1/x$ has graph $xy = 1$ of degree 2, so $k \geq 1$ -- correctly *not* penalising the witnessed-inverse trick.
-
-> **The trap.**
-> $MC \geq \deg - 1$ **does not hold over $\mathbb{F}_p$.**
-> One row doubles multilinear degree, so you only get $rows \geq \lceil \log_2 \deg\rceil$.
-> Do not import the GF(2) degree bound ("The Multi-Operand Degree Bound") to convince yourself an $\mathbb{F}_p$ gadget is optimal -- the zero-test trick, a degree-$n$ function in two rows, is exactly the loophole.
-
-A second trap, learned expensively: the Bezout row floor is valid only when the accepted set is finite *in the ambient space you are arguing in*.
-When a 256-bit value's acceptor lives in $\mathbb{F}_r^8$ rather than $\mathbb{F}_r^1$, a positive-dimensional component escapes Bezout entirely and the honest floor drops by $4\times$.
-Check the ambient dimension before quoting a floor.
-
-## The Parameter-Counting Bound
-
-A $k$-row, $m$-wire system is described by $3k(m+1)$ field elements, so with $s = k+m$, $s \geq 2\sqrt{\frac{\log_p |F|}{3}} - 1$.
-
-This gives $s \geq 295$ for an arbitrary 16-bit table -- **a rigorous proof that lookup-free table emulation is expensive**, and the reason the $\sqrt N$ law of "Baby-Step Giant-Step" is the right tool rather than a workaround.
-
-> **Which of these survive nondeterminism.**
-> Only "The Krull Height Bound" was cracked, and it was the weakest.
-> The Bezout bound *survives projection* -- linear projection does not raise degree, so $\deg \overline{\pi(V)} \leq \deg V \leq 2^k$ and the bound holds for arbitrary fibres.
-> The counting bound is manifestly nondeterminism-proof, since it counts circuits rather than varieties.
-> **The money is in degree, not dimension.**
-
-> **A ceiling on the whole hypersurface-counting programme.**
-> Storch (1972) and Eisenbud-Evans (1973): every algebraic set in $\mathbb{A}^N$ is cut out set-theoretically by $N$ equations.
-> So *any* argument that merely counts hypersurfaces can never prove a relation-level floor above $N = inputs + outputs$.
-> Combined with arithmetical rank being degree-blind, that programme was capped before it began -- which is why the rank-1, degree-2 *shape* is the only thing left to exploit.
-
-> **Honest limit on all three tools.**
-> They are geometric: they constrain the variety over the algebraic closure, while soundness concerns only the $\mathbb{F}_p$-points.
-> By Lang-Weil they are effectively unconditional for gadgets under about 63 rows, and genuinely open above that.
-> And there is no theory beyond them -- our cost measure is *nondeterministic nonscalar complexity*,
-> for which no superlinear lower bound is known on any explicit function,
-> and the commutative-algebra invariant that would settle it (arithmetical rank) is provably degree-blind.
-> Treat every "proved optimal" as "not beaten yet".
 
 # Traps
 

@@ -36,7 +36,7 @@ Everything else is witness.
 **Everything up to the calibration chapter is the row-based AIR model**: a trace of columns, transition and boundary constraints over a two-row window, no copy constraints, cross-row and cross-chip wiring done by lookups/permutation buses.
 That is the trace-based family: general-purpose zkVMs, special-purpose STARK machines, and AIR compilers.
 **The PLONKish model is `plonkish.md`** -- rotations, copy constraints, custom gates, wire budgets, selector combining -- a genuinely different cost model, kept in its own reference rather than annotated in place, because almost nothing about *paying for a copy* or *paying for a selector* has an analogue here.
-Calibration, traps, and knowing when to stop apply to both; where a trick crosses over, the tag under its heading says so.
+Calibration and traps apply to both; where a trick crosses over, the tag under its heading says so.
 **Adding a whole sub-AIR to the machine is `gates.md`**, which prices a bespoke relation the way this file prices a column.
 
 # The Cost Model, and How to Read It
@@ -947,7 +947,7 @@ Related passes worth applying by hand:
 
 Three honest counterexamples.
 
-- **Fixed cost per shard.** A `BYTE_NUM_ROWS = 2^16` and `RANGE_NUM_ROWS = 2^17` are paid **in every shard**, even one that does a single byte lookup: $2^{16}\cdot13 + 2^{17}\cdot3 = \mathbf{1{,}245{,}184}$ cells of floor.
+- **Fixed cost per shard.** A `BYTE_NUM_ROWS = 2^16` and `RANGE_NUM_ROWS = 2^17` are paid **in every shard**, even one that does a single byte lookup: $2^{16}\cdot13 + 2^{17}\cdot3 = \mathbf{1{,}245{,}184}$ fixed cells.
 - **Table amortization.** One system's own note on its 16-bit XOR gate: *"We could halve the number of rows of the 64-bit XOR gadget by having lookups for 8 bits at a time ...
   Rough computations show that if we run 8 or more Keccaks in one circuit we should use the 8-bit XOR table."* The table costs $2^{2k}$ rows and only amortizes over enough instances.
 - **Do the arithmetic natively and lookup only the overflow.** One sumcheck zkVM does *not* look up addition: it adds in the scalar field and applies a range-check lookup purely to truncate the 65th bit -- one constraint plus one lookup against a $2^{128}$-entry two-operand table.
@@ -1576,7 +1576,7 @@ Beyond "Borrow-Bit Comparison"'s $\le 29$-bit cliff:
 The efficient fix is worth copying: compare the top limb against the modulus' top limb and force the rest to zero when equal, exploiting $p-1 \equiv 0 \bmod 2^{16}$ -- **one column, one lookup**.
 
 **Deferred normalization that outgrows two different bounds at once.** A deferred-normalization helper (`FieldVariable::save_if_overflow`) saved when the carry would exceed the *range checker's* capacity, but with a large `range_checker_bits` the carries could still overflow the *proving field*.
-And the reverse cliff is real: making `range_checker_bits` too small means products can never be range-checked at all -- for $\mathbb F_{p^{12}}$ multiplication the lower bound rose from 17 to 21, which would have grown the range-checker AIR from $2^{18}$ to $2^{22}$ rows.
+And the reverse cliff is real: making `range_checker_bits` too small means products can never be range-checked at all -- for $\mathbb F_{p^{12}}$ multiplication the required setting rose from 17 to 21, which would have grown the range-checker AIR from $2^{18}$ to $2^{22}$ rows.
 **You are squeezed between two bounds, and the slack is where the optimization lives.**
 
 ## Degree Reduction and Selector Traps
@@ -1603,19 +1603,7 @@ Note from "The Boundary-Selector Asymmetry" that first/last-row selectors are th
 **A field that never enters the hash it is supposed to be bound by.** One release added `initial_global_cumulative_sum` to the verifying key without adding it to the vk hash or the challenger observation, so two vks collided [High].
 **Adding a vk/public-values field is a three-site change** -- struct, hash, observe -- and the compiler checks none of them.
 
-# Knowing When to Stop
-
-## Irreducible Cost Floors
-
-Unlike R1CS (`r1cs-fp.md` "Knowing When to Stop"), there is no clean geometric floor on trace area -- the trace is a *layout*, not a variety.
-What you do have:
-
-- **The interaction floor.** A value that must cross a chip boundary costs at least one message of its own width on both sides.
-  Splitting is bounded below by that ("Chip Specialization").
-- **The degree floor.** A relation of algebraic degree $d$ needs $\lceil\log_2 d\rceil$ committed intermediate steps if the budget is 2, and exactly $\lceil d/(\text{budget}-1)\rceil$ splits in general ("Degree Reduction with an Intermediate Column").
-  $y = x^5$ under a degree-3 budget is two columns, and no trick removes them.
-- **The table floor.** A lookup table costs $2^{\text{key bits}}$ rows *in every shard that touches it*, and that number is in the code, not in your estimate ("The Limits of Lookup Tables").
-- **The padding floor.** Under power-of-two padding, a chip used $n$ times costs $2^{\lceil\log_2 n\rceil}$ rows, and no column reduction changes that ("Per-Chip vs. Stacked Padding").
+# Verification and Cost Reporting
 
 ## Three Checks Worth Demanding
 
@@ -1625,10 +1613,6 @@ What you do have:
 - **Track the bus, not just the sum.** Demand a relation tracker that dumps every $(\text{relation}, \text{tuple}, \text{multiplicity})$ so you find *which* tuple is unbalanced rather than only that the sum is nonzero.
 - **Make forgetting impossible.** Demand a logup accumulator that panics when it was never finalized and when it is finalized twice; a degree bound asserted at the end of every optimization pipeline; an assertion that all PC lookups vanished.
   A constraint you *cannot* forget is worth more than one you remember today.
-
-> **The honest limit.** Row-by-row constraint checking proves your valid traces pass and your specific corruptions fail.
-> It does not prove soundness of an under-constrained layout, and no tool in this manual does.
-> Treat every "optimal" as "not beaten yet", and every "sound" as "not broken yet".
 
 ## Re-Deriving the Reported Cost
 

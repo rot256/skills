@@ -302,9 +302,7 @@ Below that, the narrow table wins outright.
 
 The knob is worth exposing: a table parameterized by `TABLE_BITS` with base $B$ has $B^{\text{bits}}$ rows and $\lceil 64/\text{bits}\rceil$ lookups per 64-bit lane, and the right value is workload-dependent.
 
-> **Where it stops.** The table sets a **floor** on circuit height that no amortization removes. A chip requiring a
-> minimum of $2^{16}$ rows makes a circuit that would otherwise be $2^{12}$ sixteen times taller no matter how many
-> operations you do. **Check the floor before the crossover.**
+> **Price the fixed height first.** A chip requiring $2^{16}$ table rows makes a circuit that would otherwise use $2^{12}$ rows sixteen times taller before any operation is added.
 
 ## Log-Derivative Against Sorted Copy
 

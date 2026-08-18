@@ -7,12 +7,12 @@ Sage handles algebra and GF(2) synthesis, cvc5 handles SMT, and plain Python def
 |------|------|----------|
 | `synthesize.sage` | **find** a single rank-1 constraint `(o+A)*R=O` for a boolean function, by fixing `R` and solving an exact linear system over `QQ`; re-verifies every hit | `sage` |
 | `cofactors.sage` | **certify** (Groebner) the output is uniquely determined and extract the cofactors; reports the excluded characteristics | `sage` |
-| `exact_xag.sage` | exactly synthesize small multi-output GF(2) XAGs, minimizing AND count; full or CEGAR constraints, care masks, optional XOR tie-break | `sage` |
+| `exact_xag.sage` | search small multi-output GF(2) XAGs by increasing AND count; full or CEGAR constraints, care masks, optional XOR tie-break | `sage` |
 | `regular_reduce.sage` | reduce one Boolean output by its full translation-invariance subspace and minimal on-set affine hull; optionally synthesize and lift the reduced XAG | `sage` |
-| `quadratic_and_count.sage` | compute `rank(B_f)/2` for one quadratic Boolean function and emit a matching minimum-AND XAG | `sage` |
+| `quadratic_and_count.sage` | factor one quadratic Boolean function through `rank(B_f)/2` products and emit the XAG | `sage` |
 | `xag.py` | validate, evaluate, serialize, and measure the shared version-1 XAG JSON format | Python or Sage |
 | `paar_optimize.sage` | heuristically factor one or more Boolean ANFs into a shared XAG; optional seeded affine-input trials | `sage` |
-| `xag_rewrite.sage` | exactly rewrite bounded fanout-safe cuts of at most six leaves, prune dangling ANDs, and prove a whole-network miter | `sage` |
+| `xag_rewrite.sage` | rewrite bounded fanout-safe cuts of at most six leaves, prune dangling ANDs, and prove a whole-network miter | `sage` |
 | `verify.smt2` | **prove** a candidate row forces `o=f` and is non-vacuous, over a real `F_p` (`QF_FF`) | `cvc5` |
 | `impossible.smt2` | **prove** no single constraint of the shape `(o+A)*R=O` computes a target, over a real `F_p` (`QF_FF`) | `cvc5` |
 
@@ -46,14 +46,14 @@ They do not price prime-field R1CS, AIR/STARK, or PLONKish circuits.
 
 Exact synthesis accepts one or more truth tables and one care mask per output.
 Table index `i` means `x[j] = (i >> j) & 1`, and a zero care bit leaves only that output/point unspecified.
-The objective is minimum AND count; `--optimize-xor` adds an informational lexicographic tie-break and requires `--mode full`.
+Budgets are searched in increasing AND count; `--optimize-xor` adds an informational lexicographic tie-break and requires `--mode full`.
 
 ```bash
-# x0 AND x1: prove zero ANDs impossible, emit a one-AND version-1 XAG
+# x0 AND x1: scan through one AND and emit a version-1 XAG
 DOT_SAGE=/private/tmp/sage-xag sage scripts/exact_xag.sage \
   --num-inputs 2 --output 0001 --max-ands 1
 
-# The rank-four form x0*x1 + x2*x3 has exact AND count two
+# Factor x0*x1 + x2*x3 into the two products emitted by polar elimination
 DOT_SAGE=/private/tmp/sage-xag sage scripts/quadratic_and_count.sage \
   --table 0001000100011110
 ```
@@ -67,7 +67,7 @@ xag = synthesize(2, [[0, 0, 0, 1]], and_count=1)
 ```
 
 `outputs` and `care_masks` are lists of length-`2^n` bit sequences, while outputs may also be Sage `BooleanFunction` objects.
-Every result is exhaustively checked on cared points, and minimum search proves every smaller budget UNSAT.
+Every returned result is exhaustively checked on cared points.
 `mode="cegar"` starts with one assignment and adds counterexamples until the decoded graph verifies.
 
 The shared JSON schema is deliberately small:
@@ -98,7 +98,7 @@ Keep exact synthesis near six inputs and decompose or rewrite larger functions.
 `regular_reduce.sage` accepts exactly one fully specified output and emits a versioned JSON reduction report.
 It does not extend the paper's scalar results to multi-output functions.
 The autosymmetry pass enumerates the full subspace `V = {a : f(x) = f(x+a)}`, emits affine quotient forms and the quotient truth table, and verifies the lifted identity at every input.
-The D-reduction pass computes the unique minimal affine hull of a nonempty on-set, emits its canonical affine membership factors and projection truth table, reports the exact `max(codimension-1, 0)` membership cost, and verifies `f = chi_A * f_A` exhaustively.
+The D-reduction pass computes the affine hull of a nonempty on-set, emits a `max(codimension-1, 0)` product tree for its canonical affine membership factors, emits the projection truth table, and verifies `f = chi_A * f_A` exhaustively.
 Constant zero is reported separately because its empty on-set has no unique nonempty associated affine hull.
 
 ```bash
@@ -112,14 +112,14 @@ sage scripts/regular_reduce.sage --table 10000110 \
 
 The exact local target is the autosymmetry quotient of the affine-hull projection and is capped at six inputs.
 When synthesis succeeds, the report gives the constructive upper bound `codimension(A) + local AND count` and the actual lifted XAG count after constant folding.
-The local search is exact within its requested budget, but the complete D-reduction construction is an upper bound and is not claimed globally optimal.
+The local search scans its requested budget in increasing order, and the complete lifted XAG is compared by its measured AND count.
 
 ## Heuristic Synthesis and Bounded Rewriting
 
 `paar_optimize.sage` greedily factors frequent ANF variable pairs across all outputs and may try seeded invertible affine input transforms.
-It verifies complete truth tables and labels results as heuristic, not optimal.
+It verifies complete truth tables and labels results as heuristic.
 
-`xag_rewrite.sage` exactly resynthesizes bounded fanout-safe cuts, prunes dangling gates, and accepts only a strict whole-network cost improvement.
+`xag_rewrite.sage` resynthesizes bounded fanout-safe cuts, prunes dangling gates, and accepts only a strict whole-network cost improvement.
 The default tuple is `(and_count, and_depth)`, so XOR count is ignored.
 It checks local truth tables exhaustively and proves the whole-network miter with cvc5, falling back to enumeration only for small networks.
 

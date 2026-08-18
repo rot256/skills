@@ -206,7 +206,7 @@ def _affine_hull(table, num_inputs):
         "noncanonical_input_indices": free,
         "membership_factors": membership_factors,
         "membership_factor_semantics": "each factor is 1 on A; chi_A is their AND",
-        "membership_and_count_exact": max(len(free) - 1, 0),
+        "membership_tree_and_count": max(len(free) - 1, 0),
         "projection": {
             "num_inputs": len(basis),
             "input_affine_forms": projection_forms,
@@ -330,7 +330,6 @@ def _embed_local_xag(local_xag, original_num_inputs, input_forms,
         metadata={
             "generator": "regular_reduce.sage",
             "construction": "D-reduction followed by projection autosymmetry",
-            "optimality": "constructive upper bound; global optimality is not claimed",
             "verified_exhaustively": True,
         },
     )
@@ -347,7 +346,6 @@ def _add_exact_local(report, table, num_inputs, max_local_ands):
             metadata={
                 "generator": "regular_reduce.sage",
                 "construction": "constant zero",
-                "minimum_and_count_proved": True,
                 "verified_exhaustively": True,
             },
         )
@@ -356,7 +354,6 @@ def _add_exact_local(report, table, num_inputs, max_local_ands):
             "local_and_count": 0,
             "constructive_and_upper_bound": 0,
             "full_xag": full,
-            "full_construction_global_optimality": "minimum follows from constant output",
         }
         return
 
@@ -378,7 +375,7 @@ def _add_exact_local(report, table, num_inputs, max_local_ands):
     )
     if local_xag is None:
         d_report["local_exact_synthesis"] = {
-            "status": "unsat-within-budget",
+            "status": "no-solution-within-budget",
             "target_num_inputs": local_num_inputs,
             "max_local_ands": budget,
             "constructive_and_upper_bound": None,
@@ -407,12 +404,11 @@ def _add_exact_local(report, table, num_inputs, max_local_ands):
         "local_input_affine_forms_over_original_inputs": local_input_forms,
         "local_xag": local_xag,
         "local_and_count": local_count,
-        "local_minimum_and_count_proved": True,
+        "local_search_verified": True,
         "constructive_and_upper_bound": codimension + local_count,
         "bound_formula": "codimension(A) + local AND count",
         "full_xag": full,
         "full_xag_and_count_after_constant_folding": full["metrics"]["and_count"],
-        "full_construction_global_optimality": "not claimed",
         "verified_exhaustively": True,
     }
 
@@ -502,12 +498,12 @@ def _self_test():
     d_report = d_reduce(table, 3)
     hull = d_report["_hull"]
     assert hull["dimension"] == 2 and hull["codimension"] == 1
-    assert hull["membership_and_count_exact"] == 0
+    assert hull["membership_tree_and_count"] == 0
 
     singleton = [0] * 7 + [1]
     singleton_hull = d_reduce(singleton, 3)["_hull"]
     assert singleton_hull["dimension"] == 0
-    assert singleton_hull["membership_and_count_exact"] == 2
+    assert singleton_hull["membership_tree_and_count"] == 2
 
     zero = analyze([0] * 8, 3)
     assert zero["autosymmetry"]["quotient_num_inputs"] == 0

@@ -130,7 +130,7 @@ if !sends.is_empty() || !receives.is_empty() {
     max_constraint_degree = max(max_constraint_degree, MAX_CONSTRAINT_DEGREE);
 }
 ```
-That is a *floor*, not a ceiling.
+A bus-using chip therefore already runs at degree 3.
 A chip author who keeps a constraint at degree 2 "to be safe" on a chip that already sends or receives is spending an intermediate column for literally nothing.
 
 **(c) Widen accumulator and bus chunks to $D-2$ / $D-1$ per column** ("The $D-2$ Law", "LogUp Fraction Batching").

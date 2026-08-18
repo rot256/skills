@@ -318,12 +318,12 @@ def _fixed_count(n, tables, masks, and_count, mode, optimize_xor, verbose=False)
 
 def synthesize(num_inputs, outputs, care_masks=None, and_count=None,
                max_ands=None, mode="full", optimize_xor=False, verbose=False):
-    """Synthesize an XAG, optionally proving the minimum AND count.
+    """Synthesize an XAG at one budget or scan budgets in increasing order.
 
     If ``and_count`` is supplied, search exactly that many gates.  Otherwise
-    budgets from zero through ``max_ands`` are proved UNSAT or solved in order.
+    budgets from zero through ``max_ands`` are searched in order.
     ``max_ands`` defaults to ``num_inputs`` as a small-instance safety bound.
-    A ``None`` result proves no graph exists in the requested budget range.
+    A ``None`` result means no graph was found in the requested budget range.
     """
     n, tables, masks = _problem(num_inputs, outputs, care_masks)
     if and_count is not None:
@@ -339,7 +339,7 @@ def synthesize(num_inputs, outputs, care_masks=None, and_count=None,
 
 def search_minimum(num_inputs, outputs, care_masks=None, max_ands=None,
                    mode="full", optimize_xor=False, verbose=False):
-    """Prove lower budgets UNSAT and return a minimum-AND XAG, or ``None``."""
+    """Search AND budgets in increasing order and return the first XAG found."""
     n, tables, masks = _problem(num_inputs, outputs, care_masks)
     limit = n if max_ands is None else int(max_ands)
     if limit < 0:
@@ -354,8 +354,8 @@ def search_minimum(num_inputs, outputs, care_masks=None, max_ands=None,
             metadata = dict(xag.get("metadata", {}))
             metadata["synthesis"] = dict(metadata.get("synthesis", {}))
             metadata["synthesis"].update({
-                "minimum_and_count_proved": True,
-                "lower_budgets_unsat": list(range(and_count)),
+                "budget_search": "increasing",
+                "selected_and_count": and_count,
             })
             return make_xag(n, xag["gates"], xag["outputs"], metadata=metadata)
     return None
@@ -440,7 +440,7 @@ def _main(argv):
         help="care-mask bits for the corresponding output; repeatable",
     )
     parser.add_argument("--and-count", type=int, help="search exactly this AND count")
-    parser.add_argument("--max-ands", type=int, help="maximum budget for minimum search")
+    parser.add_argument("--max-ands", type=int, help="largest AND budget to search")
     parser.add_argument("--mode", choices=("full", "cegar"), default="full")
     parser.add_argument(
         "--optimize-xor", action="store_true",

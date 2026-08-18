@@ -55,9 +55,9 @@ sage scripts/synthesize.sage     # single-constraint encoding of a 3-bit functio
 sage scripts/cofactors.sage      # XOR3/Maj soundness cofactors + excluded chars (Groebner)
 cvc5 scripts/verify.smt2         # prove a row forces o = f, over a real F_p
 cvc5 scripts/impossible.smt2     # prove AND3/OR3 have no single-constraint encoding of the shape
-sage scripts/exact_xag.sage      # minimum-AND GF(2) XAG self-tests
+sage scripts/exact_xag.sage      # increasing-budget GF(2) XAG self-tests
 sage scripts/regular_reduce.sage # autosymmetry and D-reduction self-tests
-sage scripts/quadratic_and_count.sage  # exact scalar-quadratic GF(2) construction
+sage scripts/quadratic_and_count.sage  # polar-factorized quadratic GF(2) construction
 sage scripts/paar_optimize.sage  # heuristic shared-ANF factoring self-tests
 sage scripts/xag_rewrite.sage    # bounded exact rewrite and miter self-tests
 ```
@@ -68,13 +68,12 @@ Use both. See `references/smt.md`, `references/sage.md`.
 ## Files
 
 - `references/techniques.md` -- cross-arithmetization catalogue (carry-save, CRT/RNS, lookups, range-check/spread, custom gates, non-deterministic advice, solver methods, primitive notes).
-- `references/boolean-zk.md` -- Boolean optimization across ZK backends: function versus checker complexity, advice and relational don't-cares, backend cost profiles, permutation certificates, post-commitment fingerprints and Freivalds checks, and the limited scope of multiplicative-complexity bounds.
+- `references/boolean-zk.md` -- Boolean-specific ZK rewrites: binary-word repacking, witnessed compute-then-check, relational don't-cares, permutation certificates, post-commitment fingerprints, Freivalds checks, and co-processor deferral.
   XOR count is a secondary, explicitly model-dependent metric.
-- `references/r1cs-fp.md` -- R1CS over a prime field: what one row can do (single-row multipliers, lambda-packing, decoy roots, baby-step giant-step), not materialising values, free affine structure, bound arithmetic for non-native modmul, lower-bound tools, traps, and the baseline moves with their soundness side conditions.
-- `references/r1cs-gf2.md` -- the boolean cost model: what is free there, which prime-field tricks do not carry over, and where each model wins.
-  Measured prices throughout.
+- `references/r1cs-fp.md` -- R1CS over a prime field: what one row can do (single-row multipliers, lambda-packing, decoy roots, baby-step giant-step), not materialising values, free affine structure, bound arithmetic for non-native modmul, traps, and the baseline moves with their soundness side conditions.
+- `references/r1cs-gf2.md` -- restricted free-affine GF(2) constructions: adders, conditional linear maps, affine reductions, quadratic factoring, don't-cares, ANF factoring, and bounded XAG rewriting.
 - `references/binary-extension-fields.md` -- arithmetic native to GF(2^k) or built as a tower over it: cost-model separation, linear basis changes, bilinear rank, RMFE and commitment packing, multiplication and inversion through towers, witnessed inverse checks, Frobenius-oriented nonlinear layers, and evaluation/interpolation constructions.
-- `references/air.md` -- AIR / STARK: the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, a calibration chapter of worked good/bad encodings, traps, and floors.
+- `references/air.md` -- AIR / STARK: the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, a calibration chapter of worked good/bad encodings, traps, and fixed backend charges.
 - `references/plonkish.md` -- PLONKish: why a copy constraint is not free, advice vs routed wires, gate packing and the wire budget, selector grouping, the degree-for-wires dial inside a gate, the decomposition and hard-wire-budget gadget catalogues, non-native arithmetic with the two bound derivations that set every other cost, lookup-table design (accumulator columns, sparse base-B where the base is a carry budget, free rotations), and gate-specific traps.
 - `references/gates.md` -- bespoke relations (custom gates, sub-AIRs, precompiles), shared across arithmetizations: what a selector, a degree and the circuit-wide maxima actually cost before the relation is used once; multiplexing and de-multiplexing; relation vs lookup; how relations are invented (substitution, identity choice, search); when the answer is "no relation". A worked break-even and a decision procedure.
 - `references/degree.md` -- constraint degree as an economic resource: exact cost per backend, the bracket theorem (`D in {3,5,9,17,33}`), the blowup cliff, degree matching and where the free headroom goes, buying degree back with a column, the gating tax, and where the trade inverts (sumcheck, folding). Two worked break-evens and a decision procedure.

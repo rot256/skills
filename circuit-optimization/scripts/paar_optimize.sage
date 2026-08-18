@@ -177,7 +177,7 @@ def _synthesize_once(tables, num_inputs, seed=0):
 
     metadata = {
         "generator": "paar_optimize.sage",
-        "optimality": "heuristic; no minimum-AND certificate",
+        "search": "heuristic",
         "seed": seed,
         "initial_anf_product_upper_bound": int(initial_anf_products),
         "shared_pair_products": len(pair_gates),

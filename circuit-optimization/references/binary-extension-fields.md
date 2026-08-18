@@ -34,11 +34,8 @@ Apply Karatsuba or a lower-rank multiplication tensor to the product-formation s
 ## Use Bilinear Rank With Its Model Attached
 
 A rank-$R$ decomposition of multiplication in $\mathbb F_{q^n}$ over $\mathbb F_q$ gives $R$ base-field products surrounded by $\mathbb F_q$-linear maps.
-Ordinary bilinear multiplication satisfies $R\geq 2n-1$, so reject a claimed degree-$n$ tower multiplier below that count when its only nonlinear operations are base-field products of linear input forms.
-Equality $R=2n-1$ holds exactly when $n\leq q/2+1$; in particular quadratic multiplication needs three base-field products, while multiplication of $\mathbb F_{2^4}$ over GF(2) needs nine rather than seven.
-The known exact binary value for $\mathbb F_{2^6}$ over GF(2) is fifteen.
 Symmetric rank can exceed ordinary tensor rank, so require a symmetric algorithm only when the surrounding constraint or implementation actually needs the same linear forms on both inputs.
-This bound concerns bilinear algorithms over the stated base field; it is not by itself a lower bound for unrestricted bit-level XAGs, advice-bearing relations, lookups, or custom constraints.
+Compare candidate decompositions after expanding them to the backend's actual scalar products and linear maps.
 
 ## Compose Towers as Upper Bounds
 
@@ -61,7 +58,7 @@ $$
 $$
 
 such that $x\mathbin\odot y=\psi(\phi(x)\phi(y))$, packing $k$ coordinatewise bit products into one extension-field product.
-Any such nontrivial packing needs $e\geq2k-1$, so choose it by the complete rate and proof cost rather than by counting the single displayed multiplication.
+Choose the extension degree by the complete rate and proof cost rather than by counting the single displayed multiplication.
 An ordinary basis packing lacks this identity: it preserves coordinatewise addition but does not turn coordinatewise multiplication into extension-field multiplication.
 Charge image or kernel membership, padding, commitments, modular linear checks, and decoding; RMFE packing is a relation-level transformation, not an ordinary change of basis for one field element.
 
