@@ -22,11 +22,11 @@ Everything in I.1--I.2 is a way to avoid paying it.
 Adding a bespoke gate is not free even on rows that do not use it: the selector is committed over the whole domain, it
 enters the degree budget, and where selectors are grouped it competes for space in a selector *group* whose size is capped
 by the degree. The break-even question -- how many uses does a gate need before it pays for its selector -- is
-`gates.md` I.7, and the answer is usually "more than you have".
+`gates.md` I.7, and the answer is usually "more than you have"; the selector-group cliff is `gates.md` I.4.
 
 **Rows are filled, not consumed.**
 A row has a fixed width, and the builder's job is to pack independent operations into the leftover columns.
-Whether a row is "used" is the wrong question; how much of its width is idle is the right one (II.3).
+Whether a row is "used" is the wrong question; how much of its width is idle is the right one (I.3).
 
 **The window is a rotation, and its reach is the first thing a design fixes.**
 Gate-based systems differ along a few axes -- how far a gate may see, what a gate *is*, how selectors are charged -- so
@@ -159,8 +159,8 @@ PLONKish, gate-vector frontend
 The `CosetInterpolationGate` is an explicit dial, and the design note is worth quoting: *"A full interpolation of N values
 corresponds to the evaluation of a degree-N polynomial. This gate can however be configured with a bounded degree of at
 least 2 by introducing more non-routed wires."*
-The numbers are in IV.5. The *second* trick in that gate is the one to steal: after fixing the intermediate count, it
-**re-minimizes the degree** purely so the gate joins a bigger selector group.
+The worked numbers are in `gates.md` II.3. The *second* trick in that gate is the one to steal: after fixing the
+intermediate count, it **re-minimizes the degree** purely so the gate joins a bigger selector group.
 
 Other shapes worth knowing:
 - `BaseSumGate<B>`: base-$B$ decomposition **and** a per-limb range check in one row, at `degree = B` and
@@ -250,7 +250,429 @@ That is the whole derivation of the 88-bit foreign-field limb, out of a wire bud
 
 ---
 
-# Part IV -- Traps
+# Part IV -- Non-native arithmetic in a gate-based system
+
+Emulating a foreign field $p$ inside a native field $n$ is the same CRT/bound problem everywhere (`r1cs.md` Part IV,
+`air.md` Part VIII, `techniques.md` §2). What a gate-based system adds is a wire budget and a selector: the identity is
+checked by a custom gate whose modulus limbs *are* selector constants, so nearly every saving below is either a constant
+folded into a selector or a quotient shared across several products.
+Running example: 4 limbs of $L = 68$ bits, native field with $\log n \approx 253.5$.
+
+## IV.1 The CRT split: one 272-bit equality becomes two ~136-bit ones
+
+PLONKish, two-row frontend
+
+The prover supplies $q, r$ with $ab = qp + r$ **over $\mathbb Z$**; the circuit never checks that. It checks the identity
+mod $2^T$ (the *binary basis*, $T = \text{NUM\_LIMBS}\cdot\text{NUM\_LIMB\_BITS} = 4\cdot68 = 272$) and mod $n$ (the *prime
+basis*). CRT gives it mod $M = 2^T n$; both sides being $< M$ gives it over $\mathbb Z$. Each half is cheap for a different
+reason. The prime half is **one gate**, because every element carries a redundant fifth field element
+$\text{prime\_basis\_limb} = \sum_i \text{limb}_i 2^{68i} \bmod n$, making $a_\pi b_\pi + q_\pi(n-p) - r_\pi = 0$ a single
+fused multiply-add. The binary half needs only the **partial** schoolbook product: limb-products of weight $\ge 2^{4L}$
+vanish mod $2^T$, so only $c_0..c_3$ are ever formed.
+**Price** per multiplication: 8 gates for the limb products (*"4 non-native field gates to check the limb multiplications,
+plus 4 arithmetic gates (3 big add gates + 1 unconstrained gate)"*), $+1$ prime-limb gate, $+$ quotient/remainder
+construction ($\approx2$ gates, 2 range-constraint triples), $+$ 2 carry range checks.
+
+> **Where it stops.** The quotient-bound arithmetic is validated only for target moduli of 250--256 bits: below 250 it is
+> unproven [Medium], above 256 four limbs do not hold the modulus at all.
+
+## IV.2 The bound discipline: derive your two ceilings, never copy them
+
+PLONKish, every frontend
+
+Two inequalities decide the gate count of everything else. Redo both for your own parameters.
+
+**Ceiling 1 -- the whole element.** CRT needs $ab < M$; the cheapest sufficient invariant is $\max(a),\max(b) < \sqrt M$.
+Since $M = 2^t n = 2^t(2^m+\ell) = 2^{t+m} + 2^t\ell > 2^{t+m}$, $\sqrt M > 2^{(t+m)/2}$; take the strictly safer
+$2^{\lfloor(\mathrm{msb}(M)-1)/2\rfloor}-1$. At $t = 272$, $m = 253$: $\mathrm{msb}(M) = 525$, exponent $\lfloor524/2\rfloor = 262$,
+ceiling $2^{262}-1$ -- $2^{8}$ of headroom over a reduced $\sim2^{254}$. A second constant sits an
+`arbitrary_secure_margin` of **20 bits** higher; crossing that aborts the build rather than emitting constraints.
+
+**Ceiling 2 -- the single limb, which usually fires first.** The element bound does not protect the *accumulators*:
+$\text{hi} = c_2 + c_3 2^L$ sums **four** limb-products ($c_3 = a_3b_0+a_2b_1+a_1b_2+a_0b_3$) in $\mathbb F_n$, and
+overflow there destroys the mod-$2^T$ argument with no constraint failing. With $Q$ the allowed limb width and $2^k$ the
+allowed number of chained additions:
+
+$$\max\textstyle\sum\text{hi} = 2^k\bigl(3\cdot2^{2Q}\bigr) + 2^k2^L\bigl(4\cdot2^{2Q}\bigr) < 2^k(2^L{+}1)\bigl(4\cdot2^{2Q}\bigr) < n
+\;\Longrightarrow\; 2Q+3 < \log n - k - L \;\Longrightarrow\; Q < \tfrac{\log n - k - L - 3}{2}$$
+
+At $\log n = 253.5$, $L = 68$, $k = \text{MAX\_ADDITION\_LOG} = 10$: $Q = \lfloor(253.5-68-10-3)/2\rfloor = \mathbf{86}$,
+whence `MAX_UNREDUCED_LIMB_BITS = L + k = 78` and `PROHIBITED_LIMB_BITS = 83`, asserted $83 < 86$ at compile time.
+**What the 78 buys: $2^{10} = 1024$ default-width elements added limb-wise before a reduction is forced.** Every addition
+doubles a limb's maximum, so from $2^{68}-1$ you get **10 free additions**; the 11th trips the check.
+
+> **Where it stops.** The 3-bit slack between 83 and 86 is the entire safety margin -- raise $k$, raise $L$, or move to a
+> native field below $\sim2^{253}$ and the assertion fires. The derivation also assumes **at most four limb-products per
+> accumulator column**; widen the limb count and the constant 4 is wrong in the unsound direction.
+
+## IV.3 Lazy reduction: reduce mod $2^s$, not mod $p$
+
+PLONKish, two-row frontend
+
+Full reduction to $[0,p)$ needs a comparison chain; skip it. Prove $\text{this} = qp + r$ with $r$ constrained only to
+$s = \lceil\log_2 p\rceil$ **bits** -- free, being exactly what the non-overflowing constructor already does when it
+range-constrains the top limb to `NUM_LAST_LIMB_BITS`. *"We reduce an element's mod $2^t$ representation to size $2^s$ for
+smallest $s$ with $2^s>p$ ... suffices for addition chains."* Two economies inside: the quotient is a **single limb** (the
+other three wired to the zero index, prime limb *is* the quotient limb), and its range proof is $\mathrm{msb}(\max/p)+1$
+rounded **up to even**, asserted $\le$ `NUM_LIMB_BITS`. **Price** $\approx9$ gates $+$ one small range constraint $+$ 2
+range-constraint triples for the remainder.
+
+> **Where it stops.** The output is $< 2^s$, **not** $< p$. Comparing limbs against a constant needs a real reduction, and
+> canonicalising chains the lazy reduction *then* a less-than. Publishing reduces only mod $2^s$, so two representations of
+> one residue can both be published unless the caller reduces mod $p$.
+
+## IV.4 Amortising the quotient: N products, one quotient, one pair of carries
+
+PLONKish, two-row frontend
+
+Each quotient costs a range proof and each identity two carry range checks, so have **one** of each per expression.
+Rearrange $\sum_j a_jb_j + \sum_i c_i = qp+r$ as $a_0b_0 = qp + \bigl(r - \sum_{j\ge1}a_jb_j - \sum_i c_i\bigr)$: one full
+multiplication gate handles $(a_0,b_0,q,r')$ and every other product is a cheap *partial* multiplication folded into the
+remainder accumulators. **How the folding is free is the trick.** The gate evaluates
+$\bigl(ab + q\cdot\text{neg\_modulus} - r\bigr)/2^{136} = \text{lo} + \text{hi}\cdot2^{136}$; setting
+$\text{neg\_modulus} = [2^{136},0,0,0]$ and $q = [\text{lo}_1,0,\text{hi}_1,0]$ injects $\text{lo}_1$ into `lo` and
+$\text{lo}_1/2^{136}+\text{hi}_1$ into `hi`, and $r = [0,0,\text{lo}_1,0]$ subtracts the stray term back off, which
+*"saves us 2 addition gates"* -- the modulus-limb selectors have become a **shift operator**.
+
+- **Paired carry checks.** If both carries are $\le70$ bits one accumulator handles both: each splits into $5\times14$-bit
+  sublimbs, **3 rows**, packing 10 sublimbs plus 2 originals into $3\times4 = 12$ wire slots. 70 *is* $5\times14$.
+- **The remainder borrow, folded into a selector.** $r$'s low half can exceed the positive part's and underflow in
+  $\mathbb F_n$, wrapping and destroying the bound. Add the constant $\lceil\text{max\_remainders\_lo}/2^{2L}\rceil$: zero
+  gates, it only bumps an additive constant. The high half needs none, $r \in [0,2^{|p|})$ against $[0,2^T)$.
+- **A greedy scheduler decides when a reduction is forced.** For each of the $2N$ multiplicands compute how much the
+  maximum quotient would shrink if *that one alone* were reduced; sort descending, reduce the single best, re-test, loop.
+  Constants score 0, each avoided reduction is worth $\approx12$ gates, and it gives up when every candidate scores 0 and
+  the product still overflows.
+
+> **Where it stops.** `MAXIMUM_SUMMAND_COUNT` $= 2^4 = 16$ products and 16 addends -- but carry bounds scale with $N$, so
+> the high-carry msb crosses 70 and the paired fast path is lost well before the cap. At least one multiplicand of the
+> *whole batch* must be a witness, and $N\cdot(\text{max remainder})^2$ must fit under $M$ even after every operand is
+> reduced -- checked up front, rejecting the circuit rather than building it.
+
+## IV.5 Packing the wires: addition in 4 gates, injection in 2, subtraction for free
+
+PLONKish, two-row frontend
+
+Adding two elements looks like 5 gates -- four binary limbs and the prime limb. But it touches **15 witnesses** (5 each of
+$x,y,z$) and 4 rows $\times$ 4 wires is **16 slots**: *"we cannot do better than 4 gates because we have a total of 15
+witnesses ... $\lceil15/4\rceil = 4$"*. Row 1 carries $z_0 = x_0+y_0$ **and** $z_\pi = x_\pi+y_\pi$, rows 2--4 one limb
+each; the doubling up works because a special mode of the arithmetic relation (two distinct `q_arith` values) toggles an
+extra $w_1 + w_4 - w_4^{\omega}$ relation on top of the ordinary add. Guarded by both operands being witnesses, both
+prime-limb multiplicative constants being 1, and their prime witness indices differing.
+**`add_to_lower_limb`: 2 gates instead of 5.** To add a small *already range-constrained* field element (a skew bit, a NAF
+correction), do not build a whole element -- add it to limb 0 and the prime limb and bump limb 0's maximum by the
+caller-supplied bound, for *"2 additional constraints instead of 5/3 needed to add 2 bigfield elements and several needed
+to construct a bigfield element."* The assertion is $A_0 + \max(\text{other}) \le 2^{78}-1$, and the caller, not the
+function, must have constrained $\text{other}$ to that bound.
+**Subtraction is addition plus a borrow-chain constant.** Compute $a-b$ as $a + sp - b$ for the smallest $s$ making
+**every limb** non-negative -- strictly stronger than making the value non-negative. A borrow cascade fixes per-limb shifts
+$t_0 = 2^{\beta_0}$, $t_1 = 2^{\beta_1}-2^{\beta_0-L}$, $t_2 = 2^{\beta_2}-2^{\beta_1-L}$, $t_3 = 2^{\beta_2-L}$,
+redistributed so the net added quantity is exactly $sp$. The constant folds into additive constants, so it is **free in
+gates**; it is paid for in the maxima $C_i = A_i + S'_i$, which shorten the chain before the next forced reduction.
+
+> **Where it stops.** If the subtrahend has been inflated by a long addition chain its maxima grow, $s$ grows, and the
+> result's maxima grow super-linearly -- hence a reduction check on *both* operands first. And if the base element is
+> constant while the injected value is a witness, limbs 1--3 are re-materialised as fixed witnesses at **3 extra gates**,
+> because an element's limbs must be uniformly constant or uniformly witness.
+
+## IV.6 Equality and order without a reduction
+
+PLONKish, two-row frontend
+
+**Equality in one multiplication.** Witness the indicator and either an inverse or one -- *"If $r=1$ then $X=1$, $Y=0$; if
+$r=0$ then $X=I$, $Y=1$"* -- and evaluate $(a-b)X = Y$. The product comes out of the ordinary multiplication, hence is
+already reduced to $< 2^s$, so "equals 0 or 1" is *limb equality*: limb 0 and the prime limb equal the indicator, limbs
+1--3 equal zero. No comparison chain at all.
+**Non-equality as a degree-$(L{+}R{+}1)$ product.** Two unreduced elements can differ by $kp$, $k\in[-R,L]$, and still be
+equal mod $p$. Rather than reduce both, multiply out every possibility **in the prime basis only**,
+$\text{diff} \leftarrow \text{diff}\cdot(\text{base\_diff} \mp kp)$ with $\text{overload} = \lfloor\max/p\rfloor$ per side,
+then assert non-zero -- *"each loop iteration adds 1 gate"*. For reduced inputs that is **1 gate** against $\approx12$ for
+a reduction, and **the constraint count is a function of how unreduced the inputs are.**
+**Less-than by prover-chosen borrows.** Prove $(\text{limit}-1)-x \ge 0$ limb-wise with three witnessed borrow bits and
+**4 range checks** (two paired calls): $r_0 = U_0-x_0+b_02^L$, $r_1 = U_1-x_1+b_12^L-b_0$, $r_2 = U_2-x_2+b_22^L-b_1$,
+$r_3 = U_3-x_3-b_2$, for $\approx9$ gates. *"The prover can rearrange the borrows the way they like. The important thing is
+that the borrows are constrained."* For a *boolean* answer, run an msb-to-lsb ladder whose rungs each encode $a<b$ as one
+witness plus one range check, $b - a + (K-1) - Kq = r < K$.
+
+> **Where it stops.** The non-equality product has imperfect *completeness*: *"for points equal mod $r$ ... but different
+> mod $p$, you can't construct a proof. The failure probability is at most $(L+R+1)/r$"* -- at $\max < 2^{256}-1$ and
+> $p \ge 2^{249}$ that is $L,R \le 127$ and $< 2^{-246}$, but it grows with the addition chain. The borrow argument needs
+> each per-limb quantity in $[-2^b-1,2^{b+1}]$ and those distinct mod $n$, *"which happens e.g. if $r/2 > 2^{b+1}$"*, and
+> the ladder needs $2^{\text{num\_bits}} < n/2$ so the worst case $r = 2K-2$ cannot wrap. Both assume the operands' limbs
+> are **already** range-constrained; the equality trick is unsound the moment its product comes from an unreduced path.
+
+## IV.7 Everything that lives in a selector is free -- including a multiple of $p$
+
+PLONKish, two-row frontend
+
+A field element is $\text{witness}\cdot\text{multiplicative\_constant} + \text{additive\_constant}$, so adding a constant,
+scaling by a constant, and adding two terms sharing a witness index are all **0 gates**; one normalisation gate flattens
+the form back, early-returning when already flat. The $sp$ offsets of IV.5, the remainder borrow of IV.4, the negated
+modulus limbs and the fractional rotation coefficients of V.3 are all this one mechanism.
+**`unreduced_zero()`:** for $a/b$ the circuit checks $bc = a$ where $a$ is an *input*, possibly unreduced and larger than
+$bc$, so the difference underflows. Add a compile-time multiple of the modulus, $u = \lceil\max(a)/p\rceil$ with
+$\max(a) < \sqrt{2^T n}$ -- *"if we always add this element during division, then we never run into the formula-breaking
+situation"* -- for **zero gates**, its limbs being selector constants.
+**N summands in $\lceil N/3\rceil$ gates:** chain add gates passing a running total out through the fourth wire into the
+*next row's* fourth wire, $d_{i+1} = d_i - a_i - b_i - c_i$ on every row but the last and $0 = d_i-a_i-b_i-c_i$ on it, with
+constants stripped into the accumulator's additive constant and the vector zero-padded to a multiple of 3. Five additions
+in **2 gates**: gate 0 wires $[a_0,a_1,a_2,a_3]$, gate 1 wires $[b_0,b_1,b_2,b_3]$, $b_3 = a_0+a_1+a_2+a_3$,
+$b_2 = b_3+b_0+b_1$ -- against $N-1$ naive.
+
+> **Where it stops.** Custom gates index wires by witness index and cannot absorb a scaling, so a scaled value used as
+> custom-gate input must be normalised, and constants materialised: *"we disallow constants. If there are constants, we
+> convert them to fixed witnesses (at the expense of 1 extra gate per constant)"*. `unreduced_zero` is sized against
+> ceiling 1 of IV.2, and the accumulator emits a fresh witness -- if the value was only wanted inside another gate, a
+> chained fused add is cheaper.
+
+## IV.8 `msub_div`: one quotient for a whole formula
+
+PLONKish, two-row frontend
+
+Rather than compute $x = \text{num}/\text{den}$ and then multiply, constrain
+$\text{result}\cdot\text{divisor} + \sum_i \text{mul\_left}_i\text{mul\_right}_i + \sum_j \text{to\_sub}_j = 0$ in one shot,
+feeding IV.4 with `result` as first left operand, `divisor` as first right operand, remainder **fixed to zero**.
+*"Algorithm is constructed in this way to ensure that all computed terms are positive ... It is critical that ALL the terms
+on the LHS are positive to eliminate the possibility of underflows ... only requires one quotient and remainder + overflow
+limbs."* That zero remainder must be a *fixed witness*, not a constant, because *"remainder needs to be defined as wire
+value and not selector values"*. **Price:** one full multiplication group $+$ $N-1$ partial groups $+$ **one** quotient
+range proof, against one division plus $N$ multiplications each with its own quotient.
+This is why curve formulas never materialise intermediate $y$-coordinates. A chained addition stores
+$(x_1^{\text{prev}}, y_1^{\text{prev}}, \lambda^{\text{prev}}, x_3^{\text{prev}})$ instead of $(x_3,y_3)$ and gets the next
+slope as $-\bigl(\lambda^{\text{prev}}(x_2-x_1^{\text{prev}}) + y_1^{\text{prev}} + y_1\bigr)/(x_2-x_1)$: *"we only require
+2 non-native field multiplications per point addition, instead of 3"*. A ladder goes further, keeping $y$ as an
+**unevaluated** record $\{\text{mul\_left},\text{mul\_right},\text{add},\text{is\_negative}\}$ fed straight into the next
+round's `msub_div`, sign alternating per round so every argument stays positive, one quotient paying for the whole deferred
+expression -- *"each iteration reduces the number of field multiplications by 1, at the cost of more additions ... The
+optimal input size appears to be 4."*
+
+> **Where it stops.** The optimum is 4 and not 16 for IV.4's reason: deferred products are summands and the carry bounds
+> degrade until the 70-bit paired check is lost. The divisor-non-zero check is an explicit opt-out, and every caller taking
+> it must discharge non-zeroness otherwise -- in the chain, by the preceding non-equality assertion of IV.6, itself
+> imperfectly complete. The formulas are also *incomplete*: they require $x_1 \ne x_2$ on every input.
+
+## IV.9 The uniqueness trap in a lo/hi split
+
+PLONKish, every frontend
+
+Two range checks do **not** pin a decomposition. If $\text{lo} + 2^{\text{lo\_bits}}\text{hi}$ is recombined mod $n$, then
+$(\text{lo},\text{hi})$ and $(\text{lo}-n_{\text{lo}}, \text{hi}+\dots)$ can both be in range. What is missing is a
+*modulus* check -- a borrow comparison against $n$ itself, with $\text{hi\_diff} = n_{\text{hi}}-\text{hi}-\text{borrow}$
+and $\text{lo\_diff} = (n_{\text{lo}}-1)-\text{lo}+\text{borrow}\cdot2^{\text{lo\_bits}}$ both range-constrained.
+**Price:** 1 boolean $+$ 2 range constraints $+$ 1 linear identity, on top of the two range checks for `lo`/`hi` -- and
+*those* can be **skipped** when the halves are immediately used as lookup keys, which range-constrains them implicitly (V.1).
+
+> **Where it stops.** Explicit precondition: *"The low `lo_bits` of `field_modulus` must be nonzero. If they are zero, the
+> borrow arithmetic has undefined behaviour."* The same pattern appears open-coded in a 32-byte serialisation with a
+> 128/128 split and a hand-rolled overlap bit, so audit every hand-rolled split for it, not just the library one.
+
+> **Where this whole part stops.** Every technique above is sound *only inside a proved bound*: IV.3 is licensed by
+> ceiling 1 of IV.2, IV.5 by ceiling 2, IV.4 by both re-derived for $N$ terms, `unreduced_zero` and the remainder borrow
+> by ceiling 1, and the paired 70-bit carry check is a *consequence* of how tight the batch's bounds came out.
+> **The bounds compose multiplicatively**, so one element admitted with a pessimistic maximum -- a point read from a table
+> whose entry maxima were taken as the max over all entries, say -- turns free additions into forced reductions all the
+> way downstream. The failure mode is never a failed constraint; it is a silent wrap in $\mathbb F_n$ that makes the
+> mod-$2^T$ half of IV.1 vacuous.
+
+---
+
+# Part V -- Lookup-table design
+
+A lookup is not a function call. Designed well, one lookup sequence proves a decomposition, a range, a recombination and a
+computation at once; designed badly it proves one bit of arithmetic and costs a table.
+
+## V.1 The accumulator column: decompose, look up and recombine in one column
+
+PLONKish, two-row frontend
+
+A multi-table returns not slices but **accumulators**: row $j$ of column $i$ holds the *remaining* value
+$\bigl(S - \sum_{k<j}s_k\text{coeff}_k\bigr)/\text{coeff}_j$, so that $w_i[j] - w_i[j+1]\cdot\text{step}_{i,j} = s_{i,j}$
+with the step in selectors and $w_i[j+1]$ the shifted wire. Row 0 of each column is therefore the **fully recombined
+value**, and the decomposition is proved by the lookup relation itself. For a 32-bit XOR: coefficients
+$(2^0,2^6,2^{12},2^{18},2^{24},2^{30})$, steps $(1,2^6,2^6,2^6,2^6,2^6)$ -- **6 lookup rows** (five 6-bit tables of
+$2^{12} = 4096$ entries, one 2-bit table of $2^4 = 16$) with **zero** extra gates for slicing or recombining, against a
+naive single table of $2^{64}$ entries. This is the gate-based form of `air.md` V.5: the lookup argument *is* the range
+check *and* the recomposition.
+**Multi-output tables give several answers per lookup.** A basic table has three columns, so $(C_2,C_3)$ is two outputs per
+key and the third exists whether you use it or not: an S-box table returning $S(x)$ **and**
+$S(x)\oplus\text{xtime}(S(x)) = 3S(x)$; a $\chi$ table returning the normalised output and $C_2/11^8$, *"to determine the
+value of the most significant (63rd) bit of the output"*; a hash input table returning three linear functions of the same
+slices -- normal accumulator, sparse accumulator, and a rotation accumulator with its correction already in the
+coefficients.
+
+> **Where it stops.** The accumulator forces a *single geometric step* per column, so an output sliced differently from the
+> input needs fractional coefficients (V.3) or a per-slice correction (V.4). And a two-input table spends $C_1,C_2$ as
+> **keys**, leaving only $C_3$ as output: multi-output and two-in-one-out are alternatives, not a package.
+
+## V.2 Sparse (base-$B$) representation, where the base is a carry budget
+
+PLONKish, two-row frontend
+
+Write a $k$-bit value as $\sum_i b_i B^i$, $b_i\in\{0,1\}$. XOR of several values is then **addition** of their sparse
+forms plus one normalisation lookup $d \mapsto d \bmod 2$; AND and majority come from the same sum read through a different
+normalisation table. **The rule for choosing $B$: it must exceed the largest digit reachable before the next
+normalisation** -- not the largest digit of an input, the largest after every accumulation you intend to do. $B$ is a carry
+budget, and it is the only parameter in the scheme:
+
+| operation | base $B$ | digit budget | bits/lookup | table size |
+|---|---|---|---|---|
+| Ch $+\ \Sigma_1$ | 28 | $7\sigma + (e+2f+3g)$, $\sigma\in[0,3]$, sum $\in[0,6]$ $\Rightarrow$ max 27 | 2 | $28^2 = 784$ |
+| Maj $+\ \Sigma_0$ | 16 | $4\sigma + (a+b+c)$, both $\in[0,3]$ $\Rightarrow$ max 15 | 3 | $16^3 = 4096$ |
+| $\sigma_0/\sigma_1$ | 16 | $4s_0 + s_1$, both $\in[0,3]$ | 3 | $16^3 = 4096$ |
+| $\theta$ | 11 | 5-way XOR plus a rotate $\Rightarrow$ digits to 10 | 4 | $11^4 = 14641$ |
+| $\rho$ | 11 (effective 3) | digits $\in[0,2]$ after $\theta$ | $\le8$ | $3^8 = 6561$ |
+| $\chi$ | 11 (effective 5) | $1 + 2A - B + C \in[0,4]$ | 6 | $5^6 = 15625$ |
+| byte-oriented cipher | 9 | up to 8 XOR-adds per digit | 4 | $9^4 = 6561$ |
+
+Measured: **17,329 constraints for a one-block sponge permutation** *"using small(ish) lookup tables (total size
+$< 2^{64}$)"* -- $\theta$ at *"20.5 gates per 5 lanes + 25 = 127.5 per round"*, $\rho$ at 8 gates for the unrotated lane
+and 10 for the other 24 (248 total), $\chi$ at $12\times25 = 300$, and $\pi$ at **0 gates**, being witness re-indexing.
+**The payoff is that whole layers become multiplication-free.** With an S-box table returning both $S(x)$ and $3S(x)$, and
+$2x = 3x\oplus x$ over $\mathrm{GF}(2^8)$, a diffusion layer is pure addition:
+$r_0 = 2s_0\oplus3s_1\oplus s_2\oplus s_3 = s_0^{(1)}+s_0^{(3)}+s_1^{(3)}+s_2^{(1)}+s_3^{(1)}$, and the four outputs share
+two intermediates $t_0 = s_0{+}s_3{+}3s_1$, $t_1 = s_1{+}s_2{+}3s_3$ -- each output one fused three-term add on top.
+Round-key addition folds into the same accumulation and the row shift is 0 gates: **6 fused adds per column, 24 per
+round**, plus 16 table reads, and not one multiplication.
+
+> **Where it stops.** Digit overflow is silent and catastrophic -- the normalisation table simply returns a wrong answer
+> for an out-of-range digit. Track it: a per-byte `add_counts` array forcing a normalisation at threshold 3, *or earlier if
+> the byte is about to enter the S-box* (base 9 with five addends plus a round key reaches 6--8); a sponge permutation that
+> normalises every round to keep digits $\le2$ entering the next.
+
+## V.3 Rotation for free: fractional coefficients, or no table at all
+
+PLONKish, two-row frontend
+
+In the accumulator scheme a rotation is a **permutation of slice weights**, so it belongs in the coefficients, not a table;
+inverse powers of two are legal, selector values being field elements. For a rotate-right by 16 on 6-bit slices, with
+$c = 1/2^{16}$, the output column takes $\bigl(1,\,2^6,\,c,\,c2^2,\,c2^8,\,c2^{14}\bigr)$ and the caller multiplies the
+accumulator by $2^{32-16}$ once -- **free**, folding into a multiplicative constant (IV.7). Zero extra multi-tables and
+zero extra gates, beyond one small intra-slice rotate table per amount.
+**Better still, derive the rotation from a plain accumulator.** Row $j$ is "the value with the low $j$ slices removed and
+divided out", so row 2 of the *ordinary* XOR accumulator already is the top of a 12-bit rotation: with
+$\text{row}_0 = s_0 + 2^6s_1 + 2^{12}s_2 + 2^{18}s_3 + 2^{24}s_4 + 2^{30}s_5 = u$ and
+$\text{row}_2 = s_2 + 2^6s_3 + 2^{12}s_4 + 2^{18}s_5$, $\;\mathrm{ROTATE}_{12}(u) = \text{row}_2 + (\text{row}_0 -
+2^{12}\text{row}_2)\cdot2^{20}$ -- *"we can get the correct value by combining values from [the] XOR table itself"*.
+**1 arithmetic gate, and a whole multi-table (6 basic tables) deleted.**
+
+> **Where it stops.** Fractional coefficients express only rotations congruent to a slice boundary modulo the slice size;
+> the residue needs its own small rotate table (by 4 for a 16-rotation, by 2 for 8, by 1 for 7). The table-free derivation
+> is narrower still: the amount must be an **exact multiple** of the slice size ($12 = 2\times6$). Both are sound only
+> because the reconstruction is exact over the integers -- $2^{-16}$ in $\mathbb F_n$ is not a shift.
+
+## V.4 Two accumulator sequences in one column, and a twist that turns rotation into a multiply
+
+PLONKish, two-row frontend
+
+**A step size of 0 breaks the accumulation and starts a new sum**, so one lookup column can carry two independent
+accumulators. A base-11 left-rotation uses this: split the lane at the rotation boundary into a wrapping "left" part and a
+non-wrapping "right" part and run both through the *same* gate sequence, letting column 1 hold a pair of sums:
+
+```
+| Row | C0                                 | C1           | C2       |  Q1  |  Q2  | Q3 |
+|  0  | A3.11^24 + A2.11^16 + A1.11^8 + A0 | B1.11^8 + B0 | A0.msb() | 11^8 | 11^8 | 0  |
+|  1  |            A3.11^16 + A2.11^8 + A1 |           B1 | A1.msb() | 11^8 |   0  | 0  |  <- new sum
+|  2  |                       A3.11^8 + A2 | B3.11^8 + B2 | A2.msb() | 11^8 | 11^8 | 0  |
+|  3  |                                 A3 |           B3 | A3.msb() |
+```
+
+*"The coefficients for the rows treat Column0 as a single accumulating sum, but Column1 is a pair of accumulating sums."*
+The halves are stitched with one gate, $\text{left} + \text{right}\cdot11^{\text{rot}}$, and column 3 gives the per-slice
+msb free. Slice sizes are chosen so the lookup *also* range-constrains each half -- *"we want to implicitly range-constrain
+normalized $< 11^{\text{limb\_bits}}$, which means potentially using a lookup table that is not of size
+$11^{\text{max\_bits\_per\_table}}$ for the most-significant slice"* -- so the table is instantiated at every slice size
+1..8. **8 gates for the unrotated lane, 10 for the other 24, 248 per round**, rotation *and* range constraint free.
+**Choose the representation so that rotate-by-one is a multiply.** Where the diffusion step needs
+$D = C_0 \oplus \mathrm{ROTL}(C_1,1)$, store each 64-slice lane in a **65-slice twisted** form $[b_{63},\dots,b_0,b_{63}]$.
+Then $\mathrm{XOR}(A,\mathrm{ROTL}(B,1))$ is $A.\text{twist} + 2B.\text{twist}$ in base 11, i.e.
+$D[i] = C[(i{+}4)\bmod5] + C[(i{+}1)\bmod5]\cdot B$ -- **a single constant multiply, 0 gates**, where the twisted value is
+$\text{state}\cdot11 + \text{state\_msb}$ and the msb arrives free in the third column of the $\chi$ table (V.1).
+*"This is MUCH cheaper than the extra range constraints required for a naive left-rotation."* $D$ then has 66 slices whose
+top and bottom are artifacts, stripped with 3 witnesses and one assertion (**1 gate**, the multipliers being constants)
+plus two small range constraints and a 1-to-2 table read on the middle.
+
+> **Where it stops.** The two-sequence trick needs 25 distinct multi-tables, one per lane rotation, and its witnesses
+> cannot be derived by the generic lookup machinery -- they are built by hand. The twist rests on a compile-time assertion
+> that the table's slice width **divides** the lane width: at $4 \mid 64$ the lookup sequence implies the middle term is
+> $< 11^{64}$ for free; if it did not divide, that term would need its own range constraint and the saving would evaporate.
+
+## V.5 One lookup producing a modular sum *and* a Boolean function
+
+PLONKish, two-row frontend
+
+Two independent sums share one sparse digit if you separate them with a **radix multiplier**. The digit
+$7\sigma + (e+2f+3g)$ packs a rotation sum $\sigma\in[0,3]$ against a choice-function encoding in $[0,6]$, and the
+2-D-indexed normalisation table returns $\Sigma_1\text{bit} + \mathrm{Ch}\,\text{bit} \in [0,2]$ -- **one lookup answers
+both**; the companion pair uses $4\sigma + (a+b+c)$ in base 16. The multiplier 7 (resp. 4) *is* the separator, and it is
+exactly the digit budget of V.2 read as two fields. The three rotations are applied by multiplying the whole sparse value
+by a limb-0 coefficient and correcting the rest: one correction $\delta = c_1 - B^{11}c_0$ folds into the **input table's**
+third-column coefficients, the other is a single constant multiply, and the limb structure $L_0 = 0..10$, $L_1 = 11..21$,
+$L_2 = 22..31$ is chosen so the rotation amounts $(6,11,25)$ and $(2,13,22)$ each split cleanly across it.
+**Price:** one pair is 1 input lookup (3 rows) $+$ 2 arithmetic gates $+$ 1 output lookup (16 rows of the 784-entry table);
+the other is 1 input lookup $+$ 2 gates $+$ 11 rows of the 4096-entry table.
+
+> **Where it stops.** The bases are exactly tight -- 28 because the maximum index is 27, 16 because it is 15. A fourth
+> rotation term or a fourth Boolean input overflows the digit. And two different bases for the two pairs means the same
+> word needs **two different sparse forms**, which is where ordering side-effects come from: one routine populates a
+> sparse form another one copies.
+
+## V.6 Modular addition and wide bitwise ops: constrain the overflow, not the result
+
+PLONKish, two-row frontend
+
+**Addition mod $2^{32}$ in 1 gate.** Emit $\text{result} = a + b - \text{overflow}\cdot2^{32}$ as a single fused three-term
+add and range-constrain `overflow` to a handful of bits. **That bit count is the entire soundness argument**, so every call
+site must justify it: a sum of six 32-bit values has overflow $\le5$ (3 bits), of seven $\le6$ (3 bits), a final two-term
+add 1 bit. Message expansion frames the same trick as a division -- $(w_{\text{raw}}-w)/2^{32}$ range-constrained to
+**2 bits**, because a sum of four 32-bit values has quotient $\le3$.
+**Wide XOR/AND in 32-bit chunks.** Slice both operands into 32-bit chunks, do one 2-to-1 table read per chunk, and
+reconstruct with $\sum_i \text{chunk}_i2^{32i}$ asserted against the input. *"Since we perform the lookup from 32-bit
+multi-tables, the lookup operation implicitly enforces a 32-bit range constraint on each chunk"* -- so **only the tail
+chunk is explicitly range-constrained**: 2 range constraints for the whole operation at any width, 6 lookup rows per chunk.
+
+> **Where it stops.** The modular add does not range-constrain its *result* -- *"marked unsafe since the result is not
+> explicitly range-constrained herein."* Record which outputs a downstream lookup constrains implicitly and constrain the
+> rest explicitly: two round-state words at loop exit, three initial-state words, three schedule words, and all eight
+> outputs. Miss one and the hash is malleable. The chunked op stops where the reconstruction would wrap the native modulus.
+
+## V.7 Read-only arrays: build them lazily, or not at all
+
+PLONKish, two-row frontend
+
+The array is **not** created at construction; initialisation runs on the first non-constant read. A table whose entries are
+all constants and whose index is always constant therefore never touches the builder -- *"if both the table entries and the
+index are constant, we don't need a builder as we can directly extract the desired value from `raw_entries`"* -- and
+constant entries go through a caching helper, so repeated constants share one witness. A **twin** table stores a pair per
+index, so one read yields two field elements for one gate; that is what makes a 5-table encoding of an emulated curve point
+affordable, the four binary limbs plus prime limb of each coordinate packing as
+$(x_0,x_1),(x_2,x_3),(y_0,y_1),(y_2,y_3),(x_\pi,y_\pi)$ and a whole point costing 5 gates.
+**Price:** 1 gate per read; construction 1 gate per entry.
+
+> **Where it stops.** *"The caller must enforce that `_index < 2^table_bits`; `_index` is not constrained in this
+> function."* The index range is implied only if it came from a range-constrained source or a lookup, and a constant index
+> must be converted to a witness and pinned, at 1 gate.
+
+## V.8 Several rounds of a permutation per row, via a linear solve inside the relation
+
+PLONKish, two-row frontend
+
+The obvious encoding is one round per row, four wires holding four state limbs. But where an internal round S-boxes only
+`state[0]` and the internal matrix is diagonal-plus-all-ones, the other three limbs are **affine functions of the history**
+and can be *solved for inside the relation* rather than witnessed. Put `state[0]` at rounds $4i{+}0..4i{+}3$ into the four
+wires and recover $(s_1,s_2,s_3)$ at row start by a $3\times3$ Vandermonde solve in the relation itself:
+**56 internal rounds in 14 rows** instead of 56. Where no such gate exists, the initial external matrix multiply is 6 fused
+adds, exploiting the reuses $v_1 = v_2 + t_1$ and $v_3 = v_4 + t_2$:
+
+$$t_1 = s_0{+}s_1{+}2s_3,\quad t_2 = s_2{+}2s_1{+}s_3,\quad v_2 = 4s_0{+}4s_1{+}t_2,\quad v_1 = v_2{+}t_1,\quad v_4 = t_1{+}4s_2{+}4s_3,\quad v_3 = v_4{+}t_2$$
+
+> **Where it stops.** The round count must be divisible by the compression factor, asserted at compile time, and the
+> compressed rows must be **contiguous** in one block. Where external and internal rounds live in separate blocks you need
+> explicit state-propagation landing rows between them, and the saving shrinks by one row per boundary. The gate indexes
+> wires by witness index, so constant inputs must be materialised first (IV.7).
+
+---
+
+# Part VI -- Traps
 
 The AIR trap catalogue (`air.md` Part X) mostly transfers: range checks without canonicity, selectors that are boolean
 but not one-hot, advice not uniquely pinned, and small-field overflow all bite identically here.
