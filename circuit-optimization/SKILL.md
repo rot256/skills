@@ -8,7 +8,9 @@ description: Optimizing arithmetic circuits / constraint systems (R1CS, PLONKish
 Reduce the cost of an arithmetic circuit / constraint system without breaking soundness.
 A toolbox and a method, not a fixed playbook: `references/techniques.md` primes known moves but is deliberately incomplete -- the largest wins come from composing tricks or from structure specific to your circuit.
 Arithmetization-specific moves live in their own reference: `references/r1cs.md`, `references/air.md` and `references/plonkish.md`.
-Constraint degree is priced separately, in `references/degree.md`, because it is global and almost always under-spent.
+Two resources are priced separately because they are *global* rather than local: constraint degree (`references/degree.md`),
+which is almost always under-spent, and a bespoke relation added to the system itself -- a custom gate, a sub-AIR, a
+precompile -- which is charged once against every circuit whether it is used or not (`references/gates.md`).
 
 ## Know what is free
 
@@ -17,8 +19,8 @@ Every optimization moves work into what the proof system charges nothing for and
 | System | Pays for | Free / cheap |
 |--------|----------|--------------|
 | **R1CS** (Groth16, Marlin, Spartan) | multiplication rows `(A*z)(B*z)=(C*z)` | linear combinations feeding a row, inlined wire definitions (a standalone asserted equality still costs a row) |
-| **AIR / STARK** (Plonky3, SP1, OpenVM, stwo, Cairo, Miden) | `(preprocessed + main + permutation width) x padded height`; interactions; max constraint degree | constraints themselves, periodic/preprocessed columns, `is_transition` gating, anything affine in committed columns, values read from the next row |
-| **PLONKish** (halo2, Kimchi, Plonky2) | rows x columns; gate degree; copy constraints and their permutation columns; selector groups | additions within a gate, rotations within a region, selectors on unused rows, unrouted advice wires |
+| **AIR / STARK** | `(preprocessed + main + permutation width) x padded height`; interactions; max constraint degree | constraints themselves, periodic/preprocessed columns, `is_transition` gating, anything affine in committed columns, values read from the next row |
+| **PLONKish** | rows x columns; gate degree; copy constraints and their permutation columns; selector groups | additions within a gate, rotations within a region, selectors on unused rows, unrouted advice wires |
 
 State the scarce metric (mult-constraints? trace cells? interactions? degree?) and get a baseline before optimizing.
 The two most common ways to waste a week: optimizing width while padding eats the win, and reducing a degree that was not the global maximum.
@@ -32,6 +34,7 @@ The two most common ways to waste a week: optimizing width while padding eats th
    Trace-based systems ship static cost oracles -- use them (`air.md` I.6).
 3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`, `references/air.md`, `references/plonkish.md`, `references/degree.md`),
    then look for structure the catalogue misses -- usually the bigger win.
+   If the candidate is a new relation for the *system* rather than an encoding inside one circuit, price it with `references/gates.md` first: it will usually say no.
 4. Synthesize a candidate.
    Small boolean gadgets: search exactly with `scripts/synthesize.sage` (fix the multiplier `R`, solve a linear system over `QQ`).
 5. Verify soundness before trusting it: `scripts/verify.smt2` (cvc5 `QF_FF`) proves the constraint forces the output over a real `F_p`;
@@ -61,9 +64,11 @@ See `references/smt.md`, `references/sage.md`.
 - `references/techniques.md` -- cross-arithmetization catalogue (carry-save, CRT/RNS, lookups, range-check/spread, custom gates, non-deterministic advice, solver methods, primitive notes).
 - `references/r1cs.md` -- R1CS: what one row can do (single-row multipliers, lambda-packing, decoy roots, sqrt(N) law), not materialising values, free affine structure, bound arithmetic for non-native modmul, lower-bound tools, traps, the GF(2) cost model, and the baseline moves with their soundness side conditions.
   Measured prices throughout.
-- `references/air.md` -- AIR / STARK (Plonky3, SP1, OpenVM, stwo, Cairo, Miden, Valida, RISC Zero, ZisK): the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, a calibration chapter of worked good/bad encodings, traps, and floors.
-- `references/plonkish.md` -- PLONKish (halo2, Kimchi, Plonky2, Barretenberg): why a copy constraint is not free, advice vs routed wires, gate packing and the wire budget, selector grouping, the degree-for-wires dial inside a gate, the halo2 and Kimchi gadget catalogues, and gate-specific traps.
+- `references/air.md` -- AIR / STARK: the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, a calibration chapter of worked good/bad encodings, traps, and floors.
+- `references/plonkish.md` -- PLONKish: why a copy constraint is not free, advice vs routed wires, gate packing and the wire budget, selector grouping, the degree-for-wires dial inside a gate, the decomposition and hard-wire-budget gadget catalogues, and gate-specific traps.
+- `references/gates.md` -- bespoke relations (custom gates, sub-AIRs, precompiles), shared across arithmetizations: what a selector, a degree and the circuit-wide maxima actually cost before the relation is used once; multiplexing and de-multiplexing; relation vs lookup; how relations are invented (substitution, identity choice, search); when the answer is "no relation". A worked break-even and a decision procedure.
 - `references/degree.md` -- constraint degree as an economic resource: exact cost per backend, the bracket theorem (`D in {3,5,9,17,33}`), the blowup cliff, degree matching and where the free headroom goes, buying degree back with a column, the gating tax, and where the trade inverts (sumcheck, folding). Two worked break-evens and a decision procedure.
+- `references/deferral.md` -- *optional.* Moving work out of the circuit into a second proof over a domain where it is native: the emission, the co-processor's marginal row cost, the reconciliation you must budget for, and the break-even (≈40--50 emulated operations).
 - `references/smt.md` -- cvc5 / SMT-LIB: verify, prove impossibility, model the field.
 - `references/sage.md` -- SageMath: Groebner ideal-membership proofs, cofactor lifts, CRT/RNS bounds, computing hard-coded constants.
 - `scripts/` -- `synthesize.sage`, `cofactors.sage`, `verify.smt2`, `impossible.smt2`.
