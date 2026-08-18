@@ -1,7 +1,7 @@
 # Catalogue of circuit-optimization techniques
 
 Moves that survive the choice of proof system.
-Arithmetization-specific: `r1cs.md` (R1CS), `air.md` (AIR / STARK / PLONKish), `degree.md` (constraint degree).
+Arithmetization-specific: `r1cs.md` (R1CS), `air.md` (AIR / STARK), `plonkish.md` (halo2 / Kimchi / Plonky2 / Barretenberg), `degree.md` (constraint degree).
 
 ## 1. Carry-save / full-adder identity
 
@@ -18,7 +18,7 @@ Represent big / non-native values as small limbs.
 To prove `a*b = r (mod p)` in native field `n`: write `a*b = q*p + r` and check it **mod n** and **mod 2^t**.
 CRT pins the integer equality only if `D = a*b - q*p - r` is forced into a window narrower than the CRT modulus `n*2^t` -- which requires **range-checking `a,b,q,r`** (so `|D| < n*2^t`), not merely `(p-1)^2 < n*2^t` (that bounds `a*b` alone, not `q*p+r` or the sign).
 A classic soundness hole.
-Mina/Kimchi: 256-bit field in **88-bit limbs** -> 3 cells, FF-mul in 2 rows, each limb range-checked -- and that 88 is *derived* from a wire budget, not chosen (`air.md` IX.7).
+Mina/Kimchi: 256-bit field in **88-bit limbs** -> 3 cells, FF-mul in 2 rows, each limb range-checked -- and that 88 is *derived* from a wire budget, not chosen (`plonkish.md` III.2).
 RNS gives cheap independent ops, but comparisons / range checks force an expensive **exit from RNS** -- stay in RNS as long as possible.
 *Prove* the bound (`sage.md`), don't assume it.
 On R1CS the choice of limb base, the fold polynomial, and the exact bound constants are themselves the optimization -- `r1cs.md` Part IV.
@@ -80,7 +80,7 @@ Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *un
   soundness error `deg/|F|`, and `alpha` must be sampled **after** the values are committed.
   The same trick compresses a variable-length byte string into one cell -- but the length must be carried separately, or `[0x00,0x01]` and `[0x01]` collide.
 - **ECC:** GLV endomorphism splitting halves the scalar bit-length; windowing/wNAF cut additions; batch the affine inversions (above).
-  Incomplete addition is much cheaper than complete addition, and is sound only inside an explicitly proved index/bound argument (`air.md` IX.6).
+  Incomplete addition is much cheaper than complete addition, and is sound only inside an explicitly proved index/bound argument (`plonkish.md` III.1).
 - **Degree reduction:** introduce intermediate witnesses to split a high-degree gate into low-degree ones -- the inverse of section 5, when rows are cheaper than degree.
   It pays **only if the split constraint is the global maximum** (`degree.md` III.1).
 - **Shape the machine, not just the algebra.** The cheapest constraint is the one you never write: deleting the register file, counting instructions instead of bytes, bounding state motion to one item per step, allowing only power-of-two structure, and choosing an operand encoding whose lookup table decomposes are all constraint-system decisions made in the ISA (`air.md` VI.6).

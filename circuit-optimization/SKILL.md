@@ -7,7 +7,7 @@ description: Optimizing arithmetic circuits / constraint systems (R1CS, PLONKish
 
 Reduce the cost of an arithmetic circuit / constraint system without breaking soundness.
 A toolbox and a method, not a fixed playbook: `references/techniques.md` primes known moves but is deliberately incomplete -- the largest wins come from composing tricks or from structure specific to your circuit.
-Arithmetization-specific moves live in their own reference: `references/r1cs.md` and `references/air.md`.
+Arithmetization-specific moves live in their own reference: `references/r1cs.md`, `references/air.md` and `references/plonkish.md`.
 Constraint degree is priced separately, in `references/degree.md`, because it is global and almost always under-spent.
 
 ## Know what is free
@@ -30,7 +30,7 @@ The two most common ways to waste a week: optimizing width while padding eats th
    Witnesses, constraints, columns, interactions and degree are not interchangeable, and a metric that charges only rows reorders every trade-off in the references, so a change that looks like a win under a guessed metric can measure as a loss.
 2. Measure the scarce resource; find the dominating hotspot.
    Trace-based systems ship static cost oracles -- use them (`air.md` I.6).
-3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`, `references/air.md`, `references/degree.md`),
+3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`, `references/air.md`, `references/plonkish.md`, `references/degree.md`),
    then look for structure the catalogue misses -- usually the bigger win.
 4. Synthesize a candidate.
    Small boolean gadgets: search exactly with `scripts/synthesize.sage` (fix the multiplier `R`, solve a linear system over `QQ`).
@@ -61,7 +61,8 @@ See `references/smt.md`, `references/sage.md`.
 - `references/techniques.md` -- cross-arithmetization catalogue (carry-save, CRT/RNS, lookups, range-check/spread, custom gates, non-deterministic advice, solver methods, primitive notes).
 - `references/r1cs.md` -- R1CS: what one row can do (single-row multipliers, lambda-packing, decoy roots, sqrt(N) law), not materialising values, free affine structure, bound arithmetic for non-native modmul, lower-bound tools, traps, the GF(2) cost model, and the baseline moves with their soundness side conditions.
   Measured prices throughout.
-- `references/air.md` -- AIR / STARK / PLONKish: the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, the PLONKish model (copy constraints, wire budgets, gate packing, selector grouping), traps, and floors.
+- `references/air.md` -- AIR / STARK (Plonky3, SP1, OpenVM, stwo, Cairo, Miden, Valida, RISC Zero, ZisK): the area law and which ceiling binds, column engineering, the two-row window, degree, lookups and buses from the designer's side, multi-AIR machine economics, memory and mutable state, non-native arithmetic, a calibration chapter of worked good/bad encodings, traps, and floors.
+- `references/plonkish.md` -- PLONKish (halo2, Kimchi, Plonky2, Barretenberg): why a copy constraint is not free, advice vs routed wires, gate packing and the wire budget, selector grouping, the degree-for-wires dial inside a gate, the halo2 and Kimchi gadget catalogues, and gate-specific traps.
 - `references/degree.md` -- constraint degree as an economic resource: exact cost per backend, the bracket theorem (`D in {3,5,9,17,33}`), the blowup cliff, degree matching and where the free headroom goes, buying degree back with a column, the gating tax, and where the trade inverts (sumcheck, folding). Two worked break-evens and a decision procedure.
 - `references/smt.md` -- cvc5 / SMT-LIB: verify, prove impossibility, model the field.
 - `references/sage.md` -- SageMath: Groebner ideal-membership proofs, cofactor lifts, CRT/RNS bounds, computing hard-coded constants.

@@ -1,11 +1,12 @@
-# AIR / PLONKish optimization
+# AIR optimization
 
 *A field manual for trace-based constraint systems.*
 
 Non-obvious techniques for making an execution trace smaller, collected by reading the constraint systems of
-OpenVM, SP1, Plonky3, Plonky2, stwo, Cairo/Stone, Miden, Valida, Jolt, Binius, halo2, Kimchi, ZisK and powdr.
+OpenVM, SP1, Plonky3, stwo, Cairo/Stone, Miden, Valida, Jolt, Binius, RISC Zero, ZisK and powdr.
 Every entry carries the mechanism, the price, and the condition under which it stops working.
-Cross-arithmetization moves live in `techniques.md`; R1CS in `r1cs.md`.
+Gate-based systems are `plonkish.md`; constraint degree is `degree.md`; R1CS is `r1cs.md`;
+cross-arithmetization moves are `techniques.md`.
 
 $$\text{cost} \;=\; \underbrace{(w_{\text{pre}} + w_{\text{main}} + w_{\text{perm}})}_{\text{width}} \times \underbrace{\lceil h \rceil_{\text{pad}}}_{\text{height}} \qquad\text{scaled by}\qquad \text{blowup} \approx d - 1$$
 
@@ -27,7 +28,7 @@ Below that maximum, extra degree is *already paid for* -- see IV.2, which is whe
 
 **The window is two rows.**
 `local` and `next`, nothing else (Plonky3 `symbolic/expression.rs:129`: "expressions cannot span more than two rows"; Kimchi `Curr`/`Next`).
-halo2 relaxes this to arbitrary rotations *within a region*, and that difference drives its whole gadget style (IX).
+halo2 relaxes this to arbitrary rotations *within a region*, and that difference drives its whole gadget style (`plonkish.md`).
 Anything further away goes through a shift register (III.5) or a bus (III.7).
 
 **Interactions are a third currency, priced separately from columns.**
@@ -46,10 +47,11 @@ Those are the only two kinds of free column (I.5). Everything else is witness.
 **Parts I--VIII are the row-based AIR model**: a trace of columns, transition and boundary constraints over a
 two-row window, no copy constraints, cross-row and cross-chip wiring done by lookups/permutation buses.
 That is Plonky3, SP1, OpenVM, stwo, Cairo/Stone, Miden, Valida, RISC Zero, ZisK.
-**Part IX is the PLONKish model** -- rotations, copy constraints, custom gates, wire budgets, selector combining --
-which is a genuinely different cost model (halo2, Kimchi, Plonky2), kept separate rather than annotated in place.
-**Parts X and XI (traps, and knowing when to stop) apply to both.**
-Where a trick crosses over, the tag under its heading says so.
+**The PLONKish model is `plonkish.md`** -- rotations, copy constraints, custom gates, wire budgets, selector combining --
+a genuinely different cost model (halo2, Kimchi, Plonky2, Barretenberg), kept in its own reference rather than annotated
+in place, because almost nothing about *paying for a copy* or *paying for a selector* has an analogue here.
+Parts IX and X (traps, and knowing when to stop) apply to both; where a trick crosses over, the tag under its heading
+says so.
 
 ---
 
@@ -748,7 +750,7 @@ let a = ndarray::concatenate(Axis(0), &[local.work_vars.a, next.work_vars.a]).un
 (OpenVM `sha2-air/src/air.rs:524,589`) -- **4 SHA rounds per row with zero copy columns** for a 3-deep dependency, because
 the window is 8 wide.
 Kimchi's packing is the extreme version: 5 Poseidon rounds per row, 5 scalar-mul bits per 2 rows, 8 endo-crumbs per row
-(IX.7).
+(`plonkish.md` III.2).
 
 > **Where it stops.** Exactly 2 rows. Dependencies deeper than $2 \times$ (rounds per row) need III.5.
 
@@ -1614,17 +1616,13 @@ The cheapest constraint is the one you never write. Five documented instances:
 > *"Mixing opcode types unevenly can thus produce a cycle-efficient program that is still proving-expensive."*
 > An ISA tuned to shrink one segment can silently make another the binding one.
 
-## VI.7 Two measured negative results, kept for calibration
+## VI.7 Two measured negative results
 
 Universal
 
-**Width is not the objective.** OpenVM deleted 12 specialized pairing opcodes, *"removed 16527 columns"* -- and cells went
-**25.4M -> 92.6M (3.65$\times$)** because the work reappeared as many more rows in generic chips (`openvm#1413`).
-**Optimize $\text{width}\times\text{padded height}$, never width alone.**
-
-**Padding eats small width wins.** Thinning `AddSub` from 34 to 32 columns and 20 to 19 interactions projected 1.63B cells;
-it measured **0.12B** -- *0.2% of total cells* -- because each chip pads to its own power-of-two height (`openvm#2957`).
-The author's conclusion is the right one: the effort belonged in splitting *all* the immediate chips, not thinning one.
+Both of the chip-level moves above have shipped counterexamples: deleting 16,527 columns of specialised pairing AIR made
+total cells **3.65x worse**, and thinning `AddSub` by two columns delivered **0.2%** of its projected saving.
+They are worked in IX.4, because they are calibration rather than technique.
 
 ---
 
@@ -1866,195 +1864,97 @@ Universal
 
 ---
 
-# Part IX -- The PLONKish model
+---
 
-A different cost model, kept separate because the two do not mix. Rows $\times$ columns is still the area, but three things
-change: **copy constraints exist and are not free**, **gates are custom and are packed into rows**, and **selectors have
-their own economics**.
+# Part IX -- Calibration: what good and bad actually look like
 
-## IX.1 Rotations replace copies -- and a copy is not free
+Prices in isolation do not build judgement. This part is the same job encoded twice, with the measured delta, so you can
+recognise which side of it your AIR is on.
 
-PLONKish
+## IX.1 The same job, two encodings
 
-halo2's own statement of the trick:
+Universal
 
-> *"The motivation for offset references is to reduce the number of columns needed in the configuration ... If we did not
-> have offset references then we would need a column to hold each value referred to by a custom gate, and we would need to
-> use equality constraints to copy values from other cells ... we also do not need equality constraints to be supported for
-> all of those columns."* (`book/src/concepts/chips.md:36-42`)
+| job | expensive encoding | cheap encoding | delta |
+|---|---|---|---|
+| 32-bit comparison | full bit decomposition, 33 columns | first-differing-byte: 4 flags + 9 bits + 1 inverse = **14 columns** (Valida `alu_u32/src/lt/stark.rs`) | 2.4x |
+| 16-bit comparison | any comparator chain | `diff = a - b + bit*2^16`, range-checked: **1 column**, 1 lookup (SP1 `operations/u16_compare.rs:57-71`) | -- |
+| 64-bit add | 4 witnessed carry columns | carry as an *expression* asserted boolean: **0 carry columns** (SP1 `operations/add.rs:63-69`) | 4 columns/word |
+| 5-way XOR of bits | XOR chain, degree 5 | `diff(diff-2)(diff-4) = 0`, **degree 3, 0 aux columns** (Plonky3 `keccak-air/src/air.rs:131-139`) | 2 degrees |
+| 32-bit modular add | witnessed carry + range check | `acc(acc+2^32)(acc+2*2^32) = 0` plus the mod-$2^{16}$ twin: **0 carry columns**, 2 constraints (`plonky3/air/src/utils.rs:82-133`) | -- |
+| Poseidon2, 16-wide, 8+20 rounds | one committed state per round, 448 columns | constants and linear layers are degree-1 and fold into the $x^3$ constraint; partial rounds commit only `state[0]`: **179 columns** (SP1 `operations/poseidon2/permutation.rs:45-54`) | 2.5x |
+| bitwise AND/XOR/OR | 64 bit columns + booleanity + degree-3 selected constraints (Valida) | Cairo *diluted form*: **degree-1** constraints, **zero** bit columns, all three ops from one witness set (`diluted_check_cell.h`) | -- |
+| prove `[dst] == 0` for a 252-bit felt | witness 28 limbs, sum them, one inverse: 47 columns | split the component by branch outcome and read memory with **28 literal zeros in the lookup tuple**: 9 columns, 1 constraint (stwo-cairo `jnz_opcode_non_taken.rs:87-121`) | 5x |
+| decode a fixed instruction | 18 witness columns + 19 constraints (generic path) | specialise the component: all 7 fields are compile-time constants, so decode is **0 columns, 0 constraints, 1 lookup** (stwo-cairo `decode_instruction_a4d88.rs:21-39`) | -- |
+| range-check `n` bytes | one lookup each | pair them into the two key slots of a byte table: $\lceil n/2\rceil$ lookups (SP1 `air/word.rs:55-80`); measured **144 -> 120 segments** on reth (`openvm#2841`) | 2x |
+| per-row constant | a committed column | periodic column (verifier-evaluable, degree $n - n/p$), or a linear combination of one-hot flags you already own (`keccak-air/src/air.rs:175-185`) | 1 column |
+| link rows 17 apart | shift-register columns | a private bus with a unique tag: 2 interactions, **0 columns** (OpenVM `sha2-air/src/air.rs:358-382`) | -- |
 
-The price of the alternative is concrete: enabling equality on a column adds it to the permutation product
-$\prod_i (v_i(X) + \beta s_i(X) + \gamma)$, so each such column costs one extra fixed permutation polynomial *and* one
-degree in the rule; past the degree bound halo2 splits the product across $b$ sets with a separate grand-product column each
-(`design/proving-system/permutation.md:180-248`).
-In Plonky2 the same fact appears as a *width* budget: only the first `num_routed_wires` columns participate, and
-`num_partial_products = ceil(num_routed_wires / quotient_degree_factor) - 1` (`util/partial_products.rs:40-47`).
+Every row of that table is the same move: **stop materialising a value that something else already pins.**
 
-> **Where it stops.** Rotations reach only *within a region* (halo2) or exactly one row (Kimchi's `Curr`/`Next`, Plonky2's
-> gate). Crossing a region or a chip forces a real copy. And a rotation-using gate cannot be placed on an arbitrary row, so
-> it cannot fill floor-planner gaps -- only rotation-free gates can.
+## IX.2 Four AIRs that are worth reading as examples of good
 
-## IX.2 Advice (unrouted) wires for anything no gadget reads
+Universal
 
-PLONKish (Plonky2)
+**stwo-cairo `ret_opcode` -- 16 columns, 4 relation uses.**
+Full instruction decode costs nothing because the component exists only for one instruction variant, so the entire
+instruction word is a constant in the lookup tuple. Compare `generic_opcode` at **243 columns and 22 relation uses**
+(`components/generic_opcode.rs:10`). That 15x is the price of generality, and it is why 17 specialised
+`decode_instruction_<hash>` subroutines exist.
 
-Columns above `num_routed_wires` are committed but do **not** join the permutation argument. Every serious Plonky2 gate
-parks its internals there:
+**OpenVM's adapter/core split.**
+One `Rv32BaseAluAdapterAir` -- 2 reads, 1 write, execution bridge -- is shared by ALU, shift, less-than, mul, mulh and
+divrem, with the core handing over reads and writes as `AB::Expr` and **zero columns of glue**
+(`arch/integration_api.rs:220-278`). The factoring is what makes VI.1's subcase splitting pay: you delete the core and
+keep the adapter.
 
-```rust
-/// An intermediate wire where the prover gives the (purported) binary decomposition of the index.
-pub(crate) const fn wire_bit(&self, i: usize, copy: usize) -> usize {
-    self.num_routed_wires() + copy * self.bits + i
-}
-```
-(`gates/random_access.rs:116-122`). `ExponentiationGate`'s budget is the resulting asymmetry:
-$\min(\text{routed}-2, (\text{wires}-2)/2) = \min(78,66) = 66$ bits (`gates/exponentiation.rs:53-58`).
+**SP1's `MemoryBump` shadow read.**
+Register accesses drop `prev_high` and `compare_low` -- **2 timestamp columns instead of 5**, saving 9 columns on every
+ALU row -- by maintaining the invariant externally: a bump chip re-syncs every register when the clock's high limb rolls
+over (`memory/consistency/columns.rs:12-27`). A local saving bought with a global invariant, priced honestly.
 
-> **Where it stops.** Anything a *gadget* must read or reuse must be routed. That is why `RandomAccessGate` exposes the
-> claimed element (routed) and hides the index bits (unrouted): the caller never needs the bits.
+**Miden's opcode layout.**
+Opcodes are *assigned* by degree class, so an instruction whose constraints need degree 5 gets a 4-bit flag and one that
+needs degree 2 gets a 7-bit flag (`air/src/constraints/op_flags/mod.rs`). The ISA encoding is a degree-budget allocation.
+Cost: 32 of 128 opcodes are unusable.
 
-## IX.3 Gate packing: `num_ops` comes from the wire budget
+## IX.3 Four patterns that are reliably bad
 
-PLONKish (Plonky2)
+Universal
 
-Every "small" gate is a vector of independent copies of one op, and the copy count is a pure division:
+**Optimising width while the height ceiling binds, or vice versa.** I.1. Know which of your two ceilings is live before
+deleting a column.
 
-```rust
-pub(crate) const fn num_ops(config: &CircuitConfig) -> usize {
-    let wires_per_op = 4;
-    config.num_routed_wires / wires_per_op
-}
-```
-(`gates/arithmetic_base.rs:44-47`). At 80 routed wires: **20** base MADs, **10** extension MADs, **13** extension muls,
-**40** lookups, **26** LUT entries per row.
+**One wide row that pays every opcode's columns on every row.** The classic monolithic-CPU design. The fix is per-class
+chips joined by a bus (III.7): SP1 v5 has five separate files for Add, Addi, Addw, Sub, Subw, and a `DIV` with `rd = x0`
+costs **34 cells instead of 246**.
 
-The universal primitive is the fused $c_0 m_0 m_1 + c_1 a$ (degree 3), and *everything* is a rewrite into it:
-`mul` feeds `x` into the unused addend slot rather than a zero wire; `select(b,x,y) = b\cdot x - (b\cdot y - y)` is **2**
-fused ops, not 3; `or(b_1,b_2)` is 2. **Addition is not cheaper than multiplication in Plonky2** -- it burns a full
-degree-3 slot.
+**Sitting strictly inside a degree bracket.** A degree-6 AIR pays exactly what a degree-9 AIR pays, so three degrees are
+prepaid and unused (`degree.md` II.1). Plonky3's `(7,0)` Poseidon2 is the shipped example.
 
-Two non-obvious consequences:
-- **Rows are consumed by *constant-pair fragmentation*, not by op count.** The builder reuses partially-filled rows keyed on
-  the gate's constant vector (`plonk/circuit_builder.rs:813-840`), so 20 different $(c_0,c_1)$ pairs used once each cost 20
-  rows, not one. That is why `add`/`sub`/`mul` all normalize to $(1,1)$, $(1,-1)$, $(1,0)$.
-- **A gate that emits one generator can never share a row.** `num_ops` defaults to the generator count
-  (`gates/gate.rs:241-244`), so `BaseSumGate`, `ExponentiationGate`, `PoseidonGate` and `CosetInterpolationGate` always take
-  a fresh row; `RandomAccessGate` emits one per copy and can pack.
+**Saturating the degree budget and then needing to gate.** Miden's degree-9 range-check transition constraint **cannot be
+multiplied by any selector at all** (`air/src/constraints/range/mod.rs`) -- which is why its delta-0 case exists purely so
+padding rows are legal without one. Spending the last degree buys the constraint and sells your ability to condition it.
 
-## IX.4 Selector grouping is the tax nobody expects
+## IX.4 Two measured failures, and what they teach
 
-PLONKish (Plonky2), and its halo2 analogue
+Universal
 
-Gates are sorted by degree and bin-packed so that
-$$|G| + \max_{g\in G}\deg(g) \;\le\; \text{quotient\_degree\_factor} + 1 = 9$$
-and the filter that zeroes a gate outside its rows is a **product over the group**, so
-**filtered degree = gate degree + $|G|$ ($+1$ for the UNUSED term when there are several selectors)**
-(`gates/selectors.rs:101-160`, `gates/gate.rs:326-333`).
-One selector suffices only if $\max\deg + n_{\text{gates}} - 1 \le 9$ -- with `PoseidonGate` (degree 7) present, that permits
-**three gate types in the entire circuit**. A degree-9 gate panics outright.
+These are the ones worth remembering, because both looked like wins on paper.
 
-halo2's version is the mirror image: $\ell$ simple selectors on disjoint row sets pack into one fixed column at the cost of
-$+(\ell-1)$ degree on every constraint they select, with the packing algorithm stopping at the degree bound
-(`design/implementation/selector-combining.md:24-43,81-83`).
-Its side condition is worth quoting: *"Every polynomial constraint involving a simple selector $s$ must be of the form
-$s\cdot t = 0$, where $t$ is a polynomial involving no simple selectors"* -- a selector used non-linearly must be a complex
-selector and is left unoptimized. And hand-made fixed columns *"cannot take part in the automatic combining"*, so manual
-combining is counterproductive.
+**Width is not the objective (`openvm#1413`).**
+Deleting 12 specialised pairing opcodes *"removed 16527 columns"* -- and total cells went **25.4M -> 92.6M, 3.65x**, with
+the app proof 2.5x slower, because the work reappeared as many more rows in generic chips.
+**Optimise width x padded height. Never width alone.**
 
-**Practical rule: prefer fewer, reusable gate types of uniform degree.** A rarely-used degree-6 gate can push a common
-degree-3 gate into a smaller group *and* add a selector column that every row commits to.
+**Padding eats small width wins (`openvm#2957`).**
+Thinning `AddSub` from 34 to 32 columns and 20 to 19 interactions projected 1.63B cells saved; it measured **0.12B --
+0.2% of total cells**. Each chip pads to its own power-of-two height, so a 6% width cut does not become a 6% cell cut.
+The author's conclusion was the right one: the effort belonged in splitting *all* the immediate chips, not thinning one.
 
-Two more global maxima leak the same way: `num_gate_constraints` and the constants-column count are **maxima over all gate
-types** (`plonk/circuit_builder.rs:970-991,1236-1240`), so every row is evaluated against the widest gate's constraint
-count. Pack aggressively within a gate type you use a lot; keep rarely-used gates narrow.
-
-## IX.5 Trading degree for wires inside one gate
-
-PLONKish (Plonky2)
-
-The `CosetInterpolationGate` is an explicit dial, and its doc says so: *"A full interpolation of N values corresponds to the
-evaluation of a degree-N polynomial. This gate can however be configured with a bounded degree of at least 2 by introducing
-more non-routed wires."*
-The numbers are in IV.5. The *second* trick in that code is the one to steal: after fixing the intermediate count, it
-**re-minimizes the degree** purely so the gate joins a bigger selector group.
-
-Other shapes worth knowing:
-- `BaseSumGate<B>`: base-$B$ decomposition **and** a per-limb range check in one row, at `degree = B` and
-  $\text{num\_limbs} = \min(\log_B(p-1), \text{routed}-1)$ = 63 bits for $B=2$ on Goldilocks. Degree is linear in the base.
-- `ReducingGate`: 43-term Horner in one **degree-2** row, because each accumulator step is its own constraint; base-field
-  coefficients get 1 wire while accumulators get $D$, and **the last accumulator aliases the output wires**, saving $D$.
-- `RandomAccessGate`: claimed element + prover one-hot bits, $2+2^{\text{bits}}$ **routed** wires and degree $\text{bits}+1$
-  **per access** -- the entire list is re-materialized into routed wires on every read, so random access into a length-$n$
-  array is $\Theta(n)$ wires per read.
-- `PoseidonMdsGate`: a linear layer as a **degree-1** gate, which can join any selector group without raising its degree --
-  used only `if builder.config.num_routed_wires >= mds_gate.num_wires()`.
-
-## IX.6 halo2's decomposition family
-
-PLONKish (halo2)
-
-- **Running sum.** $z_{i+1} = (z_i - k_i)/2^K$, with the word never witnessed -- recovered as $k_i = z_i - 2^K z_{i+1}$ from
-  two adjacent rows of the *same* column and fed directly to the lookup.
-  **One advice column, $W{+}1$ rows, $W$ lookups, and exactly one copy** for a $WK$-bit range check.
-  *Strict mode is what actually range-checks*: only when $z_W$ is constrained to zero is the element proven $< 2^{WK}$.
-- **Shifted final chunk.** To prove $\alpha < 2^n$ with $n \le K$ on a $K$-bit table, look up $\alpha$ **and**
-  $\alpha\cdot2^{K-n}$ -- 3 rows, 2 lookups, one degree-2 bitshift gate. (Kimchi does the same *inside* the lookup argument
-  with a scaled joint lookup, for zero witness cells.)
-- **One lookup argument serving two decompositions**, folded by a selector into a single input expression -- one argument
-  instead of two, at the cost of degree 2 in the lookup input.
-- **Lookup-free running sum**, range-checking the word by the degree-$2^K$ product instead: no table at all, but
-  `assert!(WINDOW_NUM_BITS <= 3)`.
-- **Small-set Lagrange interpolation instead of a lookup.** SHA-256 interpolates the 2- and 3-bit spreads so those pieces
-  cost *no lookup row* -- degree = domain size, which is why a 9-bit piece is split into $3\times3$ rather than interpolated.
-- **Conditional canonicity.** Prove $\alpha < p$ only *when the top bit is set*, by multiplying the whole comparison by the
-  flag $\alpha_2$: degree $+1$, and the high 120 bits come free from an existing running sum.
-- **Incomplete elliptic-curve addition, and the argument that licenses it.** The incomplete formulas are degree 4 and 3;
-  *complete* addition is 12 constraints up to degree 6 with four `inv0` witnesses, and needs two rows because it wants 9
-  advice columns. halo2 discharges the exceptional case not by casework but by tracking **indices**: distinct indices mod
-  sign imply distinct $x$, and the accumulator is bounded by $2^{n+1}+2^n-1 < (q-1)/2$. The sage check shows that first
-  fails at $i = 252$, so **exactly the last three iterations and the final conditional subtraction use complete addition**
-  -- everything else is incomplete. Sinsemilla uses the same operator with a different licence: an exceptional case would
-  yield a discrete log. Two companion savings: $y_A$ is *eliminated* from the accumulator by substituting the slope
-  equations, leaving one materialized $y$ in the whole loop; and the fixed-base gadget interpolates only the
-  $x$-coordinate, recovering $y$ from the curve equation plus a per-window constant $z_w$ chosen so that $z_w + y$ is a
-  square and $z_w - y$ is not.
-  *Stops:* the bound is the whole proof. Change the scalar width, the curve, or the accumulator's starting point and the
-  index at which incompleteness becomes unsound moves with it.
-
-## IX.7 Kimchi: designing to a hard budget
-
-PLONKish (Kimchi)
-
-15 columns, **7 permutable**, a 2-row (`Curr`/`Next`) window, $\le 4$ lookups per row. Every design decision follows:
-
-> *"We have at most 7 copyable cells per row and gates can operate on at most 2 rows, meaning that we have an upperbound of
-> at most 14 limbs per gate (or 7 limbs per row)"* $\Rightarrow \text{limbs}_{\max} = \lfloor 14/4\rfloor = 3
-> \Rightarrow \ell = t/3 = 264/3 = \mathbf{88}$ bits per limb.
-
-That is the whole derivation of Kimchi's 88-bit foreign-field limbs, from a wire budget.
-Other moves worth transplanting:
-- **`Zero` companion rows** as pure storage, doubling the addressable cells for one selector.
-- **Gate chaining through the permutation**: a gate's `Next` row *is* the next gate's `Curr` row, so the hand-off costs
-  nothing -- but a chain must be **terminated**, which `Xor16` does with copy constraints of a row to itself
-  (*"Warning: don't forget to check that the final row is all zeros"*).
-- **Negated modulus to kill borrows.** Foreign-field multiplication uses $f' = 2^t - f$ as a public gate coefficient so no
-  term is ever subtracted, then deletes the terms $\equiv 0 \bmod 2^t$.
-- **Bisect once, not twice.** Only $p_1$ is bisected; $p_0$ spills, and the leftovers become witnessed carries $v_0, v_1$ --
-  *"each bisection requires constraints for the decomposition and range checks for the two halves ... we would like to avoid
-  bisections as they are expensive."*
-- **Fold the bound check into the gate that already has the value.** Folding $q' = q + f'$ into `ForeignFieldMul` saves
-  4 rows per multiplication (12 -> 8); the 2-limb decomposition of $q'$ saves 2 more. $r'$ *cannot* be folded --
-  *"This leaves only 2 remaining copyable cells."*
-- **Lazy bound checks in a chain.** Intermediate foreign-field additions may exceed $f$; only the final result needs the
-  $< f$ bound, taking a chain from $9n+11$ rows to $n+7$.
-- **Inline a range check into a gate's spare cells**: *"Since our current row within the `Rot64` gate is almost empty, we can
-  use it to perform the range check within the same gate."*
-
-> **Where it stops.** The lazy-bound trick is sound only because wrapping an 88-bit limb in $\mathbb F_n$ would need
-> $k \approx 2^{167}$ chained additions -- *"greater than Kimchi's maximum circuit length"*. **The same reasoning fails for
-> multiplication**: $r$ after $k$ multiplications is $\approx f^k$, and $f^k > 2^t n$ for $k>2$, so every multiplication must
-> check $a,b,q,r < f$. Note also the distinction the book is careful about: $q<f$ gives *correctness*, $r<f$ gives
-> *uniqueness/canonicity* -- they are different obligations.
+> **The calibration.** A width ratio is a prediction, not a measurement. Before believing one, ask which ceiling binds
+> (I.1), what the padding does to the height (I.3), and whether the interaction count moved (I.4). Report the triple and
+> the measured cells, or you have not measured anything (XI.3).
 
 ---
 
