@@ -402,12 +402,7 @@ kept honest by its test suite.
 
 ### Signing
 
-```rust
-fn sign<T: Tagged>(sk: &SigningKey, msg: &T) -> Signature;
-fn verify<T: Tagged>(vk: &VerificationKey, sig: &Signature, msg: &T) -> Result<(), CryptoError>;
-```
-
-Wrapping ed25519:
+Signing and verification are methods on the keys, wrapping ed25519:
 
 ```rust
 impl SigningKey {
@@ -434,18 +429,20 @@ Return a uniform external failure instead of leaking parser or equation details.
 ```rust
 use rand_core::CryptoRng;
 
-fn seal<M: Tagged, A: Tagged, R: CryptoRng>(
-    rng: &mut R,
-    key: &Key,
-    pt: &M,
-    ad: &A,
-) -> Ciphertext;
+impl Key {
+    pub fn seal<M: Tagged, A: Tagged, R: CryptoRng>(
+        &self,
+        rng: &mut R,
+        pt: &M,
+        ad: &A,
+    ) -> Ciphertext;
 
-fn open<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
-    key: &Key,
-    ct: &Ciphertext,
-    ad: &A,
-) -> Result<M, CryptoError>;
+    pub fn open<M: Tagged + serde::de::DeserializeOwned, A: Tagged>(
+        &self,
+        ct: &Ciphertext,
+        ad: &A,
+    ) -> Result<M, CryptoError>;
+}
 ```
 
 Accept plaintext and associated data as distinct tagged types.
