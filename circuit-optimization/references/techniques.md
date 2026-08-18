@@ -72,6 +72,9 @@ Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *un
 - **Groebner / ideal methods** to prove outputs uniquely determined and extract soundness cofactors (`sage.md`).
   Both blow up with degree/variables -- per-gadget, not whole-circuit.
 - **Constraint-system optimizers as a trick catalogue.** Their passes are the mechanized versions of moves you should be doing by hand: inline any column that equals a low-degree expression of others (while the degree budget allows), delete a range check that a tighter known range implies, replace a small-domain lookup with a matched polynomial, forward a store to a later load at a provably-equal address (`air.md` "Redundant Range-Check Elimination", `degree.md` "Spending the Free Headroom").
+- **Multiplicative-complexity synthesis over GF(2).** The cost function is exact, with off-the-shelf exact synthesis through six inputs, windowed rewriting above that, and a SAT don't-care pass that deletes AND gates outright (`r1cs-gf2.md` "Multiplicative Complexity Is This Cost Model").
+  This is the one place in the catalogue where a published tool optimizes precisely the charged metric, so run it before hand-designing -- but only for the restricted fresh-product-row model.
+  Advice-bearing and backend-native relations are routed in `boolean-zk.md`.
 - **Mutation-test the constraints.** Evaluate every constraint on every row of a concrete trace, then flip one bit and assert something catches it.
   It is the only cheap way to discover that an "implicit range check" you assumed was there is not.
 

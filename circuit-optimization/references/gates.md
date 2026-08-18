@@ -408,6 +408,8 @@ Four of the moves above already exist as compiler passes, and knowing which are 
 - **Whole-relation synthesis.** Generating a workload-specific relation from a hot basic block, with profile-guided selection of which blocks to promote.
 - **Selector packing ("Selector Compression"), automated.** An exclusion matrix plus greedy combination, running with no user input.
 - **Degree accounting ("The Degree Step Function"), automated.** Symbolic evaluation infers the true degree and only *checks* the author's declared hint; the strict version turns the same machinery into a hard assertion.
+- **AND-count minimization over an XAG, automated end to end.** Cut enumeration and affine-class lookup against minimum circuits feed resubstitution and refactoring accepted on product count, followed by a SAT pass that deletes AND gates made free by don't cares (`r1cs-gf2.md` "The Windowed Rewriting Loop").
+  It recovers the gap left by naive structural construction but finds nothing on published minimal cryptographic circuits and does not beat careful hand design.
 - **Soundness of the synthesized identity.** Not automated anywhere.
   That is the part you do by hand, with `scripts/synthesize.sage`, `scripts/verify.smt2` and `scripts/cofactors.sage`.
 
