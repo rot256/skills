@@ -5,21 +5,20 @@
 Degree is the one resource in a constraint system that is **global, quantized, and usually under-spent**.
 This reference is the arithmetic behind that sentence: what a unit of degree costs in each backend, which values of the budget are rational, how to detect and spend unused headroom (*degree matching*), when to buy degree back with a column, and where the whole trade inverts.
 
-Arithmetization-specific material lives in `air.md` (Part IV summarises this file from the AIR side) and `r1cs.md`.
+Arithmetization-specific material lives in `air.md` ("Degree: The Master Budget" summarises this file from the AIR side) and `r1cs-fp.md`.
 
 **Notation.** $n$ = trace height, $D$ = the system-wide max constraint degree, $d$ = one constraint's degree, $b = \log_2(\text{blowup})$, $W$ = trace width, $E$ = extension degree.
 
 # What a Unit of Degree Costs
 
-## The Logarithmic Soundness Price Is a Trap
-
+## The Soundness-Price Trap
 Degree enters the DEEP-ALI out-of-domain error linearly, hence the *bit* count logarithmically:
 $$\varepsilon_{\text{DEEP}} = L^+ \cdot \frac{\max\deg \cdot (k + \max\text{combo} - 1) + (k-1)}{|F|}$$
 $D: 3 \to 7$ costs $\log_2(7/3) \approx 1.22$ bits; $D: 3\to 9$ costs $\approx 1.58$.
 Recover them with one extra FRI query or two grinding bits.
 
 > **Where it stops -- and this is the trap.** Degree looks nearly free in the soundness spreadsheet and is brutally
-> expensive in the prover's concrete cost ("The Quotient Identity"--"Degree Spends Two-Adicity, I.e. It Caps Trace Height"). **Never budget degree from the soundness analysis.**
+> expensive in the prover's concrete cost ("The Quotient Identity"--"The Two-Adicity Height Cap"). **Never budget degree from the soundness analysis.**
 > Note also that the AIR-composition error depends on the *number* of constraints, not their degree, so splitting one
 > degree-$d$ constraint into $k$ degree-2 constraints trades a
 > $\log d$ term for a $\log k$ term -- a wash.
@@ -41,11 +40,10 @@ log2_ceil_usize(constraint_degree - 1)
 The same exponent appears in KZG-based PLONKish under a different name -- the *extended domain* is doubled until `(1 << extended_k) >= n * (cs.degree() - 1)` -- and in provers that call the chunks "segment polynomials".
 One quantity, three vocabularies.
 
-> **Where it stops.** The `ceil` is the entire story, and it is the subject of Part II. $D-1 = 5$ and $D-1 = 8$ both cost
+> **Where it stops.** The `ceil` is the entire story, and it is the subject of "Degree Matching". $D-1 = 5$ and $D-1 = 8$ both cost
 > 8 chunks, so degrees 6, 7 and 8 are free upgrades over 5.
 
-### The Blowup Cliff: $D \le 2^b + 1$
-
+### The Blowup Cliff
 The prover needs the trace on the quotient domain.
 If that domain is no larger than the committed LDE and shares its coset shift, this is a **free truncation of an array you already have**; otherwise it is a full iDFT + DFT of the whole trace:
 
@@ -65,10 +63,9 @@ let mut log_blowup = 1;
 while max_constraint_degree > (1 << log_blowup) + 1 { log_blowup += 1; }
 ```
 > **Where it stops.** This is why raising $D$ from 3 to 7 in a VM is never a local change: it takes $b$ from 1 to 3 and
-> **quadruples the LDE of every column of every chip**, not just the chip that wanted the degree (worked in "Worked Break-Even: Poseidon2 Registers, 141 Columns Against 4 Quotient Chunks").
+> **quadruples the LDE of every column of every chip**, not just the chip that wanted the degree (worked in "Poseidon2 S-Box Register Break-Even").
 
-### Degree Spends Two-Adicity, I.e. It Caps Trace Height
-
+### The Two-Adicity Height Cap
 The quotient domain must exist, and in a two-adic field it does not exist above $2^{\text{TWO\_ADICITY}}$.
 Every quotient chunk needs its own coset, so the reachable trace height is $2^{\text{TWO\_ADICITY} - \lceil\log_2(D-1)\rceil}$; a careful toolchain computes that ceiling and enforces it before proving rather than failing deep inside the prover.
 
@@ -83,30 +80,27 @@ BabyBear, `TWO_ADICITY = 27`:
 | 10--17 | 4 | $2^{23}$ |
 
 > **Where it stops.** Goldilocks has `TWO_ADICITY = 32`, so the cap almost never binds; on BabyBear/KoalaBear it binds at
-> production shard sizes. Note this table has **the same bracket structure** as "The Bracket Theorem: Only $D \in \{3, 5, 9, 17, 33\}$ Are Rational" -- height is lost only at bracket
+> production shard sizes. Note this table has **the same bracket structure** as "The Bracket Theorem" -- height is lost only at bracket
 > boundaries, never inside one.
 
-### Degree Is in the Proof, and Worse in a Recursive Verifier
-
+### Proof-Size Cost of Quotient Chunks
 Every quotient chunk is opened at $\zeta$ and shipped, and the verifier recombines them through Lagrange coefficients over the split domains.
 Price: $2^{\lceil\log_2(D-1)\rceil}\cdot E$ extension elements plus their Merkle paths **in every query round**.
 
 > **Where it stops.** In a recursive setting the verifier's recombination is itself constrained, so quotient chunks cost
 > *recursion-circuit rows*. That is why recursion layers pick small $D$ even when the app layer does not.
 
-### Zero-Knowledge Costs Exactly One Degree
-
+### The Zero-Knowledge Degree Surcharge
 ```rust
 let constraint_degree = (degree_hint + is_zk).max(2);
 ```
-> **Where it stops -- and nobody documents this.** If your AIR sits at $D = 2^j + 1$ (a bracket *top*, "The Bracket Theorem: Only $D \in \{3, 5, 9, 17, 33\}$ Are Rational"), enabling ZK
+> **Where it stops -- and nobody documents this.** If your AIR sits at $D = 2^j + 1$ (a bracket *top*, "The Bracket Theorem"), enabling ZK
 > pushes you to $2^j + 2$ and **doubles the quotient chunk count**: $D=9$ + ZK $\to 10 \to 16$ chunks.
 > **Any AIR that may later be proven in ZK mode should target $D = 2^j$, one below the bracket top.**
 
 # Degree Matching
 
-## The $D-2$ Law: Degree Is Running-Product Capacity
-
+## The $D-2$ Law
 Any grand-product or running-sum accumulator has the shape $z' \cdot(\text{stuff}) = z\cdot(\text{other stuff})$.
 With $z$ and $z'$ each contributing degree 1, exactly $D-2$ multiplicands fit per row.
 **Three unrelated codebases state the same constant.** A KZG PLONKish permutation argument chunks at `chunk_len = cs_degree - 2`, with the intent spelled out -- *"we will fit as many polynomials $p_i(X)$ as possible into the required degree of the circuit, so the following will not affect the required degree"*.
@@ -120,8 +114,7 @@ At $D=2$: $\lceil 80/2\rceil - 1 = 39$, $\times 2$ = **78 columns**.
 > **Where it stops.** The $-2$ assumes both $z(X)$ and $z(\omega X)$ appear. Log-derivative arguments have a different
 > constant -- see II.4.
 
-## Where the Free Headroom Actually Goes
-
+## Spending the Free Headroom
 Once the budget is set, spend the slack in this order.
 
 **(a) Fold selectors into bodies instead of committing selector products.** A degree-1 selector multiplied into a degree-$(D-1)$ body is free; a *committed* product of two flags is a column.
@@ -135,7 +128,7 @@ if !sends.is_empty() || !receives.is_empty() {
 That is a *floor*, not a ceiling.
 A chip author who keeps a constraint at degree 2 "to be safe" on a chip that already sends or receives is spending an intermediate column for literally nothing.
 
-**(c) Widen accumulator and bus chunks to $D-2$ / $D-1$ per column** ("The $D-2$ Law: Degree Is Running-Product Capacity", "The LogUp Variant: $D-1$ Messages per Fraction Column").
+**(c) Widen accumulator and bus chunks to $D-2$ / $D-1$ per column** ("The $D-2$ Law", "LogUp Fraction Batching").
 
 **(d) Inline intermediate columns away until the budget is full.** This is a whole class of constraint-system optimizer in one sentence:
 ```rust
@@ -153,9 +146,8 @@ Same degree, same columns, **16$\times$ better**.
 
 ## FRI-quotient STARK
 
-### The Bracket Theorem: Only $D \in \{3, 5, 9, 17, 33\}$ Are Rational
-
-Every cost in Part I is a function of $2^{\lceil\log_2(D-1)\rceil}$, never of $D$ itself.
+### The Bracket Theorem
+Every cost in "What a Unit of Degree Costs" is a function of $2^{\lceil\log_2(D-1)\rceil}$, never of $D$ itself.
 That quantity is **constant** on
 $$D \in [\,2^{j-1}+2,\; 2^j+1\,] \;\Longrightarrow\; 2^{\lceil\log_2(D-1)\rceil} = 2^j$$
 i.e. the brackets $\{3\}$, $\{4,5\}$, $\{6,7,8,9\}$, $\{10..17\}$, $\{18..33\}$.
@@ -170,11 +162,10 @@ Proven alone, two degrees are on the table for free: enough to fold an `is_real`
 
 > **Where it stops.** Not every backend rounds. A prover that commits exactly `quotient_degree_factor` chunks has a
 > *degenerate* bracket structure -- cost is linear in $D$ up to `rate_bits`, after which the `max(rate_bits, ...)`
-> of "The Blowup Cliff: $D \le 2^b + 1$" takes over -- so check before assuming the brackets exist. Log-space multi-AIR systems quantize even harder
-> ("One Component's Degree Taxes Every Other Component").
+> of "The Blowup Cliff" takes over -- so check before assuming the brackets exist. Log-space multi-AIR systems quantize even harder
+> ("The System-Wide Degree Maximum").
 
-### The Rule That Follows
-
+### Rounding Up to the Bracket Top
 **Round the declared budget up to the nearest $2^j+1$.
 Always.
 It is free.** Some frontends make this an API, precisely because reserving is free:
@@ -200,8 +191,7 @@ Wire this check into your own build if the toolchain does not.
 
 ## AIR with a Bus
 
-### The LogUp Variant: $D-1$ Messages per Fraction Column
-
+### LogUp Fraction Batching
 Batching messages into one fraction column has a computable degree.
 With messages $i$ carrying multiplicity $m_i$ and RLC-compressed field expression $e_i$, the fraction constraint $\bigl(\prod_i e_i\bigr)\cdot f = \sum_i m_i \prod_{j\ne i} e_j$ has degree
 $$\deg = \max\Bigl(1 + \textstyle\sum_i \deg(e_i),\ \max_i\bigl(\deg(m_i) + \textstyle\sum_{j\ne i}\deg(e_j)\bigr)\Bigr)$$
@@ -223,8 +213,7 @@ A compiler that fuses bus terms automatically states the condition directly -- f
 > fields. Mutually exclusive branches take a per-branch **max** instead of the sum
 > -- that is the escape hatch.
 
-### Three Interaction Budgets, and One That Is a Hard $\deg \le 1$
-
+### Interaction Degree Budgets
 The rule the *interaction* obeys is usually **not** the rule the identities obey, and it is rarely documented next to the degree constant.
 The four shapes seen in practice:
 
@@ -233,16 +222,15 @@ The four shapes seen in practice:
 | $\deg(\text{count}) + \max(1,\deg x,\deg y) \le D$ (per-primitive) | keep `count` affine; commit $x,y$ |
 | a separate, **lower** bus budget: `bus_interactions = identities - 1` | none; the frontend already respects it |
 | **affine only** -- a non-linear message field is a hard error | commit an intermediate column |
-| the LogUp formula of "The LogUp Variant: $D-1$ Messages per Fraction Column" | flagged / mutually-exclusive form |
+| the LogUp formula of "LogUp Fraction Batching" | flagged / mutually-exclusive form |
 
 The affine-only rule is the strictest and the most consequential: a message field like `is_real * addr` is *illegal*, and you must commit it.
 That converts a degree question into a width question **unconditionally**, which is why machines built on it come out wide and shallow.
-The separate bus budget is one **lower** than the identity budget for exactly the reason in "The LogUp Variant: $D-1$ Messages per Fraction Column" -- a frontend using a single budget for both would happily emit unprovable AIRs.
+The separate bus budget is one **lower** than the identity budget for exactly the reason in "LogUp Fraction Batching" -- a frontend using a single budget for both would happily emit unprovable AIRs.
 
 ## PLONKish
 
-### Saturation Done Right, in One Function
-
+### Two-Step Gate Saturation
 The most instructive piece of degree-golfing code in this survey -- an FRI-arity interpolation gate sizing itself:
 
 ```rust
@@ -255,7 +243,7 @@ pub(crate) fn with_max_degree(subgroup_bits: usize, max_degree: usize) -> Self {
     let degree = (n_points - 2) / (n_intermediates + 1) + 2;
 ```
 **Step 1: buy the fewest intermediate wires that fit the budget.
-Step 2: having already paid for those wires, lower the degree as far as the same wire count permits** -- because degree below the cap is *not* free in selector-group accounting ("Selector Groups: Low-Degree Gates Are Packed, Not Wasted"), even though it is free in the quotient accounting.
+Step 2: having already paid for those wires, lower the degree as far as the same wire count permits** -- because degree below the cap is *not* free in selector-group accounting ("Selector Group Packing"), even though it is free in the quotient accounting.
 
 Worked, `arity_bits = 4`, `max_degree = 8`: $n_{\text{points}}=16$, $n_{\text{int}} = 14/7 = 2$, $\deg = 14/3 + 2 = 6$.
 The gate lands at **6, not 8** -- two degrees handed back at zero wire cost, buying two more slots in its selector group.
@@ -263,8 +251,7 @@ At `max_degree = 2` it would be 14 intermediates, i.e. **48 extra wires per FRI-
 
 ## PLONKish (Selector-Grouped)
 
-### Selector Groups: Low-Degree Gates Are Packed, Not Wasted
-
+### Selector Group Packing
 > *"Partition the gates into (the smallest amount of) groups $\{G_i\}$, such that for each group $G$,
 > $|G| + \max_{g\in G}\deg(g) \le \text{max\_degree}$."*.
 with `max_degree = quotient_degree_factor + 1 = 9`, and the filter a literal product over the other indices So a degree-$g$ gate consumes $g$ of the budget and **denies $g$ slots to its group-mates**.
@@ -277,8 +264,7 @@ Degree $\ge$ `max_degree` panics outright.
 
 ## Multi-AIR / Log-Space
 
-### One Component's Degree Taxes Every Other Component
-
+### The System-Wide Degree Maximum
 ```rust
 pub fn composition_log_degree_bound(&self) -> u32 {
     self.components.iter().map(|c| c.max_constraint_log_degree_bound()).max().unwrap()
@@ -296,8 +282,7 @@ In one such design every component declares `log_size() + 1` -- a uniform degree
 
 # Buying Degree Back with a Column
 
-## The Split: One Column $\times$ Trace Height, and Only Worth It at the Global Max
-
+## The Committed-Column Split
 Replace $y = f(x)$ of degree $d$ by a committed $t$ with $t = f_1(x)$ and $y = f_2(t)$, $d_1 + d_2 \approx d$.
 The canonical instance:
 
@@ -315,8 +300,7 @@ Price: exactly `SBOX_REGISTERS` committed columns per S-box.
 > costs 141 columns. Every serious frontend can evaluate the AIR symbolically and report the global max **before** you
 > commit anything, so there is no excuse for guessing.
 
-## Duplicating a Constraint Instead of Selecting Inside It
-
+## Per-Opcode Constraint Duplication
 ```rust
 // We explicitly separate the constraints for ADD and SUB in order to keep degree
 // cubic. Because we constrain that the carry (which is arbitrary) is bool, if
@@ -338,8 +322,7 @@ Price: $2\times$ the constraints, **no extra columns** -- the copies read the sa
 
 ## FRI-quotient STARK
 
-### Worked Break-Even: Poseidon2 Registers, 141 Columns Against 4 Quotient Chunks
-
+### Poseidon2 S-Box Register Break-Even
 BabyBear, `WIDTH = 16`, `HALF_FULL_ROUNDS = 4`, `PARTIAL_ROUNDS = 13`, `SBOX_DEGREE = 7`, width $W(R) = 16 + 8(16R+16) + 13(R+1)$:
 
 | $R$ | $D$ | $W(R)$ | chunks | quotient base cols ($\times E{=}4$) |
@@ -349,7 +332,7 @@ BabyBear, `WIDTH = 16`, `HALF_FULL_ROUNDS = 4`, `PARTIAL_ROUNDS = 13`, `SBOX_DEG
 
 Registers cost $298-157 = \mathbf{141}$ columns, a $1.90\times$ width increase.
 
-**Committed cells** at $b=3$ (both configs avoid the "The Blowup Cliff: $D \le 2^b + 1$" cliff): $R{=}0$: $(157+32)\cdot 8n = 1512n$.
+**Committed cells** at $b=3$ (both configs avoid the "The Blowup Cliff" cliff): $R{=}0$: $(157+32)\cdot 8n = 1512n$.
 $R{=}1$: $(298+8)\cdot 8n = 2448n$. -> **high degree wins commitment by $1.62\times$.**
 
 **Constraint-evaluation cells** (AIR evaluated over the quotient domain at full width): $R{=}0$: $8n \times 157 = 1256n$.
@@ -360,7 +343,7 @@ $$(2448-1512)\,h \;>\; (1256-596)\,e \quad\Longleftrightarrow\quad \frac he > \f
 For a Poseidon2-based Merkle tree over a 31-bit field that ratio is comfortably above 1 -- which is why reference Poseidon2 AIRs default to the register-free, high-degree form.
 For a Keccak/Blake3 tree on a machine with vectorized field arithmetic it can flip.
 
-**The decisive term is not in that table.** A *VM* integrating the same AIR picks $R=1$ anyway, because at $D=7$ the required blowup goes from $2^1$ to $2^3$ ("The Blowup Cliff: $D \le 2^b + 1$"), multiplying the committed cells of **every chip in the machine** by 4:
+**The decisive term is not in that table.** A *VM* integrating the same AIR picks $R=1$ anyway, because at $D=7$ the required blowup goes from $2^1$ to $2^3$ ("The Blowup Cliff"), multiplying the committed cells of **every chip in the machine** by 4:
 ```rust
 if max_constraint_degree >= 7 { Self::Register0(...) } else { Self::Register1(...) }
 ```
@@ -369,10 +352,9 @@ if max_constraint_degree >= 7 { Self::Register0(...) } else { Self::Register1(..
 
 ## PLONKish (KZG)
 
-### Worked Break-Even: PLONKish Permutation Chunking
-
+### PLONKish Permutation Chunking Break-Even
 Circuit with $k=18$, $T=100$ polynomials on the extended domain, $P=50$ permutation-enabled columns.
-Extended factor $X(D) = 2^{\lceil\log_2(D-1)\rceil}$, permutation columns $Z(D) = \lceil 50/(D-2)\rceil$ ("The $D-2$ Law: Degree Is Running-Product Capacity"), extended cells $= (T + Z(D))\cdot X(D)\cdot n$:
+Extended factor $X(D) = 2^{\lceil\log_2(D-1)\rceil}$, permutation columns $Z(D) = \lceil 50/(D-2)\rceil$ ("The $D-2$ Law"), extended cells $= (T + Z(D))\cdot X(D)\cdot n$:
 
 | $D$ | $X$ | $Z$ | extended cells | vs $D{=}5$ |
 |---|---|---|---|---|
@@ -387,15 +369,14 @@ Extended factor $X(D) = 2^{\lceil\log_2(D-1)\rceil}$, permutation columns $Z(D) 
 **Two conclusions.**
 1. **$D=4$ is never rational** -- same extended domain as 5, 8 more permutation columns, strictly less gate headroom.
    Identically $\{6,7,8\}$ are never rational versus 9, and $\{10..16\}$ never versus 17.
-   This is "The Rule That Follows" restated with numbers.
+   This is "Rounding Up to the Bracket Top" restated with numbers.
 2. **$5 \to 9$ is a genuine trade.** Cost $396n$ extra extended cells; benefit 9 fewer committed polynomials, i.e. 9 MSMs of size $2^{18}$ ($\approx 180n$ field-mul-equivalents at ~0.2n group ops each and ~100 muls per group op) -- close, and it **flips with $P$**: at $P=200$, $Z(5)=67$ and $Z(9)=29$, so the saving is 38 MSMs $\approx 760n$ against $364n$ extra FFT, and $D=9$ wins clearly.
 
 # The Gating Tax
 
 ## AIR
 
-### `when(c)` Is a Multiplication, and the Three Built-In Selectors Differ
-
+### Selector Degree Prices
 ```rust
 fn assert_zero<I: Into<Self::Expr>>(&mut self, x: I) { self.inner.assert_zero(self.condition() * x.into()); }
 ```
@@ -412,7 +393,7 @@ Boundary selectors are non-zero at a single row, so they are degree-$(N-1)$ poly
 `when_first_row()` / `when_last_row()` cost a full degree, and so does any witness-column selector.
 
 > **Where it stops.** A body already at $D$ cannot be gated by anything except `when_transition`. That single fact forces
-> every workaround in "The Tax as a Formula: It Caps Window Sizes"--IV.4.
+> every workaround in "The Window-Size Cap"--IV.4.
 
 ### Giving up Gating Entirely
 
@@ -434,8 +415,7 @@ The documented counter-example is worth as much:
 > interaction fires on padding rows, so the table's multiplicity column must absorb $n - \text{rows\_used}$ phantom
 > lookups. Fine for a counter, fatal for a bus whose terminal must balance.
 
-### Pad by Repeating a Real Row, and Gate Only the Lookups
-
+### Padding by Row Repetition
 The cleanest resolution of "Giving up Gating Entirely"'s dilemma.
 Rather than zero-filling -- which violates the arithmetic constraints and therefore forces *every* constraint to be gated -- duplicate the first real input and zero only the enabler:
 
@@ -457,14 +437,13 @@ Zero columns, zero per-row constraints, one public-ish value.
 
 ## PLONKish
 
-### The Tax as a Formula: It Caps Window Sizes
-
+### The Window-Size Cap
 A running-sum decomposition checks each $K$-bit window with a product over $2^K$ roots.
 Gated by a selector, that is a `selector * range_check(word, range)` expression of degree `range + 1`, so $2^K$ must be at most `degree_bound - 1` for the range-check constraint to stay inside the budget.
 Production gadgets enforce it as a hard `assert!(WINDOW_NUM_BITS <= 3)`.
 
 So $2^K + 1 \le D$.
-The tax bites hardest exactly at $D \in \{4,8,16\}$ -- the degrees just *below* a bracket top -- which is another reason never to sit at $2^j$ (except under "Zero-Knowledge Costs Exactly One Degree"'s ZK caveat).
+The tax bites hardest exactly at $D \in \{4,8,16\}$ -- the degrees just *below* a bracket top -- which is another reason never to sit at $2^j$ (except under "The Zero-Knowledge Degree Surcharge"'s ZK caveat).
 
 > **Where it stops -- and this is the whole argument for lookups.** A lookup costs
 > $\max(4,\ 2 + \deg(\text{input}) + \deg(\text{table}))$ degree,
@@ -475,8 +454,7 @@ The tax bites hardest exactly at $D \in \{4,8,16\}$ -- the degrees just *below* 
 
 # Where the Trade Inverts
 
-## The Three Regimes, Side by Side
-
+## The Three Regimes
 | backend | cost of degree $D$ | the rule |
 |---|---|---|
 | FRI / quotient STARK | $\propto 2^{\lceil\log_2(D-1)\rceil}$ field work, plus a blowup cliff at $D = 2^b+1$ | **round up to $2^j+1$; degree is free inside a bracket** |
@@ -485,8 +463,7 @@ The tax bites hardest exactly at $D \in \{4,8,16\}$ -- the degrees just *below* 
 
 ## Sumcheck Backends
 
-### Sumcheck / Multilinear: Degree Costs $d$ Scalars per Round, Not $2^{\lceil\log_2(d-1)\rceil}$ Columns
-
+### Budgeting by Multiplication Count
 There is no quotient polynomial and no LDE.
 The composed constraint's degree sets the degree of the univariate polynomial the prover sends in each of the $\mu = \log n$ rounds -- the verifier literally reads `max_degree` scalars per round (`partially_verify_sumcheck_proof(.., MAX_CONSTRAINT_DEGREE + 1)`).
 
@@ -514,8 +491,7 @@ i.e. degree 1 is free, degree $\ge 2$ costs one commitment, and **degrees 2 thro
 
 ## Folding / Accumulation
 
-### Folding Schemes: Degree Is Worse than Linear
-
+### Cross-Term Cost of Folding
 Folding a degree-$d$ relation by a random linear combination produces cross terms at every intermediate power.
 Sangria states it plainly: *"cross terms will now have powers of $r$ from 1 to $d-1$ ... the prover will perform $O(d(n+s))$ field operations and $O(d(n+s))$ point additions."* ProtoGalaxy prices it in the recursive verifier, which is what matters: marginal work $d + \log n$ field ops and $d + \log n$ **compressed hashes** per fold.
 
@@ -533,13 +509,13 @@ Moving Nova ($d=2$, one cross term) to a degree-5 gate **quadruples the MSM bill
 1. **Compute your system's actual max degree symbolically before committing to anything.** Every frontend can do it -- a symbolic AIR evaluator, a `degree()` on the constraint system, an expression evaluator plus a degree bound.
    Guessing here invalidates steps 2--6.
 2. **Round the declared budget up to the nearest $2^j+1$** -- 3, 5, 9, 17, 33.
-   Free ("The Bracket Theorem: Only $D \in \{3, 5, 9, 17, 33\}$ Are Rational").
-   If ZK may be enabled later, target $2^j$ instead ("Zero-Knowledge Costs Exactly One Degree").
-3. **Check $D \le 2^b + 1$.** If not you are paying two extra DFTs per proof, and in a VM a 4--8$\times$ LDE on *every chip* ("The Blowup Cliff: $D \le 2^b + 1$", "Worked Break-Even: Poseidon2 Registers, 141 Columns Against 4 Quotient Chunks").
-4. **Check $\log n \le \text{TWO\_ADICITY} - \lceil\log_2(D-1)\rceil$** ("Degree Spends Two-Adicity, I.e. It Caps Trace Height").
-5. **Spend the slack**, in this order: fold selectors into bodies; widen accumulator/bus chunks to $D-2$ / $D-1$; inline intermediate columns away; pick a richer degree-$D$ identity for the same price ("Where the Free Headroom Actually Goes").
-6. **Split a constraint only when it is the global maximum**, and re-run step 1 to verify the split actually moved the max ("The Split: One Column $\times$ Trace Height, and Only Worth It at the Global Max").
-7. **If you are on a sumcheck or folding backend, throw out steps 2--6** and use Part V.
+   Free ("The Bracket Theorem").
+   If ZK may be enabled later, target $2^j$ instead ("The Zero-Knowledge Degree Surcharge").
+3. **Check $D \le 2^b + 1$.** If not you are paying two extra DFTs per proof, and in a VM a 4--8$\times$ LDE on *every chip* ("The Blowup Cliff", "Poseidon2 S-Box Register Break-Even").
+4. **Check $\log n \le \text{TWO\_ADICITY} - \lceil\log_2(D-1)\rceil$** ("The Two-Adicity Height Cap").
+5. **Spend the slack**, in this order: fold selectors into bodies; widen accumulator/bus chunks to $D-2$ / $D-1$; inline intermediate columns away; pick a richer degree-$D$ identity for the same price ("Spending the Free Headroom").
+6. **Split a constraint only when it is the global maximum**, and re-run step 1 to verify the split actually moved the max ("The Committed-Column Split").
+7. **If you are on a sumcheck or folding backend, throw out steps 2--6** and use "Where the Trade Inverts".
 
 > **The one-line version.** The system pays for the maximum, the maximum is quantized, and almost every circuit is sitting
 > strictly inside a bracket with degrees it has already bought and is not using.

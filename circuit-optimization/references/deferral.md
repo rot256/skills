@@ -33,20 +33,17 @@ The coordinate bindings cost zero gates because they are copy constraints on alr
 > consequence is that aliased non-canonical coordinates in $[q, 2^{254})$ are accepted. **A deferral creates a soundness
 > obligation, and if you do not discharge it somewhere you have created a gap, not an optimization.**
 
-## Give the Deferred Type a Thinner State Model than the General One
-
+## A Stripped-Down Deferred Type
 If the host's general foreign-field type carries reduction state, bound tracking and range obligations, using it for the emission re-introduces exactly the machinery you are trying to delete.
 Define a separate, stripped-down type for deferred operands so the compiler *cannot* accidentally emit the general path.
 
 **Anything the host still checks is cost you failed to move.**
 
-## Route Every Operation Through One Primitive, Including the Degenerate Ones
-
+## A Single Uniform Queue Primitive
 Make even the trivial cases -- adding the identity, multiplying by zero, the terminating equality -- go through the same queue primitive.
 Uniformity is what lets the co-processor's relations be branch-free.
 
-## Free Width Discrimination: Pay Half Price for Narrow Operands
-
+## Free Width Discrimination
 If the operand decomposition is data-dependent, discriminate on it for free:
 
 ```
@@ -58,10 +55,9 @@ The row tracker then counts one narrow operation instead of two.
 **A full-width operation costs ~2x the co-processor rows of a narrow one**, and the *protocol* can be redesigned to exploit it: draw Fiat-Shamir batching challenges short (127-bit) where full width is not needed for soundness.
 
 > **Where it stops.** Only sound where the short challenge still gives adequate soundness. And note this makes the
-> co-processor's *size* data-dependent, which is an information leak unless the trace is padded to a constant ("The Co-Processor Is a Fixed Cost, and for Zero-Knowledge It Must Be").
+> co-processor's *size* data-dependent, which is an information leak unless the trace is padded to a constant ("The Fixed-Size Co-Processor").
 
-## Skip Degenerate Operations with Witnessed Flags, Not Branches
-
+## Witnessed Flags for Degenerate Cases
 An operation with an identity operand or a zero scalar contributes **no** rows at all: a boolean column bears witness to the fact and the work is skipped.
 
 > The motive is not only saved work. It *"dramatically simplifies the actual computations, by throwing out circumstances
@@ -71,8 +67,7 @@ Price: extra boolean columns plus the relations gating on them -- width traded f
 
 # The Co-Processor
 
-## The Marginal Row Cost Is the Whole Economic Model
-
+## The Marginal Row-Cost Function
 Write the row-count function down explicitly; it is six lines and it determines every design decision downstream:
 
 ```
@@ -95,10 +90,9 @@ precompute_rows     = 8 * m
 > **Where it stops.** The fixed charge is per *contiguous run* of the batched opcode. Any other operation between two
 > batchable ones terminates the batch and starts a new fixed charge. **Ordering your emissions is an optimization.**
 
-## Disjoint Tables in One Trace, Wired by Multiset Equality
-
+## Disjoint Tables Wired by Multiset Equality
 A machine trace has no copy constraints, so three logically separate tables -- transcript, precompute, main -- become **disjoint column groups of one trace**, communicating by emitting matching tuples into a shared grand product with an explicit domain-separation tag per tuple family.
-Without the tags, tuples from different families with identical packed values produce identical fingerprints and can be substituted across families (`air.md` "Bus Separation: Tags, Widths, and the Three Aliasing Traps").
+Without the tags, tuples from different families with identical packed values produce identical fingerprints and can be substituted across families (`air.md` "Bus Aliasing").
 
 Price: the set relation's grand-product subrelation reaches degree 22 -- by far the highest in the flavor -- plus one permutation column and a log-derivative relation.
 
@@ -107,13 +101,11 @@ Price: the set relation's grand-product subrelation reaches degree 22 -- by far 
 > groups makes the trace height the **max** rather than the **sum**. If the sections were the same height, one table
 > would be better.
 
-## Exploit a Layout Coincidence to Do Several Steps per Row
-
+## Coinciding Loop Bounds
 Choosing `ADDITIONS_PER_ROW == DIGIT_BITS` (both 4) is not an accident: the equality lets the same row structure serve the accumulation and the digit decomposition, and several parts of the implementation exploit it.
-**Pick constants that make two unrelated loop bounds coincide, and a whole class of index arithmetic disappears** (`air.md` "Slide a Window Across `local || next` to Pack $k$ Steps per Row").
+**Pick constants that make two unrelated loop bounds coincide, and a whole class of index arithmetic disappears** (`air.md` "Packing Multiple Steps per Row").
 
-## Range-Check by Low-Degree Identity, When the Range Is Tiny
-
+## Range Checks as Low-Degree Identities
 A 2-bit range check as a quartic identity, not a table read:
 
 ```
@@ -127,10 +119,9 @@ That is why a 4-bit digit is *stored as two 2-bit halves*: the split exists pure
 Price: twice the slice columns, one degree-4 subrelation each.
 
 > **Where it stops.** The identity has degree $2^k$ for a $k$-bit range. At $k = 4$ it is degree 16 and you have already
-> lost to a lookup. Under a degree-8 budget the crossover is at 2 bits (`degree.md` "The Tax as a Formula: It Caps Window Sizes").
+> lost to a lookup. Under a degree-8 budget the crossover is at 2 bits (`degree.md` "The Window-Size Cap").
 
-## Do Not Range-Constrain a Counter Another Argument Already Pins
-
+## Counters Pinned by the Multiset Argument
 A round counter in $\{0..7\}$ that is *never* range-constrained, with the argument written out:
 
 > *"note that we don't actually range-constrain `round` (expensive if we don't need to!). We nonetheless can correctly
@@ -145,8 +136,7 @@ A companion micro-move: make the operation counter **count down** rather than up
 > non-local one, and the argument must be re-audited whenever the multiset tuples change. Zero constraints, real
 > maintenance cost.
 
-## Trade Circuit Size for Relation Degree by Concatenating Columns
-
+## Column Concatenation for Lower Degree
 Permuting ~64 columns simultaneously means committing to all of them and a relation of degree $1 + 64 = 65$.
 Instead, concatenate 16 logical columns into one polynomial and build 5 such polynomials; each group performs an independent permutation check at degree $1 + 5 = 6$.
 
@@ -157,10 +147,9 @@ Measured: a $2^{13}$ mini-circuit becomes $2^{17}$; 5 commitments instead of 64;
 
 > **Where it stops.** Only where rows are genuinely cheaper than degree -- true for sumcheck provers, where per-round
 > work is linear in rows but the univariate degree drives per-row cost. **In a FRI/AIR setting where blowup dominates,
-> this trade inverts** (`degree.md` "Sumcheck / Multilinear: Degree Costs $d$ Scalars per Round, Not $2^{\lceil\log_2(d-1)\rceil}$ Columns").
+> this trade inverts** (`degree.md` "Budgeting by Multiplication Count").
 
-## Split One Monolithic Relation into Selector-Gated Pieces so the Prover Can Skip
-
+## Selector-Gated Relation Splitting
 Decompose a 51-subrelation, degree-8 monolith into three 6-subrelation pieces plus a remainder, each with its own `skip()` predicate on a mutually exclusive selector.
 Roughly 2/3 of the work is skipped per row.
 No change to the AIR's meaning and no change to the verifier -- a purely prover-side reorganization.
@@ -171,8 +160,7 @@ No change to the AIR's meaning and no change to the verifier -- a purely prover-
 
 # The Reconciliation, and the Bet
 
-## Prove the Two Encodings Agree by Evaluating Both at a Challenge
-
+## Encoding Equality by Random Evaluation
 The reconciling proof must never re-do the semantics.
 It proves one scalar identity:
 $$\text{acc} \;=\; \sum_i x^{\,n-1-i}\bigl(\text{op}_i + v\,a_i + v^2 b_i + v^3 c_i + v^4 d_i\bigr) \bmod q$$
@@ -187,8 +175,7 @@ Because the co-processor's field is larger than the host's, the identity is non-
 > (that is the co-processor's job) and it does not check the host's limbs were canonical -- which is exactly the gap "Emit, Do Not Execute"
 > flags. And the batched-evaluation trick is sound only because $x, v$ are drawn **after** both tables are committed.
 
-## Compare Commitments Instead of Hashing Data
-
+## Commitments in Place of Hashing
 Passing data between circuits as public inputs forces in-circuit hashing of the whole payload.
 Passing **commitments** instead makes the verification $O(1)$, independent of data size.
 Dynamic reads into the data column go through a log-derivative lookup at **one row per read, no copy constraint back**, so prover cost scales with the number of *reads* rather than the total data size.
@@ -200,13 +187,12 @@ Price: per data column, a value column, a read-count column, an inverses column 
 
 > **Where it stops.** The data still occupies columns of the producing circuit; you save the *hash*, not the *storage*.
 
-## The Co-Processor Is a Fixed Cost, and for Zero-Knowledge It Must Be
-
+## The Fixed-Size Co-Processor
 | component | fixed size |
 |---|---|
 | co-processor trace | $2^{15}$ rows, 86 wires / 88 witness / 119 total entities |
 | reconciler mini-circuit | $2^{13}$ rows (4,096 operations max), 81 wires |
-| reconciler full circuit | $2^{17}$ rows after 16x concatenation ("Trade Circuit Size for Relation Degree by Concatenating Columns") |
+| reconciler full circuit | $2^{17}$ rows after 16x concatenation ("Column Concatenation for Lower Degree") |
 | merge proof | 41 field elements |
 
 **Capacity.** At ~16.5 rows per full-width point, $2^{15}$ rows absorb **~1,900 full-width operations** (or ~3,900 narrow ones); the reconciler caps at 4,096.
@@ -235,19 +221,19 @@ The measured trajectory is worth reading as a lesson in ordering:
 | deferral | 60 narrow + 21 full-width | ~100 co-processor rows per circuit |
 | deferral + folding | 57--72 narrow | the final batch is pushed out entirely |
 
-Note the second-order move in the last row: once the operations are cheap, the *next* optimization is to reduce their number, and to make the survivors narrow ("Free Width Discrimination: Pay Half Price for Narrow Operands").
+Note the second-order move in the last row: once the operations are cheap, the *next* optimization is to reduce their number, and to make the survivors narrow ("Free Width Discrimination").
 
 # The Checklist
 
 1. **Find the mismatch.** Cost per operation in the host must vastly exceed the cost of merely *writing down* its operands -- here, ~6,500 gates against 7 field elements.
 2. **Make the emission a pure log.** No validity check, no range check, no reduction.
-   Give the deferred type a stripped-down state model so the general machinery cannot creep back in ("Give the Deferred Type a Thinner State Model than the General One").
+   Give the deferred type a stripped-down state model so the general machinery cannot creep back in ("A Stripped-Down Deferred Type").
 3. **Take the result back as unconstrained advice** ("Emit, Do Not Execute").
    That is what makes the emission $O(\text{operand size})$ rather than $O(\text{operation})$.
 4. **Write down which obligations you dropped**, and where each is re-established.
    The ones you cannot place are soundness gaps, not savings.
-5. **Budget the reconciliation.** Two encodings of one log must be proven equal, and the cheap way is a random-challenge batched evaluation of both ("Prove the Two Encodings Agree by Evaluating Both at a Challenge") -- but that third proof is a whole circuit in its own right.
+5. **Budget the reconciliation.** Two encodings of one log must be proven equal, and the cheap way is a random-challenge batched evaluation of both ("Encoding Equality by Random Evaluation") -- but that third proof is a whole circuit in its own right.
    Count it.
 6. **Compute the break-even in committed cells, not in operations** ("The Break-Even"), and check your workload clears it by a comfortable margin.
    Below capacity the fixed cost is pure waste.
-7. **Pin the size** if the workload is private ("The Co-Processor Is a Fixed Cost, and for Zero-Knowledge It Must Be").
+7. **Pin the size** if the workload is private ("The Fixed-Size Co-Processor").

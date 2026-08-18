@@ -1,17 +1,17 @@
 # Catalogue of Circuit-Optimization Techniques
 
 Moves that survive the choice of proof system.
-Arithmetization-specific: `r1cs.md` (R1CS), `air.md` (AIR / STARK), `plonkish.md` (gate-based), `degree.md` (constraint degree).
+Arithmetization-specific: `r1cs-fp.md` (R1CS), `air.md` (AIR / STARK), `plonkish.md` (gate-based), `degree.md` (constraint degree).
 Bespoke relations of any kind -- custom gates, sub-AIRs, precompiles -- are priced in `gates.md`; `deferral.md` is the optional chapter on moving work into a second proof.
 
 ## Carry-Save / Full-Adder Identity
 
 For bits, `a + b + c = (a xor b xor c) + 2*maj(a,b,c)`, so a 3-input bit step is the linear check `a+b+c = s + 2*cy`.
 This pins `s,cy` to (parity, maj) only when **both** are constrained boolean; booleanity of `cy` alone does **not** force `cy = maj`.
-Witnessing only `cy` and feeding `s = a+b+c-2cy` downstream as a linear combination is sound only because the consumer (e.g. the bit-decomposition of `r1cs.md` "Multi-Operand Add, Decompose Once") pins the result -- the soundness lives in the *composed* circuit.
+Witnessing only `cy` and feeding `s = a+b+c-2cy` downstream as a linear combination is sound only because the consumer (e.g. the bit-decomposition of `r1cs-fp.md` "Multi-Operand Add with One Decomposition") pins the result -- the soundness lives in the *composed* circuit.
 Halves the witnesses for Sigma/sigma and Maj.
 Needs char not in {2,3}.
-In an AIR the carry usually should not be a column at all: define it by dividing by the base and assert only that it is boolean (`air.md` "Carries as Asserted-Boolean Expressions Instead of Columns", "Small-Field Arithmetic: What Division Buys You, and Exactly How Deep You May Chain").
+In an AIR the carry usually should not be a column at all: define it by dividing by the base and assert only that it is boolean (`air.md` "Carries as Boolean Expressions" and "Constant Division and Carry-Chain Depth").
 
 ## CRT / RNS, Foreign-Field Arithmetic
 
@@ -22,7 +22,7 @@ A classic soundness hole.
 A worked instance: a 256-bit field in **88-bit limbs** -> 3 cells, FF-mul in 2 rows, each limb range-checked -- and that 88 is *derived* from a wire budget, not chosen (`plonkish.md` "Designing to a Hard Wire Budget").
 RNS gives cheap independent ops, but comparisons / range checks force an expensive **exit from RNS** -- stay in RNS as long as possible.
 *Prove* the bound (`sage.md`), don't assume it.
-On R1CS the choice of limb base, the fold polynomial, and the exact bound constants are themselves the optimization -- `r1cs.md` "Bound Arithmetic".
+On R1CS the choice of limb base, the fold polynomial, and the exact bound constants are themselves the optimization -- `r1cs-fp.md` "Bound Arithmetic".
 In an AIR the identity is checked **coefficient-wise** against a witnessed quotient by `(x - B)`, which turns a big multiply into a wide row of degree-2 constraints; the witness-offset constant is derivable rather than guessable (`air.md` "Non-Native and Big-Integer Arithmetic").
 
 ## Lookup Arguments
@@ -32,7 +32,7 @@ Table size is arity-dependent: a 2-input k-bit XOR needs a `(x,y,z)` table of si
 LogUp uses the log-derivative identity `sum_a 1/(X-a) = sum_b m_b/(X-b)` (handles multiplicities); Lasso pays only for entries accessed, for decomposable (SOS) tables.
 Worth it only when a table replaces *many* constraints or is heavily reused -- and note the floor: a shared table costs its full height **in every shard that touches it** (a byte table of $2^{16}$ rows plus a range table of $2^{17}$ is 1,245,184 cells before a single instruction runs).
 A static indexed lookup is **not** RAM: read/write memory needs a full consistency argument (address, timestamp, value tuples, sorted by a permutation/log-derivative argument, plus "a read returns the last write").
-Where lookups are unavailable or uncounted, an arbitrary table on `N` points is still only `~2*sqrt(N)` rows (`r1cs.md` "Evaluate a Function on N Points in About 2 sqrt(N) Rows with Baby-Step Giant-Step"), and there is a proof that you cannot do much better (`r1cs.md` "A Counting Bound on Rows and Witnesses Survives Nondeterminism").
+Where lookups are unavailable or uncounted, an arbitrary table on `N` points is still only `~2*sqrt(N)` rows (`r1cs-fp.md` "Baby-Step Giant-Step"), and there is a proof that you cannot do much better (`r1cs-fp.md` "The Parameter-Counting Bound").
 The designer-side economics -- multiplicity as a free conditional, one table serving many ops, two checks per lookup, variable-width tables, lookups that compute *and* range-check, and the bus-aliasing traps -- are `air.md` "Lookups and Buses, from the Designer's Side".
 
 ## Bit-Decomposition, Range Checks, Spread
@@ -40,13 +40,13 @@ The designer-side economics -- multiplicity as a free conditional, one table ser
 - **Pack** as one field element; decompose only when bits are needed, and reuse the decomposition for *both* the range check and the logic.
 - **Small set via product of factors**: `a in {0..4}` => degree-5 row `a(1-a)(2-a)(3-a)(4-a)=0`.
   Raises gate degree linearly -- tiny sets only; lookup for large ranges.
-  The exact crossover is `2^K + 1 <= D` once a selector gates it (`degree.md` "The Tax as a Formula: It Caps Window Sizes").
+  The exact crossover is `2^K + 1 <= D` once a selector gates it (`degree.md` "The Window-Size Cap").
 - **Spread / interleave** (as used by SHA-256 gadgets): map a k-bit word to one with a 0 between every bit.
   A lookup into the spread table *simultaneously* range-checks the chunk and returns its spread form.
   Adding two spread words puts the **XOR in even positions and the carry/AND in odd positions** -- one addition yields both.
   Needs a shared 2^16 table.
   The *diluted form* is the same idea with variable spacing, and gets AND/XOR/OR from degree-**1** constraints with no bit columns at all.
-- **Prefer a root-set constraint to a chain** when the value lands in a small known set: 5-way XOR as `diff(diff-2)(diff-4)=0`, carry-free 32-bit addition as `acc(acc+2^32)(acc+2*2^32)=0` (`air.md` "Prefer a Vanishing-Set Constraint to a Chain").
+- **Prefer a root-set constraint to a chain** when the value lands in a small known set: 5-way XOR as `diff(diff-2)(diff-4)=0`, carry-free 32-bit addition as `acc(acc+2^32)(acc+2*2^32)=0` (`air.md` "Vanishing-Set Constraints").
 
 ## Custom / Higher-Degree Gates, and the Degree Budget
 
@@ -61,15 +61,15 @@ Full treatment, with two worked break-evens and the decision procedure: `degree.
 
 Compute the hard value out-of-circuit, verify it cheaply (inverse, division, sqrt, bit-decomposition).
 **Soundness rule, the #1 ZK bug:** every hint value reaching an output must be uniquely pinned by constraints -- pair each `<--` with a determining `===`; the precise condition is that no prover-chosen freedom reaches an output.
-(sqrt pins only up to sign; add a canonicality constraint if the root itself is used downstream.) Taken to its limit this replaces the computation entirely: witness the answer and assert a verification identity (`r1cs.md` "Witness the Answer and Check a Relation Instead of Computing It").
-Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *ungated* consumer is prover-chosen on disabled rows, and `a = b/c` checked as `b == a*c` makes `0/0` a free oracle (`air.md` "The Nondeterministic-Inverse Family, and Its Two Holes").
+(sqrt pins only up to sign; add a canonicality constraint if the root itself is used downstream.) Taken to its limit this replaces the computation entirely: witness the answer and assert a verification identity (`r1cs-fp.md` "Verification Identity").
+Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *ungated* consumer is prover-chosen on disabled rows, and `a = b/c` checked as `b == a*c` makes `0/0` a free oracle (`air.md` "The Nondeterministic-Inverse Family").
 
 ## Solver- and Algebra-Aided Methods
 
 - **SMT over finite fields** (cvc5 `QF_FF`) to *find* minimal encodings and *detect under-constraint* (ask for two distinct witnesses agreeing on I/O; a model is a counterexample).
 - **Groebner / ideal methods** to prove outputs uniquely determined and extract soundness cofactors (`sage.md`).
   Both blow up with degree/variables -- per-gadget, not whole-circuit.
-- **Constraint-system optimizers as a trick catalogue.** Their passes are the mechanized versions of moves you should be doing by hand: inline any column that equals a low-degree expression of others (while the degree budget allows), delete a range check that a tighter known range implies, replace a small-domain lookup with a matched polynomial, forward a store to a later load at a provably-equal address (`air.md` "Delete a Range Check That a Tighter Known Range Already Implies", `degree.md` "Where the Free Headroom Actually Goes").
+- **Constraint-system optimizers as a trick catalogue.** Their passes are the mechanized versions of moves you should be doing by hand: inline any column that equals a low-degree expression of others (while the degree budget allows), delete a range check that a tighter known range implies, replace a small-domain lookup with a matched polynomial, forward a store to a later load at a provably-equal address (`air.md` "Redundant Range-Check Elimination", `degree.md` "Spending the Free Headroom").
 - **Mutation-test the constraints.** Evaluate every constraint on every row of a concrete trace, then flip one bit and assert something catches it.
   It is the only cheap way to discover that an "implicit range check" you assumed was there is not.
 
@@ -85,5 +85,5 @@ Two AIR-specific failure modes worth memorizing: a gated `IsZero` read by an *un
 - **ECC:** GLV endomorphism splitting halves the scalar bit-length; windowing/wNAF cut additions; batch the affine inversions (above).
   Incomplete addition is much cheaper than complete addition, and is sound only inside an explicitly proved index/bound argument (`plonkish.md` "The Decomposition Family").
 - **Degree reduction:** introduce intermediate witnesses to split a high-degree gate into low-degree ones -- the inverse of "Custom / Higher-Degree Gates, and the Degree Budget", when rows are cheaper than degree.
-  It pays **only if the split constraint is the global maximum** (`degree.md` "The Split: One Column $\times$ Trace Height, and Only Worth It at the Global Max").
-- **Shape the machine, not just the algebra.** The cheapest constraint is the one you never write: deleting the register file, counting instructions instead of bytes, bounding state motion to one item per step, allowing only power-of-two structure, and choosing an operand encoding whose lookup table decomposes are all constraint-system decisions made in the ISA (`air.md` "ISA and Layout Choices Are Constraint Choices").
+  It pays **only if the split constraint is the global maximum** (`degree.md` "The Committed-Column Split").
+- **Shape the machine, not just the algebra.** The cheapest constraint is the one you never write: deleting the register file, counting instructions instead of bytes, bounding state motion to one item per step, allowing only power-of-two structure, and choosing an operand encoding whose lookup table decomposes are all constraint-system decisions made in the ISA (`air.md` "ISA Design as Constraint Design").

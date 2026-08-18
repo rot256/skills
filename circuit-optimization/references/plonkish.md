@@ -4,7 +4,7 @@
 
 Rows x columns, custom gates, selectors, copy constraints, lookups.
 Every entry carries the mechanism, the price, and the condition under which it stops working.
-The trace-based (AIR/STARK) cost model is `air.md`; constraint degree is `degree.md`; **the decision to add a gate type at all -- selector economics, multiplexing, break-even, how gates are invented -- is `gates.md`**; R1CS is `r1cs.md`; cross-arithmetization moves are `techniques.md`.
+The trace-based (AIR/STARK) cost model is `air.md`; constraint degree is `degree.md`; **the decision to add a gate type at all -- selector economics, multiplexing, break-even, how gates are invented -- is `gates.md`**; R1CS is `r1cs-fp.md`; cross-arithmetization moves are `techniques.md`.
 
 $$\text{cost} \;=\; \text{rows} \times \text{columns} \;+\; \underbrace{\text{permutation polys}}_{\text{per equality-enabled column}} \;+\; \underbrace{\text{selector columns}}_{\text{per gate group}} \qquad\text{under a cap on gate degree}$$
 
@@ -12,13 +12,13 @@ $$\text{cost} \;=\; \text{rows} \times \text{columns} \;+\; \underbrace{\text{pe
 
 **A copy constraint is not free.** This is the single deepest difference from an AIR, which has no permutation over its own columns at all.
 Enabling equality on a column adds it to the permutation product, costing one fixed permutation polynomial and one degree in the rule; past the degree bound the product splits across sets, each with its own grand-product column.
-Everything in "Rotations Replace Copies, Which Are Not Free"--"Advice (Unrouted) Wires for Anything No Gadget Reads" is a way to avoid paying it.
+Everything in "Rotations Instead of Copy Constraints"--"Unrouted Wires for Gate Internals" is a way to avoid paying it.
 
 **A gate is a selector, and a selector is a committed column.** Adding a bespoke gate is not free even on rows that do not use it: the selector is committed over the whole domain, it enters the degree budget, and where selectors are grouped it competes for space in a selector *group* whose size is capped by the degree.
-The break-even question -- how many uses does a gate need before it pays for its selector -- is `gates.md` "The Break-Even, Worked", and the answer is usually "more than you have"; the selector-group cliff is `gates.md` "The Selector-Group Tax, and the Cliff at the Second Selector".
+The break-even question -- how many uses does a gate need before it pays for its selector -- is `gates.md` "The Break-Even, Worked", and the answer is usually "more than you have"; the selector-group cliff is `gates.md` "The Selector-Group Tax".
 
 **Rows are filled, not consumed.** A row has a fixed width, and the builder's job is to pack independent operations into the leftover columns.
-Whether a row is "used" is the wrong question; how much of its width is idle is the right one ("Gate Packing: `num_ops` Comes from the Wire Budget").
+Whether a row is "used" is the wrong question; how much of its width is idle is the right one ("Gate Packing").
 
 **The window is a rotation, and its reach is the first thing a design fixes.** Gate-based systems differ along a few axes -- how far a gate may see, what a gate *is*, how selectors are charged -- so name the archetypes once; every section below is a statement about one of them, not about a product:
 
@@ -39,8 +39,7 @@ These three sections are the whole of that bill.
 
 ## Rotation-Based Frontend
 
-### Rotations Replace Copies, Which Are Not Free
-
+### Rotations Instead of Copy Constraints
 The design note is worth quoting:
 
 > *"The motivation for offset references is to reduce the number of columns needed in the configuration ... If we did not
@@ -57,8 +56,7 @@ In a gate-vector frontend the same fact presents as a *width* budget instead: on
 
 ## Gate-Vector Frontend
 
-### Advice (Unrouted) Wires for Anything No Gadget Reads
-
+### Unrouted Wires for Gate Internals
 Columns above `num_routed_wires` are committed but do **not** join the permutation argument.
 Every serious gate in such a system parks its internals there:
 
@@ -74,8 +72,7 @@ pub(crate) const fn wire_bit(&self, i: usize, copy: usize) -> usize {
 > **Where it stops.** Anything a *gadget* must read or reuse must be routed. That is why `RandomAccessGate` exposes the
 > claimed element (routed) and hides the index bits (unrouted): the caller never needs the bits.
 
-### Gate Packing: `num_ops` Comes from the Wire Budget
-
+### Gate Packing
 Every "small" gate is a vector of independent copies of one op, and the copy count is a pure division:
 
 ```rust
@@ -99,8 +96,7 @@ Two non-obvious consequences:
 
 ## Selector-Grouped and Rotation-Based Frontends Alike
 
-### Selector Grouping Is the Tax Nobody Expects
-
+### Selector Grouping
 Gates are sorted by degree and bin-packed so that
 $$|G| + \max_{g\in G}\deg(g) \;\le\; \text{quotient\_degree\_factor} + 1 = 9$$
 and the filter that zeroes a gate outside its rows is a **product over the group**, so **filtered degree = gate degree + $|G|$ ($+1$ for the UNUSED term when there are several selectors)**.
@@ -120,7 +116,7 @@ Pack aggressively within a gate type you use a lot; keep rarely-used gates narro
 
 ### Trading Degree for Wires Inside One Gate
 
-The `CosetInterpolationGate` is an explicit dial, and the design note is worth quoting: *"A full interpolation of N values corresponds to the evaluation of a degree-N polynomial. This gate can however be configured with a bounded degree of at least 2 by introducing more non-routed wires."* The worked numbers are in `gates.md` "Trade Degree for Wires Inside the Relation, Then Hand the Degree Back".
+The `CosetInterpolationGate` is an explicit dial, and the design note is worth quoting: *"A full interpolation of N values corresponds to the evaluation of a degree-N polynomial. This gate can however be configured with a bounded degree of at least 2 by introducing more non-routed wires."* The worked numbers are in `gates.md` "The Degree-for-Wires Dial".
 The *second* trick in that gate is the one to steal: after fixing the intermediate count, it **re-minimizes the degree** purely so the gate joins a bigger selector group.
 
 Other shapes worth knowing:
@@ -185,12 +181,11 @@ Other moves worth transplanting:
 
 # Non-Native Arithmetic in a Gate-Based System
 
-Emulating a foreign field $p$ inside a native field $n$ is the same CRT/bound problem everywhere (`r1cs.md` "Bound Arithmetic", `air.md` "Non-Native and Big-Integer Arithmetic", `techniques.md` section 2).
+Emulating a foreign field $p$ inside a native field $n$ is the same CRT/bound problem everywhere (`r1cs-fp.md` "Bound Arithmetic", `air.md` "Non-Native and Big-Integer Arithmetic", `techniques.md` section 2).
 What a gate-based system adds is a wire budget and a selector: the identity is checked by a custom gate whose modulus limbs *are* selector constants, so nearly every saving below is either a constant folded into a selector or a quotient shared across several products.
 Running example: 4 limbs of $L = 68$ bits, native field with $\log n \approx 253.5$.
 
-## The Bound Discipline: Derive Your Two Ceilings, Never Copy Them
-
+## The Two Bound Ceilings
 Two inequalities decide the gate count of everything else.
 Redo both for your own parameters.
 
@@ -217,24 +212,23 @@ At $\log n = 253.5$, $L = 68$, $k = \text{MAX\_ADDITION\_LOG} = 10$: $Q = \lfloo
 Two range checks do **not** pin a decomposition.
 If $\text{lo} + 2^{\text{lo\_bits}}\text{hi}$ is recombined mod $n$, then $(\text{lo},\text{hi})$ and $(\text{lo}-n_{\text{lo}}, \text{hi}+\dots)$ can both be in range.
 What is missing is a *modulus* check -- a borrow comparison against $n$ itself, with $\text{hi\_diff} = n_{\text{hi}}-\text{hi}-\text{borrow}$ and $\text{lo\_diff} = (n_{\text{lo}}-1)-\text{lo}+\text{borrow}\cdot2^{\text{lo\_bits}}$ both range-constrained.
-**Price:** 1 boolean $+$ 2 range constraints $+$ 1 linear identity, on top of the two range checks for `lo`/`hi` -- and *those* can be **skipped** when the halves are immediately used as lookup keys, which range-constrains them implicitly ("The Accumulator Column: Decompose, Look up and Recombine in One Column").
+**Price:** 1 boolean $+$ 2 range constraints $+$ 1 linear identity, on top of the two range checks for `lo`/`hi` -- and *those* can be **skipped** when the halves are immediately used as lookup keys, which range-constrains them implicitly ("The Lookup Accumulator Column").
 
 > **Where it stops.** Explicit precondition: *"The low `lo_bits` of `field_modulus` must be nonzero. If they are zero, the
 > borrow arithmetic has undefined behaviour."* The same pattern appears open-coded in a 32-byte serialisation with a
 > 128/128 split and a hand-rolled overlap bit, so audit every hand-rolled split for it, not just the library one.
 
-> **Where this whole part stops.** Every technique above is sound *only inside a proved bound*: "Lazy Reduction: Reduce Mod $2^s$, Not Mod $p$" is licensed by
-> ceiling 1 of "The Bound Discipline: Derive Your Two Ceilings, Never Copy Them", "Packing the Wires: Addition in 4 Gates, Injection in 2, Subtraction for Free" by ceiling 2, "Amortising the Quotient: N Products, One Quotient, One Pair of Carries" by both re-derived for $N$ terms, `unreduced_zero` and the remainder borrow
+> **Where this whole part stops.** Every technique above is sound *only inside a proved bound*: "Lazy Reduction" is licensed by
+> ceiling 1 of "The Two Bound Ceilings", "Packing Addition into the Wire Budget" by ceiling 2, "Amortising the Quotient" by both re-derived for $N$ terms, `unreduced_zero` and the remainder borrow
 > by ceiling 1, and the paired 70-bit carry check is a *consequence* of how tight the batch's bounds came out.
 > **The bounds compose multiplicatively**, so one element admitted with a pessimistic maximum -- a point read from a table
 > whose entry maxima were taken as the max over all entries, say -- turns free additions into forced reductions all the
 > way downstream. The failure mode is never a failed constraint; it is a silent wrap in $\mathbb F_n$ that makes the
-> mod-$2^T$ half of "The CRT Split: One 272-bit Equality Becomes Two ~136-bit Ones" vacuous.
+> mod-$2^T$ half of "The CRT Split" vacuous.
 
 ## Two-Row Frontend
 
-### The CRT Split: One 272-bit Equality Becomes Two ~136-bit Ones
-
+### The CRT Split
 The prover supplies $q, r$ with $ab = qp + r$ **over $\mathbb Z$**; the circuit never checks that.
 It checks the identity mod $2^T$ (the *binary basis*, $T = \text{NUM\_LIMBS}\cdot\text{NUM\_LIMB\_BITS} = 4\cdot68 = 272$) and mod $n$ (the *prime basis*).
 CRT gives it mod $M = 2^T n$; both sides being $< M$ gives it over $\mathbb Z$.
@@ -246,8 +240,7 @@ The binary half needs only the **partial** schoolbook product: limb-products of 
 > **Where it stops.** The quotient-bound arithmetic is validated only for target moduli of 250--256 bits: below 250 it is
 > unproven [Medium], above 256 four limbs do not hold the modulus at all.
 
-### Lazy Reduction: Reduce Mod $2^s$, Not Mod $p$
-
+### Lazy Reduction
 Full reduction to $[0,p)$ needs a comparison chain; skip it.
 Prove $\text{this} = qp + r$ with $r$ constrained only to $s = \lceil\log_2 p\rceil$ **bits** -- free, being exactly what the non-overflowing constructor already does when it range-constrains the top limb to `NUM_LAST_LIMB_BITS`.
 *"We reduce an element's mod $2^t$ representation to size $2^s$ for smallest $s$ with $2^s>p$ ... suffices for addition chains."* Two economies inside: the quotient is a **single limb** (the other three wired to the zero index, prime limb *is* the quotient limb), and its range proof is $\mathrm{msb}(\max/p)+1$ rounded **up to even**, asserted $\le$ `NUM_LIMB_BITS`.
@@ -257,8 +250,7 @@ Prove $\text{this} = qp + r$ with $r$ constrained only to $s = \lceil\log_2 p\rc
 > canonicalising chains the lazy reduction *then* a less-than. Publishing reduces only mod $2^s$, so two representations of
 > one residue can both be published unless the caller reduces mod $p$.
 
-### Amortising the Quotient: N Products, One Quotient, One Pair of Carries
-
+### Amortising the Quotient
 Each quotient costs a range proof and each identity two carry range checks, so have **one** of each per expression.
 Rearrange $\sum_j a_jb_j + \sum_i c_i = qp+r$ as $a_0b_0 = qp + \bigl(r - \sum_{j\ge1}a_jb_j - \sum_i c_i\bigr)$: one full multiplication gate handles $(a_0,b_0,q,r')$ and every other product is a cheap *partial* multiplication folded into the remainder accumulators.
 **How the folding is free is the trick.** The gate evaluates $\bigl(ab + q\cdot\text{neg\_modulus} - r\bigr)/2^{136} = \text{lo} + \text{hi}\cdot2^{136}$; setting $\text{neg\_modulus} = [2^{136},0,0,0]$ and $q = [\text{lo}_1,0,\text{hi}_1,0]$ injects $\text{lo}_1$ into `lo` and $\text{lo}_1/2^{136}+\text{hi}_1$ into `hi`, and $r = [0,0,\text{lo}_1,0]$ subtracts the stray term back off, which *"saves us 2 addition gates"* -- the modulus-limb selectors have become a **shift operator**.
@@ -275,8 +267,7 @@ Rearrange $\sum_j a_jb_j + \sum_i c_i = qp+r$ as $a_0b_0 = qp + \bigl(r - \sum_{
 > *whole batch* must be a witness, and $N\cdot(\text{max remainder})^2$ must fit under $M$ even after every operand is
 > reduced -- checked up front, rejecting the circuit rather than building it.
 
-### Packing the Wires: Addition in 4 Gates, Injection in 2, Subtraction for Free
-
+### Packing Addition into the Wire Budget
 Adding two elements looks like 5 gates -- four binary limbs and the prime limb.
 But it touches **15 witnesses** (5 each of $x,y,z$) and 4 rows $\times$ 4 wires is **16 slots**: *"we cannot do better than 4 gates because we have a total of 15 witnesses ...
 $\lceil15/4\rceil = 4$"*.
@@ -310,10 +301,9 @@ The important thing is that the borrows are constrained."* For a *boolean* answe
 > the ladder needs $2^{\text{num\_bits}} < n/2$ so the worst case $r = 2K-2$ cannot wrap. Both assume the operands' limbs
 > are **already** range-constrained; the equality trick is unsound the moment its product comes from an unreduced path.
 
-### Everything That Lives in a Selector Is Free, Including a Multiple of $p$
-
+### Constants Folded into Selectors
 A field element is $\text{witness}\cdot\text{multiplicative\_constant} + \text{additive\_constant}$, so adding a constant, scaling by a constant, and adding two terms sharing a witness index are all **0 gates**; one normalisation gate flattens the form back, early-returning when already flat.
-The $sp$ offsets of "Packing the Wires: Addition in 4 Gates, Injection in 2, Subtraction for Free", the remainder borrow of "Amortising the Quotient: N Products, One Quotient, One Pair of Carries", the negated modulus limbs and the fractional rotation coefficients of "Rotation for Free: Fractional Coefficients, or No Table at All" are all this one mechanism.
+The $sp$ offsets of "Packing Addition into the Wire Budget", the remainder borrow of "Amortising the Quotient", the negated modulus limbs and the fractional rotation coefficients of "Rotation via Accumulator Coefficients" are all this one mechanism.
 **`unreduced_zero()`:** for $a/b$ the circuit checks $bc = a$ where $a$ is an *input*, possibly unreduced and larger than $bc$, so the difference underflows.
 Add a compile-time multiple of the modulus, $u = \lceil\max(a)/p\rceil$ with $\max(a) < \sqrt{2^T n}$ -- *"if we always add this element during division, then we never run into the formula-breaking situation"* -- for **zero gates**, its limbs being selector constants.
 **N summands in $\lceil N/3\rceil$ gates:** chain add gates passing a running total out through the fourth wire into the *next row's* fourth wire, $d_{i+1} = d_i - a_i - b_i - c_i$ on every row but the last and $0 = d_i-a_i-b_i-c_i$ on it, with constants stripped into the accumulator's additive constant and the vector zero-padded to a multiple of 3.
@@ -322,12 +312,11 @@ Five additions in **2 gates**: gate 0 wires $[a_0,a_1,a_2,a_3]$, gate 1 wires $[
 > **Where it stops.** Custom gates index wires by witness index and cannot absorb a scaling, so a scaled value used as
 > custom-gate input must be normalised, and constants materialised: *"we disallow constants. If there are constants, we
 > convert them to fixed witnesses (at the expense of 1 extra gate per constant)"*. `unreduced_zero` is sized against
-> ceiling 1 of "The Bound Discipline: Derive Your Two Ceilings, Never Copy Them", and the accumulator emits a fresh witness -- if the value was only wanted inside another gate, a
+> ceiling 1 of "The Two Bound Ceilings", and the accumulator emits a fresh witness -- if the value was only wanted inside another gate, a
 > chained fused add is cheaper.
 
-### `msub_div`: One Quotient for a Whole Formula
-
-Rather than compute $x = \text{num}/\text{den}$ and then multiply, constrain $\text{result}\cdot\text{divisor} + \sum_i \text{mul\_left}_i\text{mul\_right}_i + \sum_j \text{to\_sub}_j = 0$ in one shot, feeding "Amortising the Quotient: N Products, One Quotient, One Pair of Carries" with `result` as first left operand, `divisor` as first right operand, remainder **fixed to zero**.
+### One Quotient for a Whole Formula
+Rather than compute $x = \text{num}/\text{den}$ and then multiply, constrain $\text{result}\cdot\text{divisor} + \sum_i \text{mul\_left}_i\text{mul\_right}_i + \sum_j \text{to\_sub}_j = 0$ in one shot, feeding "Amortising the Quotient" with `result` as first left operand, `divisor` as first right operand, remainder **fixed to zero**.
 *"Algorithm is constructed in this way to ensure that all computed terms are positive ...
 It is critical that ALL the terms on the LHS are positive to eliminate the possibility of underflows ... only requires one quotient and remainder + overflow limbs."* That zero remainder must be a *fixed witness*, not a constant, because *"remainder needs to be defined as wire value and not selector values"*.
 **Price:** one full multiplication group $+$ $N-1$ partial groups $+$ **one** quotient range proof, against one division plus $N$ multiplications each with its own quotient.
@@ -336,7 +325,7 @@ A chained addition stores $(x_1^{\text{prev}}, y_1^{\text{prev}}, \lambda^{\text
 A ladder goes further, keeping $y$ as an **unevaluated** record $\{\text{mul\_left},\text{mul\_right},\text{add},\text{is\_negative}\}$ fed straight into the next round's `msub_div`, sign alternating per round so every argument stays positive, one quotient paying for the whole deferred expression -- *"each iteration reduces the number of field multiplications by 1, at the cost of more additions ...
 The optimal input size appears to be 4."*
 
-> **Where it stops.** The optimum is 4 and not 16 for "Amortising the Quotient: N Products, One Quotient, One Pair of Carries"'s reason: deferred products are summands and the carry bounds
+> **Where it stops.** The optimum is 4 and not 16 for "Amortising the Quotient"'s reason: deferred products are summands and the carry bounds
 > degrade until the 70-bit paired check is lost. The divisor-non-zero check is an explicit opt-out, and every caller taking
 > it must discharge non-zeroness otherwise -- in the chain, by the preceding non-equality assertion of "Equality and Order Without a Reduction", itself
 > imperfectly complete. The formulas are also *incomplete*: they require $x_1 \ne x_2$ on every input.
@@ -348,20 +337,18 @@ Designed well, one lookup sequence proves a decomposition, a range, a recombinat
 
 ## Two-Row Frontend
 
-### The Accumulator Column: Decompose, Look up and Recombine in One Column
-
+### The Lookup Accumulator Column
 A multi-table returns not slices but **accumulators**: row $j$ of column $i$ holds the *remaining* value $\bigl(S - \sum_{k<j}s_k\text{coeff}_k\bigr)/\text{coeff}_j$, so that $w_i[j] - w_i[j+1]\cdot\text{step}_{i,j} = s_{i,j}$ with the step in selectors and $w_i[j+1]$ the shifted wire.
 Row 0 of each column is therefore the **fully recombined value**, and the decomposition is proved by the lookup relation itself.
 For a 32-bit XOR: coefficients $(2^0,2^6,2^{12},2^{18},2^{24},2^{30})$, steps $(1,2^6,2^6,2^6,2^6,2^6)$ -- **6 lookup rows** (five 6-bit tables of $2^{12} = 4096$ entries, one 2-bit table of $2^4 = 16$) with **zero** extra gates for slicing or recombining, against a naive single table of $2^{64}$ entries.
-This is the gate-based form of `air.md` "A Lookup That Computes *and* Range-Checks in the Same Message": the lookup argument *is* the range check *and* the recomposition.
+This is the gate-based form of `air.md` "Dual-Purpose Lookups": the lookup argument *is* the range check *and* the recomposition.
 **Multi-output tables give several answers per lookup.** A basic table has three columns, so $(C_2,C_3)$ is two outputs per key and the third exists whether you use it or not: an S-box table returning $S(x)$ **and** $S(x)\oplus\text{xtime}(S(x)) = 3S(x)$; a $\chi$ table returning the normalised output and $C_2/11^8$, *"to determine the value of the most significant (63rd) bit of the output"*; a hash input table returning three linear functions of the same slices -- normal accumulator, sparse accumulator, and a rotation accumulator with its correction already in the coefficients.
 
 > **Where it stops.** The accumulator forces a *single geometric step* per column, so an output sliced differently from the
-> input needs fractional coefficients ("Rotation for Free: Fractional Coefficients, or No Table at All") or a per-slice correction ("Two Accumulator Sequences in One Column, and a Twist That Turns Rotation into a Multiply"). And a two-input table spends $C_1,C_2$ as
+> input needs fractional coefficients ("Rotation via Accumulator Coefficients") or a per-slice correction ("Twin Accumulators and Twisted Lanes"). And a two-input table spends $C_1,C_2$ as
 > **keys**, leaving only $C_3$ as output: multi-output and two-in-one-out are alternatives, not a package.
 
-### Sparse (Base-$B$) Representation, Where the Base Is a Carry Budget
-
+### Sparse Base-$B$ Representation
 Write a $k$-bit value as $\sum_i b_i B^i$, $b_i\in\{0,1\}$.
 XOR of several values is then **addition** of their sparse forms plus one normalisation lookup $d \mapsto d \bmod 2$; AND and majority come from the same sum read through a different normalisation table.
 **The rule for choosing $B$: it must exceed the largest digit reachable before the next normalisation** -- not the largest digit of an input, the largest after every accumulation you intend to do.
@@ -386,10 +373,9 @@ Round-key addition folds into the same accumulation and the row shift is 0 gates
 > the byte is about to enter the S-box* (base 9 with five addends plus a round key reaches 6--8); a sponge permutation that
 > normalises every round to keep digits $\le2$ entering the next.
 
-### Rotation for Free: Fractional Coefficients, or No Table at All
-
+### Rotation via Accumulator Coefficients
 In the accumulator scheme a rotation is a **permutation of slice weights**, so it belongs in the coefficients, not a table; inverse powers of two are legal, selector values being field elements.
-For a rotate-right by 16 on 6-bit slices, with $c = 1/2^{16}$, the output column takes $\bigl(1,\,2^6,\,c,\,c2^2,\,c2^8,\,c2^{14}\bigr)$ and the caller multiplies the accumulator by $2^{32-16}$ once -- **free**, folding into a multiplicative constant ("Everything That Lives in a Selector Is Free, Including a Multiple of $p$").
+For a rotate-right by 16 on 6-bit slices, with $c = 1/2^{16}$, the output column takes $\bigl(1,\,2^6,\,c,\,c2^2,\,c2^8,\,c2^{14}\bigr)$ and the caller multiplies the accumulator by $2^{32-16}$ once -- **free**, folding into a multiplicative constant ("Constants Folded into Selectors").
 Zero extra multi-tables and zero extra gates, beyond one small intra-slice rotate table per amount.
 **Better still, derive the rotation from a plain accumulator.** Row $j$ is "the value with the low $j$ slices removed and divided out", so row 2 of the *ordinary* XOR accumulator already is the top of a 12-bit rotation: with $\text{row}_0 = s_0 + 2^6s_1 + 2^{12}s_2 + 2^{18}s_3 + 2^{24}s_4 + 2^{30}s_5 = u$ and $\text{row}_2 = s_2 + 2^6s_3 + 2^{12}s_4 + 2^{18}s_5$, $\;\mathrm{ROTATE}_{12}(u) = \text{row}_2 + (\text{row}_0 - 2^{12}\text{row}_2)\cdot2^{20}$ -- *"we can get the correct value by combining values from [the] XOR table itself"*.
 **1 arithmetic gate, and a whole multi-table (6 basic tables) deleted.**
@@ -399,8 +385,7 @@ Zero extra multi-tables and zero extra gates, beyond one small intra-slice rotat
 > is narrower still: the amount must be an **exact multiple** of the slice size ($12 = 2\times6$). Both are sound only
 > because the reconstruction is exact over the integers -- $2^{-16}$ in $\mathbb F_n$ is not a shift.
 
-### Two Accumulator Sequences in One Column, and a Twist That Turns Rotation into a Multiply
-
+### Twin Accumulators and Twisted Lanes
 **A step size of 0 breaks the accumulation and starts a new sum**, so one lookup column can carry two independent accumulators.
 A base-11 left-rotation uses this: split the lane at the rotation boundary into a wrapping "left" part and a non-wrapping "right" part and run both through the *same* gate sequence, letting column 1 hold a pair of sums:
 
@@ -416,7 +401,7 @@ A base-11 left-rotation uses this: split the lane at the rotation boundary into 
 Slice sizes are chosen so the lookup *also* range-constrains each half -- *"we want to implicitly range-constrain normalized $< 11^{\text{limb\_bits}}$, which means potentially using a lookup table that is not of size $11^{\text{max\_bits\_per\_table}}$ for the most-significant slice"* -- so the table is instantiated at every slice size 1..8.
 **8 gates for the unrotated lane, 10 for the other 24, 248 per round**, rotation *and* range constraint free.
 **Choose the representation so that rotate-by-one is a multiply.** Where the diffusion step needs $D = C_0 \oplus \mathrm{ROTL}(C_1,1)$, store each 64-slice lane in a **65-slice twisted** form $[b_{63},\dots,b_0,b_{63}]$.
-Then $\mathrm{XOR}(A,\mathrm{ROTL}(B,1))$ is $A.\text{twist} + 2B.\text{twist}$ in base 11, i.e. $D[i] = C[(i{+}4)\bmod5] + C[(i{+}1)\bmod5]\cdot B$ -- **a single constant multiply, 0 gates**, where the twisted value is $\text{state}\cdot11 + \text{state\_msb}$ and the msb arrives free in the third column of the $\chi$ table ("The Accumulator Column: Decompose, Look up and Recombine in One Column").
+Then $\mathrm{XOR}(A,\mathrm{ROTL}(B,1))$ is $A.\text{twist} + 2B.\text{twist}$ in base 11, i.e. $D[i] = C[(i{+}4)\bmod5] + C[(i{+}1)\bmod5]\cdot B$ -- **a single constant multiply, 0 gates**, where the twisted value is $\text{state}\cdot11 + \text{state\_msb}$ and the msb arrives free in the third column of the $\chi$ table ("The Lookup Accumulator Column").
 *"This is MUCH cheaper than the extra range constraints required for a naive left-rotation."* $D$ then has 66 slices whose top and bottom are artifacts, stripped with 3 witnesses and one assertion (**1 gate**, the multipliers being constants) plus two small range constraints and a 1-to-2 table read on the middle.
 
 > **Where it stops.** The two-sequence trick needs 25 distinct multi-tables, one per lane rotation, and its witnesses
@@ -424,11 +409,10 @@ Then $\mathrm{XOR}(A,\mathrm{ROTL}(B,1))$ is $A.\text{twist} + 2B.\text{twist}$ 
 > that the table's slice width **divides** the lane width: at $4 \mid 64$ the lookup sequence implies the middle term is
 > $< 11^{64}$ for free; if it did not divide, that term would need its own range constraint and the saving would evaporate.
 
-### One Lookup Producing a Modular Sum *and* a Boolean Function
-
+### Radix-Separated Digit Fields
 Two independent sums share one sparse digit if you separate them with a **radix multiplier**.
 The digit $7\sigma + (e+2f+3g)$ packs a rotation sum $\sigma\in[0,3]$ against a choice-function encoding in $[0,6]$, and the 2-D-indexed normalisation table returns $\Sigma_1\text{bit} + \mathrm{Ch}\,\text{bit} \in [0,2]$ -- **one lookup answers both**; the companion pair uses $4\sigma + (a+b+c)$ in base 16.
-The multiplier 7 (resp. 4) *is* the separator, and it is exactly the digit budget of "Sparse (Base-$B$) Representation, Where the Base Is a Carry Budget" read as two fields.
+The multiplier 7 (resp. 4) *is* the separator, and it is exactly the digit budget of "Sparse Base-$B$ Representation" read as two fields.
 The three rotations are applied by multiplying the whole sparse value by a limb-0 coefficient and correcting the rest: one correction $\delta = c_1 - B^{11}c_0$ folds into the **input table's** third-column coefficients, the other is a single constant multiply, and the limb structure $L_0 = 0..10$, $L_1 = 11..21$, $L_2 = 22..31$ is chosen so the rotation amounts $(6,11,25)$ and $(2,13,22)$ each split cleanly across it.
 **Price:** one pair is 1 input lookup (3 rows) $+$ 2 arithmetic gates $+$ 1 output lookup (16 rows of the 784-entry table); the other is 1 input lookup $+$ 2 gates $+$ 11 rows of the 4096-entry table.
 
@@ -437,8 +421,7 @@ The three rotations are applied by multiplying the whole sparse value by a limb-
 > word needs **two different sparse forms**, which is where ordering side-effects come from: one routine populates a
 > sparse form another one copies.
 
-### Modular Addition and Wide Bitwise Ops: Constrain the Overflow, Not the Result
-
+### Overflow-Constrained Modular Addition
 **Addition mod $2^{32}$ in 1 gate.** Emit $\text{result} = a + b - \text{overflow}\cdot2^{32}$ as a single fused three-term add and range-constrain `overflow` to a handful of bits.
 **That bit count is the entire soundness argument**, so every call site must justify it: a sum of six 32-bit values has overflow $\le5$ (3 bits), of seven $\le6$ (3 bits), a final two-term add 1 bit.
 Message expansion frames the same trick as a division -- $(w_{\text{raw}}-w)/2^{32}$ range-constrained to **2 bits**, because a sum of four 32-bit values has quotient $\le3$.
@@ -450,8 +433,7 @@ Message expansion frames the same trick as a division -- $(w_{\text{raw}}-w)/2^{
 > rest explicitly: two round-state words at loop exit, three initial-state words, three schedule words, and all eight
 > outputs. Miss one and the hash is malleable. The chunked op stops where the reconstruction would wrap the native modulus.
 
-### Read-Only Arrays: Build Them Lazily, or Not at All
-
+### Lazily Built Read-Only Arrays
 The array is **not** created at construction; initialisation runs on the first non-constant read.
 A table whose entries are all constants and whose index is always constant therefore never touches the builder -- *"if both the table entries and the index are constant, we don't need a builder as we can directly extract the desired value from `raw_entries`"* -- and constant entries go through a caching helper, so repeated constants share one witness.
 A **twin** table stores a pair per index, so one read yields two field elements for one gate; that is what makes a 5-table encoding of an emulated curve point affordable, the four binary limbs plus prime limb of each coordinate packing as $(x_0,x_1),(x_2,x_3),(y_0,y_1),(y_2,y_3),(x_\pi,y_\pi)$ and a whole point costing 5 gates.
@@ -461,8 +443,7 @@ A **twin** table stores a pair per index, so one read yields two field elements 
 > function."* The index range is implied only if it came from a range-constrained source or a lookup, and a constant index
 > must be converted to a witness and pinned, at 1 gate.
 
-### Several Rounds of a Permutation per Row, via a Linear Solve Inside the Relation
-
+### Round Compression via Linear Solve
 The obvious encoding is one round per row, four wires holding four state limbs.
 But where an internal round S-boxes only `state[0]` and the internal matrix is diagonal-plus-all-ones, the other three limbs are **affine functions of the history** and can be *solved for inside the relation* rather than witnessed.
 Put `state[0]` at rounds $4i{+}0..4i{+}3$ into the four wires and recover $(s_1,s_2,s_3)$ at row start by a $3\times3$ Vandermonde solve in the relation itself: **56 internal rounds in 14 rows** instead of 56.
@@ -473,7 +454,7 @@ $$t_1 = s_0{+}s_1{+}2s_3,\quad t_2 = s_2{+}2s_1{+}s_3,\quad v_2 = 4s_0{+}4s_1{+}
 > **Where it stops.** The round count must be divisible by the compression factor, asserted at compile time, and the
 > compressed rows must be **contiguous** in one block. Where external and internal rounds live in separate blocks you need
 > explicit state-propagation landing rows between them, and the saving shrinks by one row per boundary. The gate indexes
-> wires by witness index, so constant inputs must be materialised first ("Everything That Lives in a Selector Is Free, Including a Multiple of $p$").
+> wires by witness index, so constant inputs must be materialised first ("Constants Folded into Selectors").
 
 # Traps
 
@@ -487,6 +468,6 @@ Multiply two simple selectors together, or put one inside a lookup input, and it
 The design note carries the warning verbatim: *"Warning: don't forget to check that the final row is all zeros."* An unterminated chain is an unconstrained tail.
 
 **Reserving degree headroom is free; discovering you need it later is not.** `set_minimum_degree` exists precisely so a downstream argument can convert slack into fewer columns.
-Raising the cap inside a bracket costs nothing; crossing a bracket doubles the extended-domain work for *every* polynomial (`degree.md` "The Bracket Theorem: Only $D \in \{3, 5, 9, 17, 33\}$ Are Rational").
+Raising the cap inside a bracket costs nothing; crossing a bracket doubles the extended-domain work for *every* polynomial (`degree.md` "The Bracket Theorem").
 
 **A hand-rolled fixed column cannot join the automatic combining.** Manual selector packing is counterproductive wherever selectors are auto-combined, for exactly this reason -- the optimizer can only pack what it can see is a simple selector.
