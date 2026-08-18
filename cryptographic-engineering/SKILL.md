@@ -402,21 +402,13 @@ kept honest by its test suite.
 
 ### Signing
 
-Signing and verification are methods on the keys, wrapping ed25519:
-
 ```rust
 impl SigningKey {
-    pub fn sign<T: Tagged>(&self, msg: &T) -> Signature {
-        Signature(self.0.sign(&msg.encode()))
-    }
+    pub fn sign<T: Tagged>(&self, msg: &T) -> Signature;
 }
 
 impl VerificationKey {
-    pub fn verify<T: Tagged>(&self, sig: &Signature, msg: &T) -> Result<(), CryptoError> {
-        self.0
-            .verify_strict(&msg.encode(), &sig.0)
-            .map_err(|_| CryptoError::SignatureVerificationFailed)
-    }
+    pub fn verify<T: Tagged>(&self, sig: &Signature, msg: &T) -> Result<(), CryptoError>;
 }
 ```
 
@@ -500,11 +492,7 @@ impl EncapsulationKey {
 }
 
 impl DecapsulationKey {
-    pub fn decaps<C: Tagged>(
-        &self,
-        ct: &KemCiphertext,
-        context: &C,
-    ) -> Result<SharedSecret, CryptoError>;
+    pub fn decaps<C: Tagged>(&self, ct: &KemCiphertext, context: &C) -> SharedSecret;
 }
 ```
 
@@ -523,13 +511,7 @@ not as a distinguishable decapsulation error.
 impl MacKey {
     pub fn mac<T: Tagged>(&self, msg: &T) -> Mac;
 
-    pub fn check<T: Tagged>(&self, tag: &Mac, msg: &T) -> Result<(), CryptoError> {
-        if self.mac(msg) == *tag {
-            Ok(())
-        } else {
-            Err(CryptoError::AuthenticationFailed)
-        }
-    }
+    pub fn check<T: Tagged>(&self, tag: &Mac, msg: &T) -> Result<(), CryptoError>;
 }
 ```
 
@@ -539,34 +521,19 @@ Return one uniform authentication failure on mismatch.
 `Mac` is a dedicated newtype whose equality is constant-time:
 
 ```rust
-use subtle::ConstantTimeEq;
-
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-struct Mac(Secret<32>);
-
-impl ConstantTimeEq for Mac {
-    fn ct_eq(&self, other: &Self) -> subtle::Choice {
-        self.0.ct_eq(&other.0)
-    }
-}
-
-impl PartialEq for Mac {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Eq for Mac {}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Mac(Secret<32>);
 ```
 
-Do not use `type Mac = Secret<32>` or derive `PartialEq`:
+The derive delegates to `Secret`, whose `PartialEq` is constant-time.
+Do not use `type Mac = Secret<32>`, and do not wrap a raw `[u8; 32]`:
 an alias permits accidental interchange with keys and nonces,
 while derived byte-array equality may exit early.
 
 ### Key Derivation
 
 ```rust
-fn kdf<T: Tagged>(ikm: &SecretKey, info: &T) -> DerivedKey;
+pub fn kdf<T: Tagged, const N: usize>(ikm: &Secret<32>, info: &T) -> Secret<N>;
 ```
 
 Give every derived key a dedicated info type.
