@@ -84,8 +84,7 @@ Assert the per-point equation and `R(point) != 0`, then `(check-sat)`.
 (For "no encoding over *any* large field", pair it with the `QQ` Groebner argument in `sage.md`.)
 
 To probe a *symmetric* encoding, add symmetry relations tying the input coefficients (`(assert (= a0 a1))`, etc.).
-Instructive: for Maj a symmetric encoding *does* exist over a field (`(o - s/4)(9 - 6s) = -3s/4`, `s = a+b+c`),
-so a symmetric `QF_FF` query returns **sat** -- only the **integer-coefficient** symmetric encoding is impossible (a separate search).
+Instructive: for Maj a symmetric encoding *does* exist over a field (`(o - s/4)(9 - 6s) = -3s/4`, `s = a+b+c`), so a symmetric `QF_FF` query returns **sat** -- only the **integer-coefficient** symmetric encoding is impossible (a separate search).
 Scope the claim to the coefficient ring: "no symmetric *integer* encoding", not "no symmetric encoding".
 This is the kind of overclaim SMT catches.
 

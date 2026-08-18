@@ -27,12 +27,9 @@ State the scarce metric (mult-constraints? rows? witnesses? degree?) and get a b
    Ask the user which resource is scarce, or take it from its formal definition -- the scoring function, the cost model in the proof system's documentation, or the counter the toolchain actually reports.
    Witnesses and constraints are not interchangeable, and a metric that charges only rows reorders every trade-off in the references, so a change that looks like a win under a guessed metric can measure as a loss.
 2. Measure the scarce resource; find the dominating hotspot.
-3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`),
-   then look for structure the catalogue misses -- usually the bigger win.
-4. Synthesize a candidate.
-   Small boolean gadgets: search exactly with `scripts/synthesize.sage` (fix the multiplier `R`, solve a linear system over `QQ`).
-5. Verify soundness before trusting it: `scripts/verify.smt2` (cvc5 `QF_FF`) proves the constraint forces the output over a real `F_p`;
-   `scripts/impossible.smt2` proves a shape impossible when the search is empty.
+3. Prime with `references/techniques.md` plus the reference for your arithmetization (`references/r1cs.md`), then look for structure the catalogue misses -- usually the bigger win.
+4. Synthesize a candidate. Small boolean gadgets: search exactly with `scripts/synthesize.sage` (fix the multiplier `R`, solve a linear system over `QQ`).
+5. Verify soundness before trusting it: `scripts/verify.smt2` (cvc5 `QF_FF`) proves the constraint forces the output over a real `F_p`; `scripts/impossible.smt2` proves a shape impossible when the search is empty.
 6. Certify if needed: `scripts/cofactors.sage` extracts the cofactors proving the output is uniquely determined.
 7. Re-measure; track the bounds each trick relies on (field size, carry width, characteristic).
 
@@ -47,18 +44,14 @@ cvc5 scripts/verify.smt2         # prove a row forces o = f, over a real F_p
 cvc5 scripts/impossible.smt2     # prove AND3/OR3 have no single-constraint encoding of the shape
 ```
 
-cvc5 `QF_FF` proves a statement about the *specific* prime in the file (exact, no side condition);
-Sage over `QQ` yields small prime-independent constants and a single "holds for all char > bound" result.
-Use both.
-See `references/smt.md`, `references/sage.md`.
+cvc5 `QF_FF` proves a statement about the *specific* prime in the file (exact, no side condition); Sage over `QQ` yields small prime-independent constants and a single "holds for all char > bound" result.
+Use both. See `references/smt.md`, `references/sage.md`.
 
 ## Files
 
 - `references/techniques.md` -- cross-arithmetization catalogue (carry-save, CRT/RNS, lookups, range-check/spread, custom gates, non-deterministic advice, solver methods, primitive notes).
-- `references/r1cs.md` -- R1CS: what one row can do (single-row multipliers, lambda-packing, decoy roots, sqrt(N) law), not materialising values, free affine structure, bound arithmetic for non-native modmul, lower-bound tools, traps, the GF(2) cost model, and the baseline moves with their soundness side conditions.
-  Measured prices throughout.
+- `references/r1cs.md` -- R1CS: what one row can do (single-row multipliers, lambda-packing, decoy roots, sqrt(N) law), not materialising values, free affine structure, bound arithmetic for non-native modmul, lower-bound tools, traps, the GF(2) cost model, and the baseline moves with their soundness side conditions. Measured prices throughout.
   PLONKish and AIR have no reference yet -- their material is still in the catalogue.
 - `references/smt.md` -- cvc5 / SMT-LIB: verify, prove impossibility, model the field.
 - `references/sage.md` -- SageMath: Groebner ideal-membership proofs, cofactor lifts, CRT/RNS bounds, computing hard-coded constants.
-- `scripts/` -- `synthesize.sage`, `cofactors.sage`, `verify.smt2`, `impossible.smt2`.
-  Self-checking.
+- `scripts/` -- `synthesize.sage`, `cofactors.sage`, `verify.smt2`, `impossible.smt2`. Self-checking.

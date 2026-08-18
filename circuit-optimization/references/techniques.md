@@ -1,7 +1,6 @@
 # Catalogue of circuit-optimization techniques
 
-Moves that survive the choice of proof system.
-R1CS-specific: `r1cs.md`.
+Moves that survive the choice of proof system. R1CS-specific: `r1cs.md`.
 
 ## 1. Carry-save / full-adder identity
 
@@ -66,7 +65,6 @@ Taken to its limit this replaces the computation entirely: witness the answer an
   Hint-and-check (section 6) with the bound discipline of section 2.
 - **Lazy / redundant-limb arithmetic:** carry signed or oversized ("slack") limbs and defer carry propagation, range-checking only at overflow boundaries.
 - **Batched inversion (Montgomery's trick):** invert `n` elements with **one** inverse + `3(n-1)` mults via prefix products.
-- **RLC batching:** collapse equalities `a_i = b_i` into `sum_i alpha^i*(a_i - b_i) = 0` with a Fiat-Shamir `alpha`;
-  soundness error `deg/|F|`, and `alpha` must be sampled **after** the values are committed.
+- **RLC batching:** collapse equalities `a_i = b_i` into `sum_i alpha^i*(a_i - b_i) = 0` with a Fiat-Shamir `alpha`; soundness error `deg/|F|`, and `alpha` must be sampled **after** the values are committed.
 - **ECC:** GLV endomorphism splitting halves the scalar bit-length; windowing/wNAF cut additions; batch the affine inversions (above).
 - **Degree reduction:** introduce intermediate witnesses to split a high-degree gate into low-degree ones -- the inverse of section 5, when rows are cheaper than degree.

@@ -5,8 +5,7 @@ Sage covers the algebra that SMT does not: **proving an output is uniquely deter
 
 Run `.sage` files with `sage file.sage`.
 Startup is a few seconds.
-Work over `QQ` for search and cofactor extraction:
-the constants come out small and prime-independent -- integers, or small-denominator fractions -- and lift to any field whose characteristic avoids those small denominators and the multiplier's cube-values (i.e. all sufficiently large fields).
+Work over `QQ` for search and cofactor extraction: the constants come out small and prime-independent -- integers, or small-denominator fractions -- and lift to any field whose characteristic avoids those small denominators and the multiplier's cube-values (i.e. all sufficiently large fields).
 Use `GF(p)` only when a specific prime genuinely matters.
 
 ## Mental model
@@ -47,8 +46,7 @@ The relation is just `constraint + sum_i g_i*(x_i^2 - x_i) = (o-f)*R`.
 Set up the coefficients as symbolic unknowns and the 2^n point conditions as polynomial equations,
 then ask whether the system has a solution (e.g. via a Groebner basis of the elimination ideal, or by `solve`).
 Adding symmetry relations (e.g. `a`- and `b`-coefficients equal) and getting an *empty* variety proves "no symmetric single-constraint `maj` encoding exists".
-For pure existence/impossibility over a *specific* field, cvc5 / `QF_FF` (`scripts/impossible.smt2`) is often easier;
-use Sage when you want the algebraic certificate or a statement that holds across **all** large fields at once.
+For pure existence/impossibility over a *specific* field, cvc5 / `QF_FF` (`scripts/impossible.smt2`) is often easier; use Sage when you want the algebraic certificate or a statement that holds across **all** large fields at once.
 
 ## CRT / RNS bound checking (foreign-field arithmetic)
 
