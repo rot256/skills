@@ -1,6 +1,6 @@
 ---
 name: circuit-optimization
-description: Optimizing arithmetic circuits / constraint systems (R1CS, PLONKish, AIR) for zero-knowledge proofs -- minimizing multiplication constraints, rows, witnesses, trace cells, interactions, and gate degree. Use when reducing constraint/witness/column counts, designing or golfing R1CS/PLONK/AIR gadgets (boolean ops, adders, range checks, hashes like SHA-256/Keccak/Poseidon), designing AIR chips, buses, lookups or memory arguments, budgeting constraint degree, doing foreign-field/non-native or CRT/RNS arithmetic, choosing lookups vs arithmetic, or using SMT (cvc5) and SageMath (Groebner basis) to synthesize, verify, and certify constraint encodings.
+description: Optimizing arithmetic circuits / constraint systems (R1CS, PLONKish, AIR) for zero-knowledge proofs -- minimizing multiplication constraints, rows, witnesses, trace cells, interactions, and gate degree. Use when reducing constraint/witness/column counts, designing or golfing R1CS/PLONK/AIR gadgets (boolean ops, adders, range checks, hashes like SHA-256/Keccak/Poseidon), designing AIR chips, buses, lookups or memory arguments, deciding whether to add a custom gate / sub-AIR / precompile and pricing its selector, budgeting constraint degree, doing foreign-field/non-native or CRT/RNS arithmetic, choosing lookups vs arithmetic, or using SMT (cvc5) and SageMath (Groebner basis) to synthesize, verify, and certify constraint encodings.
 ---
 
 # Circuit optimization
@@ -73,3 +73,5 @@ See `references/smt.md`, `references/sage.md`.
 - `references/sage.md` -- SageMath: Groebner ideal-membership proofs, cofactor lifts, CRT/RNS bounds, computing hard-coded constants.
 - `scripts/` -- `synthesize.sage`, `cofactors.sage`, `verify.smt2`, `impossible.smt2`.
   Self-checking.
+- `CORPUS.md` -- bookkeeping only: which systems have already been read. The references deliberately do not name them, so
+  this is the record that lets the corpus grow without duplicated effort. Never cite it from a technique.
