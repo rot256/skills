@@ -14,9 +14,12 @@ should exhaust *before* proposing a relation are in `techniques.md`.
 
 ## The axioms
 
-**The selector is a committed column, and it is committed everywhere.**
-It is preprocessed -- fixed at build time, in the verification key, opened alongside everything else -- so the prover does
-not choose it and cannot skip it. Rows that do not use the gate still commit to its selector being zero.
+**The activation is a committed column, and it is committed everywhere.**
+In a gate-based system that is a preprocessed selector -- fixed at build time, in the verification key, opened alongside
+everything else, so the prover neither chooses it nor skips it; rows that do not use the gate still commit to it being
+zero. In a multi-AIR machine the analogue is coarser and more expensive: a new chip is a whole trace with its own
+padding, its own interaction columns and its own entry in every verification key and every shape (`air.md` VI.3). Either
+way the charge lands on circuits that never invoke the relation.
 
 **Degree is a step function, and the system pays the max.**
 One relation sets the budget for every other relation in the system. What it costs is a jump to the next bracket, not a
