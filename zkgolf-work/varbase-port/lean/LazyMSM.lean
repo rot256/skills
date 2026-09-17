@@ -15,7 +15,7 @@ chain proves nothing and the four coefficients are forced to `1`.
 namespace Solution.Secp256k1ScalarMul.LazyMSM
 
 open Specs.ShortWeierstrass Specs.Secp256k1
-open Solution.Secp256k1ScalarMulFixedBase (Sparse32 SparseX)
+open Solution.Secp256k1ScalarMulFixedBase.SparseX
 open Solution.Secp256k1ScalarMulFixedBase.LazyVar
 open Solution.Secp256k1ScalarMul.Lazy
 
@@ -36,7 +36,7 @@ def lkInput (input : Var Inputs (F circomPrime)) (k : Fin 64) :
 def spE (input : Var Inputs (F circomPrime)) : Expression (F circomPrime) := input.tinf[15]
 
 def seed (input : Var Inputs (F circomPrime)) : Var LazyPt (F circomPrime) :=
-  { x := SparseX.embedExpr input.tx[15], y := SparseX.embedExpr input.ty[15], isInf := input.tinf[15] }
+  { x := embedExpr input.tx[15], y := embedExpr input.ty[15], isInf := input.tinf[15] }
 
 noncomputable def stepBody (input : Var Inputs (F circomPrime))
     (acc : Var LazyPt (F circomPrime)) (k : Fin 64) :
@@ -51,19 +51,21 @@ private noncomputable def stepLength (input : Var Inputs (F circomPrime)) :
       (fun (x : Var LazyPt (F circomPrime) × Fin 64) => stepBody input x.1 x.2) where
   localLength := stepLen
   localLength_eq x n := by
-    simp only [stepBody, stepLen, circuit_norm, VarLookup.circuit, VarLookup.elaborated,
-      Step.call_localLength]
+    simp only [stepBody, stepLen, circuit_norm, Step.circuit_localLength,
+      GLVMSM.varLookup_localLength]
 
 /-- `(1 − m₀) + Σ_{i ≥ 1} m_i`: zero iff the magnitude is exactly `1`. -/
 def unitDefect (m : Var (fields GLVMSM.coeffBits) (F circomPrime)) : Expression (F circomPrime) :=
-  (1 - m[0]) + Fin.foldl 63 (fun acc i => acc + m[i.val + 1]) 0
+  ((1 : Expression (F circomPrime)) - m[0]) +
+    Fin.foldl 63 (fun acc i => acc + m[i.val + 1]'(by
+      have := i.isLt; simp only [GLVMSM.coeffBits]; omega)) 0
 
 noncomputable def main (input : Var Inputs (F circomPrime)) : Circuit (F circomPrime) Unit := do
   let acc ← Circuit.foldlRange 64 (seed input) (stepBody input) (stepLength input)
   let sp := spE input
   Circuit.assertZero ((1 - sp) * (acc.isInf - sp))
-  let ex := Products.vsubE acc.x (SparseX.embedExpr input.tx[15])
-  let ey := Products.vsubE acc.y (SparseX.embedExpr input.ty[15])
+  let ex := Products.vsubE acc.x (embedExpr input.tx[15])
+  let ey := Products.vsubE acc.y (embedExpr input.ty[15])
   let hxl ← subcircuit MulCell.circuit ⟨1 - sp, Certs.half ex false⟩
   let hxh ← subcircuit MulCell.circuit ⟨1 - sp, Certs.half ex true⟩
   assertion (Cert.circuit .rel1) #v[hxl, hxh]

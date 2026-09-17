@@ -66,3 +66,16 @@ lemma call_localLength (n : ℕ) (hn : n + 1 ≤ depth) (i : Var Inputs Field) (
   exact localLength n hn i o
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+
+namespace Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+open SmallSquare Sparse32 SparseX Challenge.CostR1CS Cost
+open Solution.Secp256k1ScalarMul.Lazy
+open Solution.Secp256k1ScalarMulFixedBase.LazyVar
+
+lemma circuit_localLength (n : ℕ) (hn : n + 1 ≤ depth) (i : Var Inputs Field) :
+    (circuit n hn).localLength i = 1500 := by
+  rw [show (circuit n hn).localLength i = (main n hn i).localLength 0 from
+    ((elaborated n hn).localLength_eq i 0).symm]
+  exact localLength n hn i 0
+
+end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step

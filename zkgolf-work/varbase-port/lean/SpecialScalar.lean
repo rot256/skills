@@ -37,23 +37,22 @@ lemma isSpecial_of_pattern (k : ZMod order) (s : Fin 4 → ℤ) (hs : ∀ j, IsS
     (hr : Relation k s) : IsSpecial k := by
   rcases hs 0 with h0 | h0
   · exact ⟨s, hs, h0, hr⟩
-  · refine ⟨fun j => -s j, fun j => isSign_neg (hs j), by rw [h0]; norm_num, ?_⟩
+  · refine ⟨fun j => -s j, fun j => isSign_neg (hs j), by show -s 0 = 1; rw [h0]; norm_num, ?_⟩
     unfold Relation at hr ⊢
     push_cast
     linear_combination -hr
 
 noncomputable def specialDecomposition (k : ZMod order) (h : IsSpecial k) :
     ShortCoeffs.Decomposition k :=
-  let s := Classical.choose h
-  have hs := Classical.choose_spec h
-  { u₁ := s 0, u₂ := s 1, v₁ := s 2, v₂ := s 3
-    u₁_bound := by rw [isSign_natAbs (hs.1 0)]; decide
-    u₂_bound := by rw [isSign_natAbs (hs.1 1)]; decide
-    v₁_bound := by rw [isSign_natAbs (hs.1 2)]; decide
-    v₂_bound := by rw [isSign_natAbs (hs.1 3)]; decide
-    relation := hs.2.2
-    v_nonzero := Or.inl (isSign_ne_zero (hs.1 2))
-    u₁_nonneg := by rw [hs.2.1]; decide }
+  { u₁ := Classical.choose h 0, u₂ := Classical.choose h 1
+    v₁ := Classical.choose h 2, v₂ := Classical.choose h 3
+    u₁_bound := by rw [isSign_natAbs ((Classical.choose_spec h).1 0)]; decide
+    u₂_bound := by rw [isSign_natAbs ((Classical.choose_spec h).1 1)]; decide
+    v₁_bound := by rw [isSign_natAbs ((Classical.choose_spec h).1 2)]; decide
+    v₂_bound := by rw [isSign_natAbs ((Classical.choose_spec h).1 3)]; decide
+    relation := (Classical.choose_spec h).2.2
+    v_nonzero := Or.inl (isSign_ne_zero ((Classical.choose_spec h).1 2))
+    u₁_nonneg := by rw [(Classical.choose_spec h).2.1]; decide }
 
 lemma specialDecomposition_signs (k : ZMod order) (h : IsSpecial k) :
     IsSign (specialDecomposition k h).u₁ ∧ IsSign (specialDecomposition k h).u₂ ∧
@@ -61,6 +60,7 @@ lemma specialDecomposition_signs (k : ZMod order) (h : IsSpecial k) :
   ⟨(Classical.choose_spec h).1 0, (Classical.choose_spec h).1 1,
     (Classical.choose_spec h).1 2, (Classical.choose_spec h).1 3⟩
 
+open Classical in
 /-- Honest decomposition: the sign pattern for special scalars, otherwise any
 short decomposition. -/
 noncomputable def decomposition (k : ZMod order) : ShortCoeffs.Decomposition k :=
@@ -69,6 +69,6 @@ noncomputable def decomposition (k : ZMod order) : ShortCoeffs.Decomposition k :
 
 lemma decomposition_special (k : ZMod order) (h : IsSpecial k) :
     decomposition k = specialDecomposition k h := by
-  simp only [decomposition, dif_pos h]
+  rw [decomposition, dif_pos h]
 
 end Solution.Secp256k1ScalarMul.SpecialScalar
