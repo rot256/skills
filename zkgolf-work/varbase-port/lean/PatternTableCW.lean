@@ -149,3 +149,37 @@ lemma negCanon_outputs_stable (P : VP) {o k : ℕ} {e e' : PE}
   exact ⟨hc, withXY_stable P _ _ hP hmx (negY_output_stable _ hc h_agree (by omega))⟩
 
 end Solution.Secp256k1ScalarMul.PatTable
+
+namespace Solution.Secp256k1ScalarMul.PatTable
+
+open Specs.ShortWeierstrass Specs.Secp256k1
+open GLVBuildTable
+open Challenge.Utils.ComputableWitnessLemmas
+
+set_option maxHeartbeats 16000000
+set_option maxRecDepth 20000
+
+lemma bases_parts {e e' : PE} (b : Var Bases CF) (h : eval e b = eval e' b) :
+    eval e b.r0 = eval e' b.r0 ∧ eval e b.r1 = eval e' b.r1 ∧
+    eval e b.r2 = eval e' b.r2 ∧ eval e b.r3 = eval e' b.r3 := by
+  simpa only [circuit_norm, Bases.mk.injEq] using h
+
+theorem structuralComputableWitnesses (offset : ℕ) (b : Var Bases CF) (env env' : PE) :
+    FormalCircuitBase.Operations.StructuralComputableWitnesses b env env' offset
+      ((main b).operations offset) := by
+  have hpa : ∀ (X : Var PhiPairAdd.Inputs CF) (o : ℕ),
+      (subcircuit PhiPairAdd.circuit X).localLength o = 1188 := fun _ _ => rfl
+  have hca : ∀ (X : Var CompleteAdd.Inputs CF) (o : ℕ),
+      (subcircuit CompleteAdd.circuit X).localLength o = 1235 := fun _ _ => rfl
+  have hmux : ∀ (X : Var (Mux.Inputs Emu) CF) (o : ℕ),
+      (subcircuit (Mux.circuit (M := Emu)) X).localLength o = 4 := fun _ _ => rfl
+  have hneg : ∀ (X : VP) (o : ℕ), (subcircuit NegYAffine.circuit X).localLength o = 68 :=
+    fun _ _ => rfl
+  simp only [main, negCanon, Circuit.bind_structuralComputableWitnesses_iff,
+    FormalCircuit.subcircuit_structuralComputableWitnesses_iff,
+    Circuit.pure_structuralComputableWitnesses_iff, Circuit.bind_output_eq, Circuit.pure_output_eq,
+    hpa, hca, hmux, hneg, and_true]
+  trace_state
+  sorry
+
+end Solution.Secp256k1ScalarMul.PatTable
