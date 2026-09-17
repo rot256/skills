@@ -314,67 +314,83 @@ theorem soundness : Soundness (F circomPrime) main Assumptions Spec := by
   intro i
   fin_cases i
   · refine ⟨he0.1, ?_, hc0.2.2.1⟩
+    try simp only [rawEntry]
     rw [he0.2, hc0.2.1, e15]
     have h := negGP_patPoint _ hB 15
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h1v, ?_, h1c⟩
+    try simp only [rawEntry]
     rw [e1]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he2.1, ?_, hc2.2.2.1⟩
+    try simp only [rawEntry]
     rw [he2.2, hc2.2.1, e13]
     have h := negGP_patPoint _ hB 13
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h3v, ?_, h3c'⟩
+    try simp only [rawEntry]
     rw [e3]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he4.1, ?_, hc4.2.2.1⟩
+    try simp only [rawEntry]
     rw [he4.2, hc4.2.1, e11]
     have h := negGP_patPoint _ hB 11
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h5v, ?_, h5c⟩
+    try simp only [rawEntry]
     rw [e5]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he6.1, ?_, hc6.2.2.1⟩
+    try simp only [rawEntry]
     rw [he6.2, hc6.2.1, e9]
     have h := negGP_patPoint _ hB 9
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h7v, ?_, h7c⟩
+    try simp only [rawEntry]
     rw [e7]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he8.1, ?_, hc8.2.2.1⟩
+    try simp only [rawEntry]
     rw [he8.2, hc8.2.1, e7]
     have h := negGP_patPoint _ hB 7
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h9v, ?_, h9c⟩
+    try simp only [rawEntry]
     rw [e9]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he10.1, ?_, hc10.2.2.1⟩
+    try simp only [rawEntry]
     rw [he10.2, hc10.2.1, e5]
     have h := negGP_patPoint _ hB 5
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h11v, ?_, h11c⟩
+    try simp only [rawEntry]
     rw [e11]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he12.1, ?_, hc12.2.2.1⟩
+    try simp only [rawEntry]
     rw [he12.2, hc12.2.1, e3]
     have h := negGP_patPoint _ hB 3
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h13v, ?_, h13c⟩
+    try simp only [rawEntry]
     rw [e13]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
   · refine ⟨he14.1, ?_, hc14.2.2.1⟩
+    try simp only [rawEntry]
     rw [he14.2, hc14.2.1, e1]
     have h := negGP_patPoint _ hB 1
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry] at h ⊢
     exact h
   · refine ⟨h15v, ?_, h15c⟩
+    try simp only [rawEntry]
     rw [e15]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
 

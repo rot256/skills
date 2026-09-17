@@ -70,61 +70,59 @@ theorem shape (i : Var Inputs Field) (hi : AffineInput i) : IsR1CSCirc (main i) 
   have hrel2 : AffineW (rel2W i) := affine_rel2W i hpab hy
   have hcz : Affine (i.cflag + i.zflag) := Affine.add hc hz
   unfold main
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hc
-    (Affine.sub (affine_half _ hxeq1 _) (affine_half _ hchord _))) fun m1l => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.add (affine_half _ hchord _) (Affine.var _))) fun h1l => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hc
-    (Affine.sub (affine_half _ hxeq1 _) (affine_half _ hchord _))) fun m1h => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.add (affine_half _ hchord _) (Affine.var _))) fun h1h => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hc
-    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _))) fun mu0 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.add (affine_limb _ huni _) (Affine.var _))) fun l0 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hc
-    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _))) fun mu1 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.add (affine_limb _ huni _) (Affine.var _))) fun l1 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hc
-    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _))) fun mu2 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.add (affine_limb _ huni _) (Affine.var _))) fun l2 => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg hz) fun gz => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ (Affine.var _) (affine_half _ hxeq2 _))
-    fun hxl => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ (Affine.var _) (affine_half _ hxeq2 _))
-    fun hxh => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hcz (affine_half _ hrel2 _)) fun m2l => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.sub (affine_half _ hrel2 _) (Affine.var _))) fun h2l => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hcz (affine_half _ hrel2 _)) fun m2h => ?_
-  rw [MulCell.call_output]
-  refine IsR1CSCirc.bind_out (MulCell.shape_call _ hg
-    (Affine.sub (affine_half _ hrel2 _) (Affine.var _))) fun h2h => ?_
-  rw [MulCell.call_output]
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hc
+    (Affine.sub (affine_half _ hxeq1 _) (affine_half _ hchord _)))
+    (MulCell.affine_call_output _) fun m1l hm1l => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.add (affine_half _ hchord _) hm1l))
+    (MulCell.affine_call_output _) fun h1l hh1l => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hc
+    (Affine.sub (affine_half _ hxeq1 _) (affine_half _ hchord _)))
+    (MulCell.affine_call_output _) fun m1h hm1h => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.add (affine_half _ hchord _) hm1h))
+    (MulCell.affine_call_output _) fun h1h hh1h => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hc
+    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _)))
+    (MulCell.affine_call_output _) fun mu0 hmu0 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.add (affine_limb _ huni _) hmu0))
+    (MulCell.affine_call_output _) fun l0 hl0 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hc
+    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _)))
+    (MulCell.affine_call_output _) fun mu1 hmu1 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.add (affine_limb _ huni _) hmu1))
+    (MulCell.affine_call_output _) fun l1 hl1 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hc
+    (Affine.sub (affine_limb _ hyeq _) (affine_limb _ huni _)))
+    (MulCell.affine_call_output _) fun mu2 hmu2 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.add (affine_limb _ huni _) hmu2))
+    (MulCell.affine_call_output _) fun l2 hl2 => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg hz)
+    (MulCell.affine_call_output _) fun gz hgz => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hgz (affine_half _ hxeq2 _))
+    (MulCell.affine_call_output _) fun hxl hhxl => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hgz (affine_half _ hxeq2 _))
+    (MulCell.affine_call_output _) fun hxh hhxh => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hcz (affine_half _ hrel2 _))
+    (MulCell.affine_call_output _) fun m2l hm2l => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.sub (affine_half _ hrel2 _) hm2l))
+    (MulCell.affine_call_output _) fun h2l hh2l => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hcz (affine_half _ hrel2 _))
+    (MulCell.affine_call_output _) fun m2h hm2h => ?_
+  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
+    (Affine.sub (affine_half _ hrel2 _) hm2h))
+    (MulCell.affine_call_output _) fun h2h hh2h => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert.shape .rel1 _
-    (affineW_pair (Affine.var _) (Affine.var _)))) fun _ => ?_
+    (affineW_pair hh1l hh1h))) fun _ => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert3.shape _
-    (affineW_triple (Affine.var _) (Affine.var _) (Affine.var _)))) fun _ => ?_
+    (affineW_triple hl0 hl1 hl2))) fun _ => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert.shape .xeq _
-    (affineW_pair (Affine.var _) (Affine.var _)))) fun _ => ?_
-  exact IsR1CSCirc.assertion (Cert.shape .rel2 _ (affineW_pair (Affine.var _) (Affine.var _)))
+    (affineW_pair hhxl hhxh))) fun _ => ?_
+  exact IsR1CSCirc.assertion (Cert.shape .rel2 _ (affineW_pair hh2l hh2h))
 
 theorem shape_call (n : ℕ) (hn : n ≤ depth) (i : Var Inputs Field) (hi : AffineInput i) :
     IsR1CSCirc (assertion (circuit n hn) i) :=

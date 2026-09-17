@@ -51,8 +51,8 @@ private noncomputable def stepLength (input : Var Inputs (F circomPrime)) :
       (fun (x : Var LazyPt (F circomPrime) × Fin 64) => stepBody input x.1 x.2) where
   localLength := stepLen
   localLength_eq x n := by
-    simp only [stepBody, stepLen, circuit_norm, Step.circuit_localLength,
-      GLVMSM.varLookup_localLength]
+    simp only [stepBody, stepLen, circuit_norm, GLVMSM.varLookup_localLength]
+    rw [Step.circuit_localLength]
 
 /-- `(1 − m₀) + Σ_{i ≥ 1} m_i`: zero iff the magnitude is exactly `1`. -/
 def unitDefect (m : Var (fields GLVMSM.coeffBits) (F circomPrime)) : Expression (F circomPrime) :=
