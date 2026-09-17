@@ -1,5 +1,4 @@
 import Solution.Secp256k1ScalarMul.GLVBuildTable
-import Solution.Secp256k1ScalarMul.Lazy.ChainAlgebra
 
 /-!
 # Sign-pattern table `E(b) = Σ_j (2 b_j − 1) B_j`
@@ -22,17 +21,6 @@ def patPoint (B : Fin 4 → GroupPoint Fp) (t : ℕ) : GroupPoint Fp :=
   add curve (add curve (pickG (bitAt t 0) (B 0)) (pickG (bitAt t 1) (B 1)))
     (add curve (pickG (bitAt t 2) (B 2)) (pickG (bitAt t 3) (B 3)))
 
-lemma pickG_toSpec (b : Bool) (P : Bridge.W.Point) :
-    pickG b (Bridge.toSpec P) = Bridge.toSpec (LazyChain.pickS b P) := by
-  cases b <;> simp [pickG, LazyChain.pickS, GLVVerifierTheorems.toSpec_neg]
-
-lemma patPoint_toSpec (B : Fin 4 → Bridge.W.Point) (t : ℕ) :
-    patPoint (fun i => Bridge.toSpec (B i)) t = Bridge.toSpec (LazyChain.patW B t) := by
-  unfold patPoint LazyChain.patW
-  simp only [bitAt]
-  rw [pickG_toSpec, pickG_toSpec, pickG_toSpec, pickG_toSpec]
-  rw [← Bridge.bridge_add, ← Bridge.bridge_add, ← Bridge.bridge_add]
-
 /-! ### Circuit -/
 
 def withY (P : Var FlaggedPoint (F circomPrime)) (y : Var Emu (F circomPrime)) :
@@ -51,7 +39,7 @@ def negCanon (P : Var FlaggedPoint (F circomPrime)) :
   let ny ← subcircuit NegYAffine.circuit (withXY P x y)
   return (withXY P x y, withXY P x ny)
 
-def main (b : Var Bases (F circomPrime)) : Circuit (F circomPrime) (Var RawTable (F circomPrime)) := do
+def main (b : Var Bases (F circomPrime)) : Circuit (F circomPrime) (Var GLVBuildTable.RawTable (F circomPrime)) := do
   let nr1y ← subcircuit NegYAffine.circuit b.r1
   let nr3y ← subcircuit NegYAffine.circuit b.r3
   let up ← subcircuit PhiPairAdd.circuit { P := b.r0, Q := b.r1 }
@@ -78,9 +66,9 @@ def main (b : Var Bases (F circomPrime)) : Circuit (F circomPrime) (Var RawTable
   let (_, e10) ← negCanon e5
   let (_, e6) ← negCanon e9
   let (_, e14) ← negCanon e1
-  return RawTable.mk e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 e12 e13 e14 e15
+  return GLVBuildTable.RawTable.mk e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 e12 e13 e14 e15
 
-instance elaborated : ElaboratedCircuit (F circomPrime) Bases RawTable main := by
+instance elaborated : ElaboratedCircuit (F circomPrime) Bases GLVBuildTable.RawTable main := by
   elaborate_circuit
 
 def Assumptions (input : Bases (F circomPrime)) : Prop :=
@@ -91,7 +79,7 @@ def Assumptions (input : Bases (F circomPrime)) : Prop :=
     (input.r3.isInf = 1 → input.r3.y = emuOfNat 0) ∧
     PhiPairAdd.Assumptions { P := input.r2, Q := input.r3 }
 
-def Spec (input : Bases (F circomPrime)) (out : RawTable (F circomPrime)) : Prop :=
+def Spec (input : Bases (F circomPrime)) (out : GLVBuildTable.RawTable (F circomPrime)) : Prop :=
   ∀ i : Fin 16, (rawEntry out i).Valid ∧
     decodePoint (rawEntry out i) =
       patPoint (fun j => decodePoint (baseEntry input j)) i.val ∧
