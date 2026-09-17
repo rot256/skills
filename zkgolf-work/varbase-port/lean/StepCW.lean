@@ -47,24 +47,41 @@ lemma products_localLength (x : Var Products.Inputs Field) (k : ℕ) :
 
 lemma certs_localLength (n : ℕ) (hn : n ≤ depth) (x : Var Certs.Inputs Field) (k : ℕ) :
     (assertion (Certs.circuit n hn) x).localLength k = 839 := by
-  simp only [Certs.circuit, Certs.elaborated, Certs.main, MulCell.circuit, MulCell.elaborated,
-    Cert.circuit, Cert3.circuit, RangeCheck.circuit, circuit_norm]
+  simp +arith only [Certs.circuit, Certs.elaborated, Certs.main, MulCell.circuit, MulCell.elaborated,
+    Cert.circuit, Cert3.circuit, RangeCheck.circuit, circuit_norm, Secp256k1ScalarMul.Lazy.qbits,
+    Secp256k1ScalarMul.Lazy.tbits, ukbits, ut0bits, ut1bits, Nat.reduceAdd, Nat.reduceSub]
 
 lemma mux_localLength (x : Var MuxVec.Inputs Field) (k : ℕ) :
     (subcircuit MuxVec.circuit x).localLength k = 8 := by
   simp only [MuxVec.circuit, MuxVec.elaborated, circuit_norm]
 
-lemma fl_component (o : ℕ) (j : ℕ) (hj : j < 2) (i : Var Inputs Field)
-    {k : ℕ} {e e' : ProverEnvironment Field} (hag : e.AgreesBelow k e') (hk : o + 2 ≤ k) :
-    Expression.eval e.toEnvironment
-        (((ProvableType.witness (α := fields 2) fun env => flagsW (eval env i)).output o :
-          Var (fields 2) Field)[j]'hj) =
-      Expression.eval e'.toEnvironment
-        (((ProvableType.witness (α := fields 2) fun env => flagsW (eval env i)).output o :
-          Var (fields 2) Field)[j]'hj) := by
-  have h := CWHelpers.fieldsWitnessOutput_stable (fun env => flagsW (eval env i)) hag hk
-  have h' := congrArg (fun v : fields 2 Field => v[j]'hj) h
-  simpa only [circuit_norm, Vector.getElem_map] using h'
+lemma mapRange_var_stable (m n : ℕ) {k : ℕ} {e e' : ProverEnvironment Field}
+    (hag : e.AgreesBelow k e') (hk : n + m ≤ k) :
+    Vector.map (Expression.eval e.toEnvironment) (Vector.mapRange m fun i => var { index := n + i }) =
+      Vector.map (Expression.eval e'.toEnvironment) (Vector.mapRange m fun i => var { index := n + i }) := by
+  apply Vector.ext
+  intro j hj
+  simp only [Vector.getElem_map, Vector.getElem_mapRange, Expression.eval]
+  exact hag (n + j) (by omega)
+
+lemma mulCell_output' (i : Var MulCell.Inputs Field) (n : ℕ) :
+    MulCell.circuit.output i n = varFromOffset field n := MulCell.call_output i n
+
+lemma mux_output' (i : Var MuxVec.Inputs Field) (n : ℕ) :
+    MuxVec.circuit.output i n = varFromOffset (fields 8) n := MuxVec.call_output i n
+
+lemma map_eval_zeroVec (env : Environment Field) :
+    Vector.map (Expression.eval env) zeroVec = Vector.ofFn (fun _ => (0 : Field)) := by
+  apply Vector.ext
+  intro j hj
+  simp only [zeroVec, Vector.getElem_map, Vector.getElem_ofFn, Expression.eval]
+
+abbrev lam1V (o : ℕ) : Var Emu Field := Vector.mapRange numLimbs fun i => var { index := o + i }
+abbrev lam2V (o : ℕ) : Var Emu Field :=
+  Vector.mapRange numLimbs fun i => var { index := o + numLimbs + 252 + i }
+abbrev aV (o : ℕ) : Var (fields 8) Field := Sparse32Normalize.circuit.output (lam1V o) (o + numLimbs)
+abbrev bV (o : ℕ) : Var (fields 8) Field :=
+  Sparse32Normalize.circuit.output (lam2V o) (o + numLimbs + 252 + numLimbs)
 
 theorem computableWitnesses (n : ℕ) (hn : n + 1 ≤ depth) : (circuit n hn).base.ComputableWitnesses := by
   intro o input env env'
@@ -76,7 +93,7 @@ theorem computableWitnesses (n : ℕ) (hn : n + 1 ≤ depth) : (circuit n hn).ba
     Circuit.assertZero_structuralComputableWitnesses_iff,
     Circuit.pure_structuralComputableWitnesses_iff,
     normalize_localLength, Certs.mulCell_localLength, products_localLength, certs_localLength,
-    mux_localLength, add_zero, true_and, and_true]
+    mux_localLength, true_and, and_true]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   all_goals first
     | (intro _ hi; rw [hi])
@@ -97,34 +114,50 @@ theorem computableWitnesses (n : ℕ) (hn : n + 1 ≤ depth) : (circuit n hn).ba
              | exact MuxVec.computableWitnesses)
   all_goals
     intro k e e' hk hag hi
-    simp only [circuit_norm, numLimbs, List.sum_cons, List.sum_nil, Nat.reduceAdd] at hk
+    simp only [circuit_norm, numLimbs] at hk
     obtain ⟨hax, hay, hai, htx, hty, hti, hsp⟩ := input_parts input hi
-    have hl1 := CWHelpers.emuWitnessOutput_stable (fun env => lam1W (eval env input)) hag
-      (by simp only [numLimbs]; omega)
-    have hl2 := CWHelpers.emuWitnessOutput_stable (fun env => lam2W (eval env input)) hag
-      (by simp only [numLimbs]; omega)
-    have ha := Sparse32Normalize.call_output_stable _ hl1 hag (by omega)
-    have hb := Sparse32Normalize.call_output_stable _ hl2 hag (by omega)
-    have hc := fl_component (o + 4 + 252 + 4 + 252) 0 (by decide) input hag (by omega)
-    have hz := fl_component (o + 4 + 252 + 4 + 252) 1 (by decide) input hag (by omega)
-    have hg := MulCell.output_stable _ (o + 4 + 252 + 4 + 252 + 2) hag (by omega)
-    have hp := Products.call_output_stable _ (o + 4 + 252 + 4 + 252 + 2 + 1) hag (by omega)
-    have hrt := MulCell.output_stable _ (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839) hag (by omega)
-    have hzrt := MulCell.output_stable _ (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839 + 1) hag (by omega)
-    have hxw := MuxVec.call_output_stable _ (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839 + 1 + 1) hag
-      (by omega)
-    have hxv := MuxVec.call_output_stable _ (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839 + 1 + 1 + 8) hag
-      (by omega)
-    have hyw := MuxVec.call_output_stable _
-      (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839 + 1 + 1 + 8 + 8 + 8) hag (by omega)
-    have hyv := MuxVec.call_output_stable _
-      (o + 4 + 252 + 4 + 252 + 2 + 1 + 96 + 839 + 1 + 1 + 8 + 8 + 8 + 8) hag (by omega)
-    simp only [circuit_norm, Vector.getElem_map] at hl1 hl2 ha hb hg hp hrt hzrt hxw hxv hyw hyv
-    simp only [circuit_norm, Inputs.mk.injEq, LazyPt.mk.injEq,
-      Solution.Secp256k1ScalarMul.FlaggedPoint.mk.injEq, MulCell.Inputs.mk.injEq,
+    have hag' : ∀ j, j < k → e.get j = e'.get j := hag
+    have hmap : ∀ m j, j + m ≤ k →
+        Vector.map (Expression.eval e.toEnvironment) (Vector.mapRange m fun i => var { index := j + i }) =
+        Vector.map (Expression.eval e'.toEnvironment) (Vector.mapRange m fun i => var { index := j + i }) :=
+      fun m j h => mapRange_var_stable m j hag h
+    have ha : o + numLimbs + 252 ≤ k →
+        Vector.map (Expression.eval e.toEnvironment) (aV o) =
+        Vector.map (Expression.eval e'.toEnvironment) (aV o) := fun h => by
+      have hl := hmap numLimbs o (by simp only [numLimbs] at h ⊢; omega)
+      have := Sparse32Normalize.call_output_stable (n := o + numLimbs) (lam1V o)
+        (by simpa only [circuit_norm] using hl) hag h
+      simpa only [circuit_norm] using this
+    have hb : o + numLimbs + 252 + numLimbs + 252 ≤ k →
+        Vector.map (Expression.eval e.toEnvironment) (bV o) =
+        Vector.map (Expression.eval e'.toEnvironment) (bV o) := fun h => by
+      have hl := hmap numLimbs (o + numLimbs + 252) (by simp only [numLimbs] at h ⊢; omega)
+      have := Sparse32Normalize.call_output_stable (n := o + numLimbs + 252 + numLimbs) (lam2V o)
+        (by simpa only [circuit_norm] using hl) hag h
+      simpa only [circuit_norm] using this
+    have hp : o + numLimbs + 252 + numLimbs + 252 + 2 + 1 + 96 ≤ k →
+        eval e ((subcircuit Products.circuit
+          ⟨aV o, bV o, input.acc.x, input.acc.y, input.t.x, input.t.y⟩).output
+          (o + numLimbs + 252 + numLimbs + 252 + 2 + 1)) =
+        eval e' ((subcircuit Products.circuit
+          ⟨aV o, bV o, input.acc.x, input.acc.y, input.t.x, input.t.y⟩).output
+          (o + numLimbs + 252 + numLimbs + 252 + 2 + 1)) :=
+      fun h => Products.call_output_stable _ _ hag h
+    simp only [circuit_norm, MulCell.call_output, MuxVec.call_output, mulCell_output', mux_output',
+      Inputs.mk.injEq,
+      LazyPt.mk.injEq, Solution.Secp256k1ScalarMul.FlaggedPoint.mk.injEq, MulCell.Inputs.mk.injEq,
       Products.Inputs.mk.injEq, Certs.Inputs.mk.injEq, MuxVec.Inputs.mk.injEq,
-      Products.map_vaddE, Products.map_vsubE, Products.map_embedExpr,
-      hax, hay, hai, htx, hty, hti, hsp, hl1, hl2, ha, hb, hc, hz, hg, hp, hrt, hzrt,
-      hxw, hxv, hyw, hyv, and_self]
+      Products.Outputs.mk.injEq, Products.map_vaddE, Products.map_vsubE, Products.map_embedExpr,
+      hax, hay, hai, htx, hty, hti, hsp, map_eval_zeroVec, and_self, true_and, and_true]
+  all_goals first
+    | done
+    | (simp (disch := simp only [numLimbs]; omega) only [hag', hmap, ha, hb, and_self, true_and]
+       done)
+    | (have hp' := hp (by simp only [numLimbs]; omega)
+       simp only [circuit_norm, Products.Outputs.mk.injEq] at hp'
+       simp (disch := simp only [numLimbs]; omega) only [hag', hmap, ha, hb, hp'.1, hp'.2.1,
+         hp'.2.2.1, hp'.2.2.2.1, hp'.2.2.2.2.1, hp'.2.2.2.2.2.1, hp'.2.2.2.2.2.2.1,
+         hp'.2.2.2.2.2.2.2.1, hp'.2.2.2.2.2.2.2.2, and_self, true_and]
+       done)
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
