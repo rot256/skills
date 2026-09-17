@@ -394,4 +394,134 @@ theorem soundness : Soundness (F circomPrime) main Assumptions Spec := by
     rw [e15]
     simp [rawEntry, patPoint, bitAt, pickG, baseEntry]
 
+set_option maxRecDepth 65536 in
+set_option maxHeartbeats 16000000 in
+theorem completeness : Completeness (F circomPrime) main Assumptions := by
+  circuit_proof_start [negCanon, withY, withXY, PhiPairAdd.circuit, PhiPairAdd.Assumptions,
+    PhiPairAdd.Spec, CompleteAdd.circuit, CompleteAdd.Assumptions, CompleteAdd.Spec,
+    NegYAffine.circuit, NegYAffine.Assumptions, NegYAffine.Spec,
+    Mux.circuit, Mux.Assumptions, Mux.Spec]
+  obtain ⟨hn1, hn3, hup, hum, hvp, hvm, hvpx, hvpy, hnvp, hvmx, hvmy, hnvm,
+    h15, h7, h11, h3, h13, h5, h9, h1,
+    h0x, h0y, h0, h8x, h8y, h8, h4x, h4y, h4, h12x, h12y, h12,
+    h2x, h2y, h2, h10x, h10y, h10, h6x, h6y, h6, h14x, h14y, h14⟩ := h_env
+  obtain ⟨hV, h0f, h1f, hne, h2c, h3c, hpp⟩ := h_assumptions
+  have hV0 : ({ x := input_r0_x, y := input_r0_y, isInf := input_r0_isInf } :
+    FlaggedPoint (F circomPrime)).Valid := hV 0
+  have hV1 : ({ x := input_r1_x, y := input_r1_y, isInf := input_r1_isInf } :
+    FlaggedPoint (F circomPrime)).Valid := hV 1
+  have hV2 : ({ x := input_r2_x, y := input_r2_y, isInf := input_r2_isInf } :
+    FlaggedPoint (F circomPrime)).Valid := hV 2
+  have hV3 : ({ x := input_r3_x, y := input_r3_y, isInf := input_r3_isInf } :
+    FlaggedPoint (F circomPrime)).Valid := hV 3
+  -- negations of r1, r3
+  obtain ⟨hn1v, hn1e⟩ := hn1 ⟨hV1, fun h => absurd (h1f.symm.trans h) zero_ne_one⟩
+  obtain ⟨hn3v, hn3e⟩ := hn3 ⟨hV3, h3c⟩
+  have hnr1 := neg_valueFP hV1 hn1v hn1e
+  have hnr3 := neg_valueFP hV3 hn3v hn3e
+  simp only [valueFP] at hnr1 hnr3
+  -- the four pair additions
+  obtain ⟨hupv, hupd⟩ := hup ⟨hV0, hV1, Or.inl ⟨h0f, h1f, hne⟩⟩
+  obtain ⟨humv, humd⟩ := hum ⟨hV0, hnr1.1, Or.inl ⟨h0f, h1f, hne⟩⟩
+  obtain ⟨hvpv, hvpd⟩ := hvp hpp
+  obtain ⟨hvmv, hvmd⟩ := hvm ⟨hV2, hnr3.1, by
+    rcases hpp.2.2 with ⟨h2, h3, hx⟩ | ⟨h2, h3, hy⟩
+    · exact Or.inl ⟨h2, h3, hx⟩
+    · refine Or.inr ⟨h2, h3, ?_⟩
+      show decodeFe _ = decodeFe input_r2_y
+      rw [hn3e, h3c h3, h2c h2, decode_zero, neg_zero]⟩
+  -- canonicalise `v±` and negate
+  have hvpx' := hvpx hvpv.1
+  have hvpy' := hvpy hvpv.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hvpx' hvpy'
+  have hcvp := canon_spec hvpv hvpx' hvpy'
+  obtain ⟨hnvpv, hnvpe⟩ := hnvp ⟨hcvp.1, hcvp.2.2.2⟩
+  have hnvp' := neg_valueFP hcvp.1 hnvpv hnvpe
+  have hvmx' := hvmx hvmv.1
+  have hvmy' := hvmy hvmv.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hvmx' hvmy'
+  have hcvm := canon_spec hvmv hvmx' hvmy'
+  obtain ⟨hnvmv, hnvme⟩ := hnvm ⟨hcvm.1, hcvm.2.2.2⟩
+  have hnvm' := neg_valueFP hcvm.1 hnvmv hnvme
+  simp only [valueFP] at hcvp hnvp' hcvm hnvm'
+  -- `u±` are affine
+  have hupf := finite_of_decode_affine hupv ⟨_, by
+    rw [hupd, CompleteAdd.decodePoint_of_finite h0f, CompleteAdd.decodePoint_of_finite h1f]
+    exact (add_affine_ne hne).choose_spec⟩
+  have humf := finite_of_decode_affine humv ⟨_, by
+    rw [humd, hnr1.2, CompleteAdd.decodePoint_of_finite h0f, CompleteAdd.decodePoint_of_finite h1f]
+    simp only [negGP]
+    exact (add_affine_ne (a := { x := decodeFe input_r0_x, y := decodeFe input_r0_y })
+      (b := { x := decodeFe input_r1_x, y := -decodeFe input_r1_y }) hne).choose_spec⟩
+  -- the eight additions
+  obtain ⟨h15v, h15d, h15c⟩ := h15 ⟨hupv, hcvp.1, hupf, hcvp.2.2.1⟩
+  obtain ⟨h7v, h7d, h7c⟩ := h7 ⟨hupv, hcvm.1, hupf, hcvm.2.2.1⟩
+  obtain ⟨h11v, h11d, h11c⟩ := h11 ⟨hupv, hnvm'.1, hupf, hcvm.2.2.1⟩
+  obtain ⟨h3v, h3d, h3c'⟩ := h3 ⟨hupv, hnvp'.1, hupf, hcvp.2.2.1⟩
+  obtain ⟨h13v, h13d, h13c⟩ := h13 ⟨humv, hcvp.1, humf, hcvp.2.2.1⟩
+  obtain ⟨h5v, h5d, h5c⟩ := h5 ⟨humv, hcvm.1, humf, hcvm.2.2.1⟩
+  obtain ⟨h9v, h9d, h9c⟩ := h9 ⟨humv, hnvm'.1, humf, hcvm.2.2.1⟩
+  obtain ⟨h1v, h1d, h1c⟩ := h1 ⟨humv, hnvp'.1, humf, hcvp.2.2.1⟩
+  -- the eight negations
+  have hn0x := h0x h15v.1; have hn0y := h0y h15v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn0x hn0y
+  have hc0 := canon_spec h15v hn0x hn0y
+  obtain ⟨hn0v, hn0e⟩ := h0 ⟨hc0.1, hc0.2.2.2⟩
+  have he0 := neg_valueFP hc0.1 hn0v hn0e
+  have hn8x := h8x h7v.1; have hn8y := h8y h7v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn8x hn8y
+  have hc8 := canon_spec h7v hn8x hn8y
+  obtain ⟨hn8v, hn8e⟩ := h8 ⟨hc8.1, hc8.2.2.2⟩
+  have he8 := neg_valueFP hc8.1 hn8v hn8e
+  have hn4x := h4x h11v.1; have hn4y := h4y h11v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn4x hn4y
+  have hc4 := canon_spec h11v hn4x hn4y
+  obtain ⟨hn4v, hn4e⟩ := h4 ⟨hc4.1, hc4.2.2.2⟩
+  have he4 := neg_valueFP hc4.1 hn4v hn4e
+  have hn12x := h12x h3v.1; have hn12y := h12y h3v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn12x hn12y
+  have hc12 := canon_spec h3v hn12x hn12y
+  obtain ⟨hn12v, hn12e⟩ := h12 ⟨hc12.1, hc12.2.2.2⟩
+  have he12 := neg_valueFP hc12.1 hn12v hn12e
+  have hn2x := h2x h13v.1; have hn2y := h2y h13v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn2x hn2y
+  have hc2 := canon_spec h13v hn2x hn2y
+  obtain ⟨hn2v, hn2e⟩ := h2 ⟨hc2.1, hc2.2.2.2⟩
+  have he2 := neg_valueFP hc2.1 hn2v hn2e
+  have hn10x := h10x h5v.1; have hn10y := h10y h5v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn10x hn10y
+  have hc10 := canon_spec h5v hn10x hn10y
+  obtain ⟨hn10v, hn10e⟩ := h10 ⟨hc10.1, hc10.2.2.2⟩
+  have he10 := neg_valueFP hc10.1 hn10v hn10e
+  have hn6x := h6x h9v.1; have hn6y := h6y h9v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn6x hn6y
+  have hc6 := canon_spec h9v hn6x hn6y
+  obtain ⟨hn6v, hn6e⟩ := h6 ⟨hc6.1, hc6.2.2.2⟩
+  have he6 := neg_valueFP hc6.1 hn6v hn6e
+  have hn14x := h14x h1v.1; have hn14y := h14y h1v.1
+  simp only [zeroConst, CompleteAdd.eval_emuConst] at hn14x hn14y
+  have hc14 := canon_spec h1v hn14x hn14y
+  obtain ⟨hn14v, hn14e⟩ := h14 ⟨hc14.1, hc14.2.2.2⟩
+  have he14 := neg_valueFP hc14.1 hn14v hn14e
+  exact ⟨⟨hV1, fun h => absurd (h1f.symm.trans h) zero_ne_one⟩, ⟨hV3, h3c⟩,
+    ⟨hV0, hV1, Or.inl ⟨h0f, h1f, hne⟩⟩, ⟨hV0, hnr1.1, Or.inl ⟨h0f, h1f, hne⟩⟩, hpp,
+    ⟨hV2, hnr3.1, by
+      rcases hpp.2.2 with ⟨h2, h3, hx⟩ | ⟨h2, h3, hy⟩
+      · exact Or.inl ⟨h2, h3, hx⟩
+      · refine Or.inr ⟨h2, h3, ?_⟩
+        show decodeFe _ = decodeFe input_r2_y
+        rw [hn3e, h3c h3, h2c h2, decode_zero, neg_zero]⟩,
+    hvpv.1, hvpv.1, ⟨hcvp.1, hcvp.2.2.2⟩, hvmv.1, hvmv.1, ⟨hcvm.1, hcvm.2.2.2⟩,
+    ⟨hupv, hcvp.1, hupf, hcvp.2.2.1⟩, ⟨hupv, hcvm.1, hupf, hcvm.2.2.1⟩,
+    ⟨hupv, hnvm'.1, hupf, hcvm.2.2.1⟩, ⟨hupv, hnvp'.1, hupf, hcvp.2.2.1⟩,
+    ⟨humv, hcvp.1, humf, hcvp.2.2.1⟩, ⟨humv, hcvm.1, humf, hcvm.2.2.1⟩,
+    ⟨humv, hnvm'.1, humf, hcvm.2.2.1⟩, ⟨humv, hnvp'.1, humf, hcvp.2.2.1⟩,
+    h15v.1, h15v.1, ⟨hc0.1, hc0.2.2.2⟩, h7v.1, h7v.1, ⟨hc8.1, hc8.2.2.2⟩,
+    h11v.1, h11v.1, ⟨hc4.1, hc4.2.2.2⟩, h3v.1, h3v.1, ⟨hc12.1, hc12.2.2.2⟩,
+    h13v.1, h13v.1, ⟨hc2.1, hc2.2.2.2⟩, h5v.1, h5v.1, ⟨hc10.1, hc10.2.2.2⟩,
+    h9v.1, h9v.1, ⟨hc6.1, hc6.2.2.2⟩, h1v.1, h1v.1, ⟨hc14.1, hc14.2.2.2⟩⟩
+
+def circuit : FormalCircuit (F circomPrime) Bases GLVBuildTable.RawTable where
+  main; elaborated; Assumptions; Spec; soundness; completeness
+
 end Solution.Secp256k1ScalarMul.PatTable
