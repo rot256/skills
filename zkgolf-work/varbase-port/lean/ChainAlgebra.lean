@@ -177,3 +177,58 @@ theorem linComb_eq_zero_of_chain (B : Fin 4 → Bridge.W.Point) (a0 a1 a2 a3 : �
   exact eq_zero_of_two_smul _ h2
 
 end Solution.Secp256k1ScalarMul.LazyChain
+
+/-! ### Special scalars -/
+
+namespace Solution.Secp256k1ScalarMul.LazyChain
+
+open Specs.ShortWeierstrass Specs.Secp256k1
+
+/-- A nonzero point has prime order, so a vanishing multiple has a vanishing scalar. -/
+lemma cast_eq_zero_of_zsmul_eq_zero (a : ℤ) (P : Bridge.W.Point) (hP : P ≠ 0)
+    (h : a • P = 0) : (a : ZMod order) = 0 := by
+  have hord : addOrderOf P = order :=
+    addOrderOf_eq_prime (GLVFinal.order_nsmul_all P) hP
+  have hdvd : ((addOrderOf P : ℕ) : ℤ) ∣ a := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h
+  rw [hord] at hdvd
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd a order).mpr hdvd
+
+/-- Sign value of a pattern bit. -/
+def sgn (b : Bool) : ℤ := if b then 1 else -1
+
+lemma pickS_eq_sgn (b : Bool) (P : Bridge.W.Point) : pickS b P = sgn b • P := by
+  cases b <;> simp [pickS, sgn]
+
+/-- Scalar of the pattern entry `E(t)` of the signed bases `σ_j B_j`,
+`B = (P, φP, kP, φ(kP))`, as a multiple of `P`. -/
+def patScalar (σ : Fin 4 → ℤ) (k : ℕ) (t : ℕ) : ℤ :=
+  sgn (decide (t / 2 ^ 0 % 2 = 1)) * σ 0 +
+    (GLVAlgebra.lambda : ℤ) * (sgn (decide (t / 2 ^ 1 % 2 = 1)) * σ 1) +
+    (k : ℤ) * (sgn (decide (t / 2 ^ 2 % 2 = 1)) * σ 2 +
+      (GLVAlgebra.lambda : ℤ) * (sgn (decide (t / 2 ^ 3 % 2 = 1)) * σ 3))
+
+def glvBases (P : Bridge.W.Point) (k : ℕ) (σ : Fin 4 → ℤ) : Fin 4 → Bridge.W.Point
+  | ⟨0, _⟩ => σ 0 • P
+  | ⟨1, _⟩ => σ 1 • Phi.hom P
+  | ⟨2, _⟩ => σ 2 • (k • P)
+  | ⟨3, _⟩ => σ 3 • Phi.hom (k • P)
+
+lemma patW_bases (P : Bridge.W.Point) (k : ℕ) (σ : Fin 4 → ℤ) (t : ℕ) :
+    patW (glvBases P k σ) t = patScalar σ k t • P := by
+  unfold patW patScalar
+  simp only [pickS_eq_sgn, glvBases]
+  rw [GLVFinal.hom_eq_lambda_nsmul, GLVFinal.hom_eq_lambda_nsmul,
+    ← GLVAlgebra.natCast_zsmul_eq_nsmul, ← GLVAlgebra.natCast_zsmul_eq_nsmul,
+    ← GLVAlgebra.natCast_zsmul_eq_nsmul]
+  simp only [smul_smul]
+  rw [← add_zsmul, ← add_zsmul, ← add_zsmul]
+  congr 1
+  ring
+
+/-- A vanishing pattern entry forces the pattern scalar to vanish modulo the order. -/
+lemma patScalar_cast_eq_zero (P : Bridge.W.Point) (hP : P ≠ 0) (k : ℕ) (σ : Fin 4 → ℤ)
+    (t : ℕ) (h : patW (glvBases P k σ) t = 0) : (patScalar σ k t : ZMod order) = 0 := by
+  rw [patW_bases] at h
+  exact cast_eq_zero_of_zsmul_eq_zero _ P hP h
+
+end Solution.Secp256k1ScalarMul.LazyChain
