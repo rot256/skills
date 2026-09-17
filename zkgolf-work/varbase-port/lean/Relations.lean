@@ -346,4 +346,77 @@ lemma yPZ_value (a b x y : Words ℤ) (Tx : Emu Field) :
       fun k => sparseMul b (fun j => x j - xPZ a b (emuz Tx) j) k - y k := rfl
   rw [h1, valZ_sub, valZ_mul, valZ_sub]
 
+/-! ## Casting field-level vectors to their integer models -/
+
+lemma sparseMul_cast (U V : Words ℤ) (u v : Fin 8 → Field)
+    (hu : ∀ k, u k = (U k : Field)) (hv : ∀ k, v k = (V k : Field)) (k : Fin 8) :
+    sparseMul u v k = ((sparseMul U V k : ℤ) : Field) := by
+  have hu' : u = fun k => ((U k : ℤ) : Field) := funext hu
+  have hv' : v = fun k => ((V k : ℤ) : Field) := funext hv
+  rw [hu', hv']
+  exact sparseMul_map (Int.castRingHom Field) U V k
+
+lemma zwords_cast (x : fields 8 Field) (k : Fin 8) : x[k.val] = ((zwords x k : ℤ) : Field) := by
+  simp only [zwords, LazyX.cast_lift]
+
+lemma digitsZ_cast (a : fields 8 Field) (k : Fin 8) : a[k.val] = ((digitsZ a k : ℤ) : Field) := by
+  simp only [digitsZ, LazyX.cast_lift]
+
+lemma embedVec_cast (u : Emu Field) (k : Fin 8) :
+    (embedVec u)[k.val] = ((embed (emuz u) k : ℤ) : Field) := by
+  simp only [embedVec, Vector.getElem_ofFn, embed, emuz]
+  split_ifs <;> simp only [Int.cast_zero, Int.cast_natCast, FoldQuot.natCast_val_F]
+
+lemma lowHalf_cast (Z : Words ℤ) :
+    lowHalf (fun k => ((Z k : ℤ) : Field)) = ((lowHalf Z : ℤ) : Field) := by
+  simp only [lowHalf]; push_cast; rfl
+
+lemma highHalf_cast (Z : Words ℤ) :
+    highHalf (fun k => ((Z k : ℤ) : Field)) = ((highHalf Z : ℤ) : Field) := by
+  simp only [highHalf]; push_cast; rfl
+
+lemma limb0_cast (Z : Words ℤ) :
+    limb0 (fun k => ((Z k : ℤ) : Field)) = ((limb0 Z : ℤ) : Field) := by
+  simp only [limb0]; push_cast; rfl
+
+lemma limb1_cast (Z : Words ℤ) :
+    limb1 (fun k => ((Z k : ℤ) : Field)) = ((limb1 Z : ℤ) : Field) := by
+  simp only [limb1]; push_cast; rfl
+
+lemma limb2_cast (Z : Words ℤ) :
+    limb2 (fun k => ((Z k : ℤ) : Field)) = ((limb2 Z : ℤ) : Field) := by
+  simp only [limb2]; push_cast; rfl
+
+/-- Lifting an integer-valued word vector back: needed to feed lazy outputs into
+the next step's model. -/
+lemma zwords_of_cast (Z : Words ℤ) (v : fields 8 Field)
+    (hv : ∀ k, v[k.val] = ((Z k : ℤ) : Field))
+    (hb : ∀ k, -LazyX.nativeHalf ≤ Z k ∧ Z k ≤ LazyX.nativeHalf) :
+    zwords v = Z := by
+  funext k
+  simp only [zwords, hv k]
+  exact LazyX.lift_cast _ (hb k)
+
+set_option maxRecDepth 40000 in
+set_option maxHeartbeats 24000000 in
+private lemma xLo_native : ∀ k : Fin 8, -LazyX.nativeHalf ≤ xLo k ∧ xHi k ≤ LazyX.nativeHalf := by
+  decide
+
+set_option maxRecDepth 40000 in
+set_option maxHeartbeats 24000000 in
+private lemma yLo_native : ∀ k : Fin 8, -LazyX.nativeHalf ≤ yLo k ∧ yHi k ≤ LazyX.nativeHalf := by
+  decide
+
+lemma xIn_native {x : Words ℤ} (hx : XIn x) (k : Fin 8) :
+    -LazyX.nativeHalf ≤ x k ∧ x k ≤ LazyX.nativeHalf := by
+  have h := hx k
+  have hc := xLo_native k
+  omega
+
+lemma yIn_native {n : ℕ} (hn : n ≤ depth) {y : Words ℤ} (hy : YIn n y) (k : Fin 8) :
+    -LazyX.nativeHalf ≤ y k ∧ y k ≤ LazyX.nativeHalf := by
+  have h := yIn_steady hn hy k
+  have hc := yLo_native k
+  omega
+
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar
