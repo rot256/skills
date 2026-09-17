@@ -10,6 +10,7 @@ open Solution.Secp256k1ScalarMulFixedBase.SparseX
 open Solution.Secp256k1ScalarMulFixedBase.LazyVar
 open Solution.Secp256k1ScalarMul.Lazy
 open Challenge.CostR1CS Cost
+open Solution.Secp256k1ScalarMulFixedBase.Cost (IsR1CSCirc.bind_out_inv)
 
 set_option maxHeartbeats 16000000
 set_option maxRecDepth 20000
@@ -58,8 +59,9 @@ theorem shape (input : Var Inputs (F circomPrime))
       Step.shape_call _ _ _ ⟨hs, ht.1, ht.2.1, ht.2.2, hsp⟩
   · rw [stepBody_output]
     exact Step.affineLazy_outputAt _
-  · simp only [circuit_norm, stepBody_output', fin_foldl_eq_accL]
-    show Step.AffineLazy (Step.outputAt _)
+  · have hl : ∀ (i : Fin 64), Operations.localLength (stepBody input default i 0).2 = 1622 :=
+      fun i => stepBody_localLength' input default i 0
+    simp only [circuit_norm, stepBody_output', hl, fin_foldl_eq_accL]
     exact Step.affineLazy_outputAt _
   obtain ⟨hax, hay, hai⟩ := hacc
   have hex : AffineW (Products.vsubE acc.x (embedExpr input.tx[15])) :=
@@ -68,21 +70,21 @@ theorem shape (input : Var Inputs (F circomPrime))
     Products.affine_vsubE _ _ hay hty
   refine IsR1CSCirc.bind (IsR1CSCirc.assertZero (isR1CSRow_mul h1sp (Affine.sub hai hsp))) fun _ => ?_
   refine IsR1CSCirc.bind_out_inv Affine
-    (MulCell.shape_call ⟨1 - spE input, Certs.half (Products.vsubE acc.x (embedExpr input.tx[15])) false⟩
+    (MulCell.shape_call ⟨(1 : Expression (F circomPrime)) - spE input, Certs.half (Products.vsubE acc.x (embedExpr input.tx[15])) false⟩
       h1sp (Certs.affine_half _ hex false))
     (MulCell.affine_call_output _) fun hxl hhxl => ?_
   refine IsR1CSCirc.bind_out_inv Affine
-    (MulCell.shape_call ⟨1 - spE input, Certs.half (Products.vsubE acc.x (embedExpr input.tx[15])) true⟩
+    (MulCell.shape_call ⟨(1 : Expression (F circomPrime)) - spE input, Certs.half (Products.vsubE acc.x (embedExpr input.tx[15])) true⟩
       h1sp (Certs.affine_half _ hex true))
     (MulCell.affine_call_output _) fun hxh hhxh => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert.shape .rel1 _ (Certs.affineW_pair hhxl hhxh)))
     fun _ => ?_
   refine IsR1CSCirc.bind_out_inv Affine
-    (MulCell.shape_call ⟨1 - spE input, Certs.half (Products.vsubE acc.y (embedExpr input.ty[15])) false⟩
+    (MulCell.shape_call ⟨(1 : Expression (F circomPrime)) - spE input, Certs.half (Products.vsubE acc.y (embedExpr input.ty[15])) false⟩
       h1sp (Certs.affine_half _ hey false))
     (MulCell.affine_call_output _) fun hyl hhyl => ?_
   refine IsR1CSCirc.bind_out_inv Affine
-    (MulCell.shape_call ⟨1 - spE input, Certs.half (Products.vsubE acc.y (embedExpr input.ty[15])) true⟩
+    (MulCell.shape_call ⟨(1 : Expression (F circomPrime)) - spE input, Certs.half (Products.vsubE acc.y (embedExpr input.ty[15])) true⟩
       h1sp (Certs.affine_half _ hey true))
     (MulCell.affine_call_output _) fun hyh hhyh => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert.shape .fin _ (Certs.affineW_pair hhyl hhyh)))
