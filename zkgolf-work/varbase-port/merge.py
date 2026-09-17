@@ -14,10 +14,9 @@ LAZY = os.path.join(PROJ, "Solution", "Secp256k1ScalarMul", "Lazy")
 MOD = "Solution.Secp256k1ScalarMul.Lazy."
 
 GROUPS = [
-    ["Cert", "Cert3", "MulCell"],
-    ["Interval", "Bounds", "Relations"],
+    ["Interval", "Bounds", "Cert", "Cert3", "Relations", "MulCell"],
     ["CertsCost", "CertsShape", "CertsCW"],
-    ["StepMath", "StepValues", "StepSpec"],
+    ["StepMath", "StepSpec", "StepValues"],
     ["StepCost", "StepOutput", "StepShape"],
     ["ProductsShape", "SquareCW", "NormalizeCW", "MuxVecCW", "ProductsCW"],
     ["LazyMSMFold", "LazyMSMSound", "LazyMSMFinal", "LazyMSMComplete"],
