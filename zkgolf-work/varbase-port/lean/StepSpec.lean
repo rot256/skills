@@ -50,8 +50,10 @@ def decodeL (P : LazyPt Field) : GroupPoint Fp :=
 def decodeT (t : FlaggedPoint Field) : GroupPoint Fp :=
   if t.isInf = 1 then .infinity else .affine ⟨decodeFe t.x, decodeFe t.y⟩
 
+/-- `sp = 0` (ordinary scalar) requires an affine table point; infinite table
+entries are only reachable through the special-scalar fallback `sp = 1`. -/
 def Assumptions (n : ℕ) (i : Inputs Field) : Prop :=
-  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp
+  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp ∧ (i.sp = 0 → i.t.isInf = 0)
 
 /-- Output valid at the next depth; with `sp = 0` (ordinary scalar) it is the
 group-law result `(R + R) + T`, on the curve. -/
@@ -59,5 +61,35 @@ def Spec (n : ℕ) (i : Inputs Field) (o : LazyPt Field) : Prop :=
   LazyValid (n + 1) o ∧
   (i.sp = 0 → OnCurveLazy o ∧
     decodeL o = add curve (add curve (decodeL i.acc) (decodeL i.acc)) (decodeT i.t))
+
+/-! ### Value-level views and honest witnesses -/
+
+def rx (i : Inputs Field) : Fp := valZ (zwords i.acc.x)
+def ry (i : Inputs Field) : Fp := valZ (zwords i.acc.y)
+def tX (i : Inputs Field) : Fp := decodeFe i.t.x
+def tY (i : Inputs Field) : Fp := decodeFe i.t.y
+
+/-- Honest first slope: chord of `(R, T)`, tangent when `T = R`, and `0` on the
+branches where no relation is certified. -/
+noncomputable def slope1 (i : Inputs Field) : Fp :=
+  if i.acc.isInf = 1 then 0
+  else if tX i = rx i then (if tY i = -ry i then 0 else 3 * rx i ^ 2 / (2 * ry i))
+  else (tY i - ry i) / (tX i - rx i)
+
+def cflagV (i : Inputs Field) : Field :=
+  if i.acc.isInf = 0 ∧ rx i = tX i ∧ ry i = -tY i then 1 else 0
+
+noncomputable def xSV (i : Inputs Field) : Fp := slope1 i * slope1 i - rx i - tX i
+
+noncomputable def zflagV (i : Inputs Field) : Field :=
+  if i.acc.isInf = 0 ∧ cflagV i = 0 ∧ xSV i = rx i then 1 else 0
+
+/-- Honest second slope from the two-slope identity. -/
+noncomputable def slope2 (i : Inputs Field) : Fp :=
+  if xSV i = rx i then 0 else 2 * ry i / (rx i - xSV i) - slope1 i
+
+noncomputable def lam1W (i : Inputs Field) : Emu Field := slopeWitness (slope1 i)
+noncomputable def lam2W (i : Inputs Field) : Emu Field := slopeWitness (slope2 i)
+noncomputable def flagsW (i : Inputs Field) : fields 2 Field := #v[cflagV i, zflagV i]
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step

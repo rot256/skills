@@ -112,7 +112,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     (hyo : IsBool zOut → yo = if zOut = 1 then zv else yv) :
     Spec n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ ⟨xo, yo, zOut⟩ := by
   simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
-  obtain ⟨⟨hIb, hX, hY, hInfZ⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp⟩ := hA
+  obtain ⟨⟨hIb, hX, hY, hInfZ⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
   have hcB : IsBool c := isBool_of_mul c hc
   have hzB : IsBool z := isBool_of_mul z hz
   have hrtB : IsBool rt := by rw [hrt]; exact isBool_mul' _ _ hIb hTb
@@ -272,5 +272,179 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
       · simp only [decodeL, hzo0, zero_ne_one, ↓reduceIte]
         rw [hxo', hyo', valZ_embedVec tx hTx, valZ_embedVec ty hTy]
         rfl
+
+end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+
+/-! ### Completeness on values -/
+
+namespace Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+
+open SmallSquare Sparse32 SparseX
+open Solution.Secp256k1ScalarMul.Lazy
+open Solution.Secp256k1ScalarMulFixedBase.LazyVar
+open Specs.ShortWeierstrass Specs.Secp256k1
+open Solution.Secp256k1ScalarMul.FusedStepTheorems
+
+set_option autoImplicit false
+set_option maxHeartbeats 4000000
+
+lemma valZ_of_rep (s : Fp) (a : fields 8 Field) (ha : SlopeRep (slopeWitness s) a) :
+    valZ (digitsZ a) = s := by
+  rw [valZ_eq, ha.reconstructFp, slopeWitness_valueFp]
+
+lemma cflagV_bool (i : Inputs Field) : IsBool (cflagV i) := by
+  unfold cflagV; split_ifs <;> simp [IsBool]
+
+lemma zflagV_bool (i : Inputs Field) : IsBool (zflagV i) := by
+  unfold zflagV; split_ifs <;> simp [IsBool]
+
+/-- All step constraints hold on the honest witnesses. -/
+theorem step_complete (n : ℕ) (hn : n + 1 ≤ depth)
+    (ax ay : fields 8 Field) (aInf : Field) (tx ty : Emu Field) (tInf sp : Field)
+    (a b : fields 8 Field) (c z g : Field) (p : Products.Outputs Field)
+    (hA : Assumptions n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
+    (ha : SlopeRep (lam1W ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) a)
+    (hb : SlopeRep (lam2W ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) b)
+    (hc : c = cflagV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
+    (hz : z = zflagV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
+    (hg : g = (1 - sp) * (1 - aInf))
+    (hp : Products.Spec ⟨a, b, ax, ay, tx, ty⟩ p) :
+    c * (1 - c) = 0 ∧ z * (1 - z) = 0 ∧ c * z = 0 ∧ aInf * c = 0 ∧ aInf * z = 0 ∧
+    (1 - sp) * tInf = 0 ∧
+    (Certs.Assumptions n ⟨a, b, ax, ay, tx, ty, p, g, c, z⟩ ∧
+      Certs.Spec ⟨a, b, ax, ay, tx, ty, p, g, c, z⟩) ∧
+    IsBool c ∧ IsBool aInf ∧ IsBool (z + aInf * tInf + -(z * (aInf * tInf))) := by
+  simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
+  obtain ⟨⟨hIb, hX, hY, hInfZ⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
+  have hcB : IsBool c := by rw [hc]; exact cflagV_bool _
+  have hzB : IsBool z := by rw [hz]; exact zflagV_bool _
+  have hDa : Digits (digitsZ a) := digits_of_rep _ a ha
+  have hDb : Digits (digitsZ b) := digits_of_rep _ b hb
+  have haF : valZ (digitsZ a) = slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ := valZ_of_rep _ a ha
+  have hbF : valZ (digitsZ b) = slope2 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ := valZ_of_rep _ b hb
+  -- the flag conditions, with projections reduced
+  have hc' : c = if aInf = 0 ∧ valZ (zwords ax) = decodeFe tx ∧ valZ (zwords ay) = -decodeFe ty
+      then 1 else 0 := hc
+  have hxS : xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ =
+      slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ * slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ -
+        valZ (zwords ax) - decodeFe tx := rfl
+  have hz' : z = if aInf = 0 ∧ c = 0 ∧ xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ = valZ (zwords ax)
+      then 1 else 0 := by rw [hz, hc]; rfl
+  have hcz : c * z = 0 := by
+    rw [hz']
+    split_ifs with h
+    · rw [h.2.1]; ring
+    · ring
+  have hic : aInf * c = 0 := by
+    rw [hc']
+    split_ifs with h
+    · rw [h.1]; ring
+    · ring
+  have hiz : aInf * z = 0 := by
+    rw [hz']
+    split_ifs with h
+    · rw [h.1]; ring
+    · ring
+  have hspt : (1 - sp) * tInf = 0 := by
+    rcases hSp with h | h
+    · rw [hSpT h]; ring
+    · rw [h]; ring
+  have hgB : IsBool g := by
+    rw [hg]
+    rcases hSp with h | h <;> rcases hIb with h' | h' <;> simp [IsBool, h, h']
+  refine ⟨by rcases hcB with h | h <;> rw [h] <;> ring, by rcases hzB with h | h <;> rw [h] <;> ring,
+    hcz, hic, hiz, hspt, ⟨⟨hgB, hcB, hzB, hcz, fun _ => ⟨hDa, hDb, hX, hY, hTx, hTy, hp⟩⟩, ?_⟩,
+    hcB, hIb, ?_⟩
+  · -- the certified relations
+    intro hg1
+    -- gate = 1 forces sp = 0 and R affine
+    have hsp0 : sp = 0 := by
+      rcases hSp with h | h
+      · exact h
+      · exfalso; rw [hg, h] at hg1; simp at hg1
+    have hI0 : aInf = 0 := by
+      rcases hIb with h | h
+      · exact h
+      · exfalso; rw [hg, h] at hg1; simp at hg1
+    have htInf : tInf = 0 := hSpT hsp0
+    have hR := hOC hI0
+    have hT := hTC htInf
+    have h2ry : valZ (zwords ay) + valZ (zwords ay) ≠ 0 :=
+      two_y_ne_zero (P := ⟨valZ (zwords ax), valZ (zwords ay)⟩)
+        ((Solution.Secp256k1ScalarMul.CompleteAdd.onCurve_iff _).mpr hR)
+    simp only [Certs.Spec, Certs.aF, Certs.bF, Certs.rx, Certs.ry, Certs.tX, Certs.tY, Certs.xS]
+    rw [haF, hbF]
+    have hs1 : slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ =
+        if decodeFe tx = valZ (zwords ax) then
+          (if decodeFe ty = -valZ (zwords ay) then 0
+            else 3 * valZ (zwords ax) ^ 2 / (2 * valZ (zwords ay)))
+        else (decodeFe ty - valZ (zwords ay)) / (decodeFe tx - valZ (zwords ax)) := by
+      simp only [slope1, rx, ry, tX, tY, hI0, zero_ne_one, ↓reduceIte]
+    have hs2 : slope2 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ =
+        if xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ = valZ (zwords ax) then 0
+        else 2 * valZ (zwords ay) / (valZ (zwords ax) - xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) -
+          slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ := rfl
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · -- c = 0: chord and unified relations
+      intro hc0
+      rw [hc'] at hc0
+      have hnot : ¬ (aInf = 0 ∧ valZ (zwords ax) = decodeFe tx ∧ valZ (zwords ay) = -decodeFe ty) := by
+        intro h; rw [if_pos h] at hc0; exact one_ne_zero hc0
+      rw [hs1]
+      by_cases hx : decodeFe tx = valZ (zwords ax)
+      · rw [if_pos hx]
+        have hy : ¬ decodeFe ty = -valZ (zwords ay) := by
+          intro hy; exact hnot ⟨hI0, hx.symm, by rw [hy]; ring⟩
+        rw [if_neg hy]
+        -- T = R
+        have hyy : decodeFe ty = valZ (zwords ay) := by
+          have h0 : (decodeFe ty - valZ (zwords ay)) * (decodeFe ty + valZ (zwords ay)) = 0 := by
+            linear_combination hT - hR + (decodeFe tx ^ 2 + decodeFe tx * valZ (zwords ax) +
+              valZ (zwords ax) ^ 2) * hx
+          rcases mul_eq_zero.mp h0 with h | h
+          · linear_combination h
+          · exfalso; exact hy (by linear_combination h)
+        have h2 : (2 : Fp) * valZ (zwords ay) ≠ 0 := by
+          intro h; exact h2ry (by linear_combination h)
+        rw [hx, hyy]
+        refine ⟨by ring, ?_⟩
+        rw [div_mul_eq_mul_div, sub_eq_zero, div_eq_iff h2]
+        ring
+      · rw [if_neg hx]
+        have hne : decodeFe tx - valZ (zwords ax) ≠ 0 := sub_ne_zero.mpr hx
+        refine ⟨?_, ?_⟩
+        · rw [div_mul_eq_mul_div, mul_div_cancel_right₀ _ hne]; ring
+        · rw [div_mul_eq_mul_div, sub_eq_zero, div_eq_iff hne]
+          linear_combination hT - hR
+    · -- c = 1: T = −R
+      intro hc1
+      rw [hc'] at hc1
+      by_cases h : aInf = 0 ∧ valZ (zwords ax) = decodeFe tx ∧ valZ (zwords ay) = -decodeFe ty
+      · exact ⟨by rw [h.2.1]; ring, by rw [h.2.2]; ring⟩
+      · rw [if_neg h] at hc1; exact absurd hc1 zero_ne_one
+    · -- z = 1: xS = x
+      intro hz1
+      rw [hz'] at hz1
+      by_cases h : aInf = 0 ∧ c = 0 ∧ xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ = valZ (zwords ax)
+      · rw [← hxS, h.2.2]; ring
+      · rw [if_neg h] at hz1; exact absurd hz1 zero_ne_one
+    · -- c = 0, z = 0: the two-slope identity
+      intro hc0 hz0
+      rw [hz'] at hz0
+      have hne : ¬ xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ = valZ (zwords ax) := by
+        intro h; rw [if_pos ⟨hI0, hc0, h⟩] at hz0; exact one_ne_zero hz0
+      rw [← hxS, hs2, if_neg hne]
+      have hd : valZ (zwords ax) - xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ ≠ 0 :=
+        sub_ne_zero.mpr (Ne.symm hne)
+      rw [show slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ +
+          (2 * valZ (zwords ay) / (valZ (zwords ax) - xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) -
+            slope1 ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) =
+          2 * valZ (zwords ay) / (valZ (zwords ax) - xSV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) by ring,
+        div_mul_cancel₀ _ hd]
+      ring
+  · -- the output flag is boolean
+    have hrtB : IsBool (aInf * tInf) := isBool_mul' _ _ hIb hTb
+    have := isBool_or' z (aInf * tInf) hzB hrtB
+    rwa [sub_eq_add_neg] at this
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step

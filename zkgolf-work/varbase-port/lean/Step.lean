@@ -23,36 +23,6 @@ set_option autoImplicit false
 set_option maxHeartbeats 16000000
 set_option maxRecDepth 20000
 
-/-! ### Value-level views and honest witnesses -/
-
-def rx (i : Inputs Field) : Fp := valZ (zwords i.acc.x)
-def ry (i : Inputs Field) : Fp := valZ (zwords i.acc.y)
-def tX (i : Inputs Field) : Fp := decodeFe i.t.x
-def tY (i : Inputs Field) : Fp := decodeFe i.t.y
-
-/-- Honest first slope: chord of `(R, T)`, tangent when `T = R`, and `0` on the
-branches where no relation is certified. -/
-noncomputable def slope1 (i : Inputs Field) : Fp :=
-  if i.acc.isInf = 1 then 0
-  else if tX i = rx i then (if tY i = -ry i then 0 else 3 * rx i ^ 2 / (2 * ry i))
-  else (tY i - ry i) / (tX i - rx i)
-
-def cflagV (i : Inputs Field) : Field :=
-  if i.acc.isInf = 0 ∧ rx i = tX i ∧ ry i = -tY i then 1 else 0
-
-noncomputable def xSV (i : Inputs Field) : Fp := slope1 i * slope1 i - rx i - tX i
-
-noncomputable def zflagV (i : Inputs Field) : Field :=
-  if i.acc.isInf = 0 ∧ cflagV i = 0 ∧ xSV i = rx i then 1 else 0
-
-/-- Honest second slope from the two-slope identity. -/
-noncomputable def slope2 (i : Inputs Field) : Fp :=
-  if xSV i = rx i then 0 else 2 * ry i / (rx i - xSV i) - slope1 i
-
-noncomputable def lam1W (i : Inputs Field) : Emu Field := slopeWitness (slope1 i)
-noncomputable def lam2W (i : Inputs Field) : Emu Field := slopeWitness (slope2 i)
-noncomputable def flagsW (i : Inputs Field) : fields 2 Field := #v[cflagV i, zflagV i]
-
 def zeroVec : Var (fields 8) Field := Vector.ofFn fun _ => (0 : Expression Field)
 
 /-! ### Circuit -/
@@ -116,4 +86,28 @@ theorem soundness (n : ℕ) (hn : n + 1 ≤ depth) :
     (hzv := eval_zeroVec env) (hxw := m1) (hxv := m2) (hxo := m3) (hyw := m4) (hyv := m5)
     (hyo := m6)
 
+end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+
+
+namespace Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+open SmallSquare Sparse32 SparseX Challenge.CostR1CS Cost
+open Solution.Secp256k1ScalarMul.Lazy
+open Solution.Secp256k1ScalarMulFixedBase.LazyVar
+set_option autoImplicit false
+set_option maxHeartbeats 16000000
+set_option maxRecDepth 20000
+attribute [local irreducible] Sparse32Mul.outputExpr Sparse32Square.outputExpr
+
+theorem completeness_probe (n : ℕ) (hn : n + 1 ≤ depth) :
+    Completeness Field (main n hn) (Assumptions n) := by
+  circuit_proof_start_core
+  subst h_input
+  simp +arith only [main, Sparse32Normalize.circuit, Sparse32Normalize.Assumptions,
+    Sparse32Normalize.Spec, Sparse32Normalize.ProverAssumptions, Sparse32Normalize.ProverSpec,
+    MulCell.circuit, MulCell.Assumptions, MulCell.Spec,
+    Products.circuit, Products.Assumptions, Certs.circuit, MuxVec.circuit, MuxVec.Assumptions,
+    MuxVec.Spec, circuit_norm, numLimbs, Nat.reduceAdd] at h_env h_assumptions ⊢
+  clear h_env h_assumptions
+  trace_state
+  sorry
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
