@@ -50,7 +50,7 @@ def decodeT (t : FlaggedPoint Field) : GroupPoint Fp :=
   if t.isInf = 1 then .infinity else .affine ⟨decodeFe t.x, decodeFe t.y⟩
 
 def Assumptions (n : ℕ) (i : Inputs Field) : Prop :=
-  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp
+  LazyValid n i.acc ∧ (i.sp = 0 → OnCurveLazy i.acc) ∧ TValid i.t ∧ IsBool i.sp
 
 /-- `sp = 0` (ordinary scalar) requires an affine table point; infinite table
 entries are only reachable through the special-scalar fallback `sp = 1`.  The

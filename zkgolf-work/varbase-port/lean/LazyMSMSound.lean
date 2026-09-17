@@ -140,7 +140,7 @@ lemma step_inv (input : Var Inputs (F circomPrime)) (i₀ : ℕ) (env : Environm
     simp only [stepIn, circuit_norm]
   have hass : Step.Assumptions k.val (eval env (stepIn input i₀ k)) := by
     rw [hin]
-    exact ⟨hinv.1, hinv.2.1, tValid_of_valid htv, hspB⟩
+    exact ⟨hinv.1, fun _ => hinv.2.1, tValid_of_valid htv, hspB⟩
   have hspec := hst hass
   rw [hin] at hspec
   obtain ⟨hv, hrest⟩ := hspec

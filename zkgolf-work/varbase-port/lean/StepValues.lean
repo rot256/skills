@@ -174,7 +174,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     rcases hIb with hI0 | hI1
     · -- R is affine
       have hg1 : g = 1 := by rw [hg, hsp0, hI0]; ring
-      have hR : valZ (zwords ay) ^ 2 = valZ (zwords ax) ^ 3 + 7 := hOC hI0
+      have hR : valZ (zwords ay) ^ 2 = valZ (zwords ax) ^ 3 + 7 := hOC hsp0 hI0
       have hdR : decodeL ⟨ax, ay, aInf⟩ = .affine ⟨valZ (zwords ax), valZ (zwords ay)⟩ := by
         simp only [decodeL, hI0, zero_ne_one, ↓reduceIte]
       have hspec := hcert ⟨by rw [hg1]; exact Or.inr rfl, hcB, hzB, hcz,
@@ -363,7 +363,7 @@ theorem step_complete (n : ℕ) (hn : n + 1 ≤ depth)
       · exact h
       · exfalso; rw [hg, h] at hg1; simp at hg1
     have htInf : tInf = 0 := hSpT hsp0
-    have hR := hOC hI0
+    have hR := hOC hsp0 hI0
     have hT := hTC htInf
     have h2ry : valZ (zwords ay) + valZ (zwords ay) ≠ 0 :=
       two_y_ne_zero (P := ⟨valZ (zwords ax), valZ (zwords ay)⟩)

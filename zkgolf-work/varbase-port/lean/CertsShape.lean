@@ -102,19 +102,25 @@ theorem shape (i : Var Inputs Field) (hi : AffineInput i) : IsR1CSCirc (main i) 
     (MulCell.affine_call_output _) fun l2 hl2 => ?_
   refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg hz)
     (MulCell.affine_call_output _) fun gz hgz => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hgz (affine_half _ hxeq2 _))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨gz, half (xeq2W i) false⟩ hgz (affine_half _ hxeq2 false))
     (MulCell.affine_call_output _) fun hxl hhxl => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hgz (affine_half _ hxeq2 _))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨gz, half (xeq2W i) true⟩ hgz (affine_half _ hxeq2 true))
     (MulCell.affine_call_output _) fun hxh hhxh => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hcz (affine_half _ hrel2 _))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨i.cflag + i.zflag, half (rel2W i) false⟩ hcz (affine_half _ hrel2 false))
     (MulCell.affine_call_output _) fun m2l hm2l => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
-    (Affine.sub (affine_half _ hrel2 _) hm2l))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨i.gate, half (rel2W i) false - m2l⟩ hg
+      (Affine.sub (affine_half _ hrel2 false) hm2l))
     (MulCell.affine_call_output _) fun h2l hh2l => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hcz (affine_half _ hrel2 _))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨i.cflag + i.zflag, half (rel2W i) true⟩ hcz (affine_half _ hrel2 true))
     (MulCell.affine_call_output _) fun m2h hm2h => ?_
-  refine IsR1CSCirc.bind_out_inv Affine (MulCell.shape_call _ hg
-    (Affine.sub (affine_half _ hrel2 _) hm2h))
+  refine IsR1CSCirc.bind_out_inv Affine
+    (MulCell.shape_call ⟨i.gate, half (rel2W i) true - m2h⟩ hg
+      (Affine.sub (affine_half _ hrel2 true) hm2h))
     (MulCell.affine_call_output _) fun h2h hh2h => ?_
   refine IsR1CSCirc.bind (IsR1CSCirc.assertion (Cert.shape .rel1 _
     (affineW_pair hh1l hh1h))) fun _ => ?_

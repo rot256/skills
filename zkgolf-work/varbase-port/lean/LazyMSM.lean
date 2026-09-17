@@ -99,6 +99,9 @@ all-plus entry is infinite and the coefficients are `±1`. -/
 def ProverAssumptions (input : Inputs (F circomPrime)) : Prop :=
   GLVMSM.Assumptions input ∧
   (input.tinf[15] = 0 → ∀ i : Fin 16, input.tinf[i] = 0) ∧
+  (input.tinf[15] = 0 →
+    LazyChain.chainAcc input GLVMSM.coeffBits =
+      decodePoint (GLVMSM.tableEntry input 15 (by norm_num))) ∧
   (input.tinf[15] = 1 → UnitBits input.m0 ∧ UnitBits input.m1 ∧ UnitBits input.m2 ∧ UnitBits input.m3)
 
 end Solution.Secp256k1ScalarMul.LazyMSM
