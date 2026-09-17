@@ -2,6 +2,7 @@ import Solution.Secp256k1ScalarMul.Lazy.PatternTable
 import Solution.Secp256k1ScalarMul.GLVBuildTableCostCW
 import Solution.Secp256k1ScalarMul.NegYAffineCost
 import Solution.Secp256k1ScalarMul.NegYAffineSubCost
+import Solution.Secp256k1ScalarMulFixedBase.Cost
 
 /-! Cost, local length and R1CS shape of the sign-pattern table. -/
 
@@ -128,6 +129,7 @@ namespace Solution.Secp256k1ScalarMul.PatTable
 open Specs.ShortWeierstrass Specs.Secp256k1
 open GLVBuildTable
 open Challenge.CostR1CS Cost
+open Solution.Secp256k1ScalarMulFixedBase.Cost (IsR1CSCirc.bind_out_inv)
 
 set_option maxHeartbeats 16000000
 set_option maxRecDepth 65536
@@ -142,43 +144,43 @@ theorem isR1CS_main (b : Var Bases (F circomPrime)) (hb : ∀ i : Fin 4, AffineF
     IsR1CSCirc (main b) := by
   obtain ⟨h0, h1, h2, h3⟩ := affineFP_bases b hb
   unfold main
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineW
+  refine IsR1CSCirc.bind_out_inv AffineW
     (negY_isR1CS_sub _ h1) (fun n => negY_affineW_sub _ h1 n) fun nr1y hn1 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineW
+  refine IsR1CSCirc.bind_out_inv AffineW
     (negY_isR1CS_sub _ h3) (fun n => negY_affineW_sub _ h3 n) fun nr3y hn3 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_phiPairAdd _ h0 h1) (fun n => affineFP_sub_phiPairAdd _ n h0) fun up hup => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_phiPairAdd _ h0 (affineFP_withY _ _ h1 hn1)) (fun n => affineFP_sub_phiPairAdd _ n h0)
     fun um hum => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_phiPairAdd _ h2 h3) (fun n => affineFP_sub_phiPairAdd _ n h2) fun vp hvp => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_phiPairAdd _ h2 (affineFP_withY _ _ h3 hn3)) (fun n => affineFP_sub_phiPairAdd _ n h2)
     fun vm hvm => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv
+  refine IsR1CSCirc.bind_out_inv
     (fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
     (isR1CS_negCanon _ hvp) (fun n => affineFP_negCanon _ hvp n) fun vpp hvpp => ?_
   obtain ⟨hvp', hnvp⟩ := hvpp
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv
+  refine IsR1CSCirc.bind_out_inv
     (fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
     (isR1CS_negCanon _ hvm) (fun n => affineFP_negCanon _ hvm n) fun vmp hvmp => ?_
   obtain ⟨hvm', hnvm⟩ := hvmp
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hup hvp') (fun n => affineFP_sub_completeAdd _ n) fun e15 h15 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hup hvm') (fun n => affineFP_sub_completeAdd _ n) fun e7 h7 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hup hnvm) (fun n => affineFP_sub_completeAdd _ n) fun e11 h11 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hup hnvp) (fun n => affineFP_sub_completeAdd _ n) fun e3 h3' => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hum hvp') (fun n => affineFP_sub_completeAdd _ n) fun e13 h13 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hum hvm') (fun n => affineFP_sub_completeAdd _ n) fun e5 h5 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hum hnvm) (fun n => affineFP_sub_completeAdd _ n) fun e9 h9 => ?_
-  refine Solution.Secp256k1ScalarMulFixedBase.Cost.IsR1CSCirc.bind_out_inv AffineFP
+  refine IsR1CSCirc.bind_out_inv AffineFP
     (isR1CS_sub_completeAdd _ hum hnvp) (fun n => affineFP_sub_completeAdd _ n) fun e1 h1' => ?_
   refine IsR1CSCirc.bind_out (isR1CS_negCanon _ h15) fun _ => ?_
   refine IsR1CSCirc.bind_out (isR1CS_negCanon _ h7) fun _ => ?_
