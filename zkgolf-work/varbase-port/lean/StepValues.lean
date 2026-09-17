@@ -112,7 +112,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     (hyo : IsBool zOut → yo = if zOut = 1 then zv else yv) :
     Spec n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ ⟨xo, yo, zOut⟩ := by
   simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
-  obtain ⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
+  obtain ⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp⟩ := hA
   have hcB : IsBool c := isBool_of_mul c hc
   have hzB : IsBool z := isBool_of_mul z hz
   have hrtB : IsBool rt := by rw [hrt]; exact isBool_mul' _ _ hIb hTb
@@ -170,6 +170,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     have hzo' : zOut = z := by rw [hzo, hzrt, hrt0]; ring
     have hdT : decodeT ⟨tx, ty, tInf⟩ = .affine ⟨decodeFe tx, decodeFe ty⟩ := by
       simp only [decodeT, htInf, zero_ne_one, ↓reduceIte]
+    refine ⟨htInf, ?_⟩
     rcases hIb with hI0 | hI1
     · -- R is affine
       have hg1 : g = 1 := by rw [hg, hsp0, hI0]; ring
@@ -297,7 +298,7 @@ lemma zflagV_bool (i : Inputs Field) : IsBool (zflagV i) := by
 theorem step_complete (n : ℕ) (hn : n + 1 ≤ depth)
     (ax ay : fields 8 Field) (aInf : Field) (tx ty : Emu Field) (tInf sp : Field)
     (a b : fields 8 Field) (c z g : Field) (p : Products.Outputs Field)
-    (hA : Assumptions n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
+    (hA : ProverAssumptions n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
     (ha : SlopeRep (lam1W ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) a)
     (hb : SlopeRep (lam2W ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩) b)
     (hc : c = cflagV ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩)
@@ -309,8 +310,8 @@ theorem step_complete (n : ℕ) (hn : n + 1 ≤ depth)
     (Certs.Assumptions n ⟨a, b, ax, ay, tx, ty, p, g, c, z⟩ ∧
       Certs.Spec ⟨a, b, ax, ay, tx, ty, p, g, c, z⟩) ∧
     IsBool c ∧ IsBool aInf ∧ IsBool (z + aInf * tInf + -(z * (aInf * tInf))) := by
-  simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
-  obtain ⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
+  simp only [ProverAssumptions, Assumptions, LazyValid, OnCurveLazy, TValid] at hA
+  obtain ⟨⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp⟩, hSpT⟩ := hA
   have hcB : IsBool c := by rw [hc]; exact cflagV_bool _
   have hzB : IsBool z := by rw [hz]; exact zflagV_bool _
   have hDa : Digits (digitsZ a) := digits_of_rep _ a ha

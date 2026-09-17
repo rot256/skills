@@ -49,16 +49,21 @@ def decodeL (P : LazyPt Field) : GroupPoint Fp :=
 def decodeT (t : FlaggedPoint Field) : GroupPoint Fp :=
   if t.isInf = 1 then .infinity else .affine ⟨decodeFe t.x, decodeFe t.y⟩
 
-/-- `sp = 0` (ordinary scalar) requires an affine table point; infinite table
-entries are only reachable through the special-scalar fallback `sp = 1`. -/
 def Assumptions (n : ℕ) (i : Inputs Field) : Prop :=
-  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp ∧ (i.sp = 0 → i.t.isInf = 0)
+  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp
 
-/-- Output valid at the next depth; with `sp = 0` (ordinary scalar) it is the
-group-law result `(R + R) + T`, on the curve. -/
+/-- `sp = 0` (ordinary scalar) requires an affine table point; infinite table
+entries are only reachable through the special-scalar fallback `sp = 1`.  The
+circuit asserts this, so it is a prover-side precondition only. -/
+def ProverAssumptions (n : ℕ) (i : Inputs Field) : Prop :=
+  Assumptions n i ∧ (i.sp = 0 → i.t.isInf = 0)
+
+/-- Output valid at the next depth; with `sp = 0` (ordinary scalar) the table
+point is affine and the output is the group-law result `(R + R) + T`, on the
+curve. -/
 def Spec (n : ℕ) (i : Inputs Field) (o : LazyPt Field) : Prop :=
   LazyValid (n + 1) o ∧
-  (i.sp = 0 → OnCurveLazy o ∧
+  (i.sp = 0 → i.t.isInf = 0 ∧ OnCurveLazy o ∧
     decodeL o = add curve (add curve (decodeL i.acc) (decodeL i.acc)) (decodeT i.t))
 
 /-! ### Value-level views and honest witnesses -/

@@ -48,7 +48,7 @@ def yBounds : ℕ → Words ℤ × Words ℤ
 def yLoAt (n : ℕ) : Words ℤ := (yBounds n).1
 def yHiAt (n : ℕ) : Words ℤ := (yBounds n).2
 
-abbrev depth : ℕ := 62
+abbrev depth : ℕ := 64
 def yLo : Words ℤ := yLoAt depth
 def yHi : Words ℤ := yHiAt depth
 
@@ -115,22 +115,28 @@ def yeqLo : Words ℤ := wadd yLo embLo
 def yeqHi : Words ℤ := wadd yHi embHi
 def uniLo : Words ℤ := wmin (wmin uniRawLo yeqLo) wzero
 def uniHi : Words ℤ := wmax (wmax uniRawHi yeqHi) wzero
+/-- Final equality slot `y − T.y` (gated, or `0`). -/
+def finLo : Words ℤ := wmin (wsub yLo embHi) wzero
+def finHi : Words ℤ := wmax (wsub yHi embLo) wzero
 
 inductive VarLayout where
   | rel1
   | xeq
   | rel2
+  | fin
   deriving DecidableEq
 
 def slotLo : VarLayout → Words ℤ
   | .rel1 => rel1Lo
   | .xeq => xeqLo
   | .rel2 => rel2Lo
+  | .fin => finLo
 
 def slotHi : VarLayout → Words ℤ
   | .rel1 => rel1Hi
   | .xeq => xeqHi
   | .rel2 => rel2Hi
+  | .fin => finHi
 
 def loMin (l : VarLayout) : ℤ := lowHalf (slotLo l)
 def loMax (l : VarLayout) : ℤ := lowHalf (slotHi l)
@@ -141,21 +147,25 @@ def qbits : VarLayout → ℕ
   | .rel1 => 85
   | .xeq => 37
   | .rel2 => 86
+  | .fin => 85
 
 def tbits : VarLayout → ℕ
   | .rel1 => 93
   | .xeq => 46
   | .rel2 => 94
+  | .fin => 93
 
 def kmin : VarLayout → ℤ
-  | .rel1 => -15814066265995873945929857
+  | .rel1 => -16320115796211931381695261
   | .xeq => -48318383303
-  | .rel2 => -32007761913344734695488872
+  | .rel2 => -33019860973776849567019680
+  | .fin => -16193584966913837944492930
 
 def tmin : VarLayout → ℤ
-  | .rel1 => -3363840161097497145987866268
+  | .rel1 => -3470244817853828247017939232
   | .xeq => -21118354193453
-  | .rel2 => -6807528870928461675695726431
+  | .rel2 => -7020338184441123877755872359
+  | .fin => -3443634642430263366552932479
 
 private def kmax (l : VarLayout) : ℤ := kmin l + 2^(qbits l) - 1
 private def tmax (l : VarLayout) : ℤ := tmin l + 2^(tbits l) - 1
@@ -293,11 +303,11 @@ def l1Max : ℤ := limb1 uniHi
 def l2Min : ℤ := limb2 uniLo
 def l2Max : ℤ := limb2 uniHi
 
-def ukmin : ℤ := -67332777887434032556353772029898847712
+def ukmin : ℤ := -69470289418662407843111130085823220377
 def ukbits : ℕ := 127
-def ut0min : ℤ := -12007864020518344896630320530829009560832
+def ut0min : ℤ := -12389053923401762962337737545768947209381
 def ut0bits : ℕ := 135
-def ut1min : ℤ := -147352207133642118883619036270663183082
+def ut1min : ℤ := -152029987281850257267045087993171210058
 def ut1bits : ℕ := 128
 
 private def ukmax : ℤ := ukmin + 2^ukbits - 1

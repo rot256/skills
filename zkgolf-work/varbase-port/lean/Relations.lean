@@ -105,7 +105,7 @@ lemma rel1_of_xeq1 {x : Words ℤ} {Tx : Fin 4 → ℤ} (hx : XIn x) (hTx : Cano
 
 lemma slot_zero (l : VarLayout) : ∀ k, slotLo l k ≤ 0 ∧ 0 ≤ slotHi l k := by
   intro k
-  cases l <;> simp [slotLo, slotHi, rel1Lo, rel1Hi, xeqLo, xeqHi, rel2Lo, rel2Hi,
+  cases l <;> simp [slotLo, slotHi, rel1Lo, rel1Hi, xeqLo, xeqHi, rel2Lo, rel2Hi, finLo, finHi,
     wmin, wmax, wzero]
 
 lemma uni_zero : ∀ k, uniLo k ≤ 0 ∧ 0 ≤ uniHi k := by

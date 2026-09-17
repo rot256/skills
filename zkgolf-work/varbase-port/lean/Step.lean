@@ -69,7 +69,8 @@ lemma eval_zeroVec (env : Environment Field) (k : Fin 8) :
   simp only [zeroVec, Vector.getElem_map, Vector.getElem_ofFn, Expression.eval]
 
 theorem soundness (n : ℕ) (hn : n + 1 ≤ depth) :
-    Soundness Field (main n hn) (Assumptions n) (Spec n) := by
+    GeneralFormalCircuit.Soundness Field (main n hn) (fun i _ => Assumptions n i)
+      (fun i o _ => Spec n i o) := by
   circuit_proof_start_core
   subst h_input
   simp +arith only [main, Sparse32Normalize.circuit, Sparse32Normalize.Assumptions,
@@ -96,9 +97,11 @@ lemma witness_emu_eq (env : ProverEnvironment Field) (f : ℕ → ℕ) (w : Emu 
   exact h ⟨k, hk⟩
 
 theorem completeness (n : ℕ) (hn : n + 1 ≤ depth) :
-    Completeness Field (main n hn) (Assumptions n) := by
+    GeneralFormalCircuit.Completeness Field (main n hn) (fun i _ _ => ProverAssumptions n i)
+      (fun _ _ _ => True) := by
   circuit_proof_start_core
   subst h_input
+  refine ⟨?_, trivial⟩
   simp +arith only [main, Sparse32Normalize.circuit, Sparse32Normalize.Assumptions,
     Sparse32Normalize.Spec, Sparse32Normalize.ProverAssumptions, Sparse32Normalize.ProverSpec,
     MulCell.circuit, MulCell.Assumptions, MulCell.Spec,
@@ -131,11 +134,13 @@ theorem completeness (n : ℕ) (hn : n + 1 ≤ depth) :
   · rw [hzrt, hrt]; exact b3
   · rw [hzrt, hrt]; exact b3
 
-noncomputable def circuit (n : ℕ) (hn : n + 1 ≤ depth) : FormalCircuit Field Inputs LazyPt where
+noncomputable def circuit (n : ℕ) (hn : n + 1 ≤ depth) :
+    GeneralFormalCircuit Field Inputs LazyPt where
   main := main n hn
-  elaborated := elaborated n hn
-  Assumptions := Assumptions n
-  Spec := Spec n
+  Assumptions := fun i _ => Assumptions n i
+  Spec := fun i o _ => Spec n i o
+  ProverAssumptions := fun i _ _ => ProverAssumptions n i
+  ProverSpec := fun _ _ _ => True
   soundness := soundness n hn
   completeness := completeness n hn
 
