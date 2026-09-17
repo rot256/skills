@@ -42,10 +42,10 @@ theorem first_add {rx ry tx ty aF : Fp}
         rfl rfl
     · rw [add_self_eq_tangent ⟨rx, ty⟩ ((CompleteAdd.onCurve_iff _).mpr hR),
         CompleteAdd.tangent_eq]
-      have hs : (3 * rx ^ 2 + 0) / (2 * ty) = aF := by
+      have hs : 3 * rx ^ 2 / (2 * ty) = aF := by
         rw [div_eq_iff (by intro h; apply h2ry; linear_combination h)]
         linear_combination -htan
-      simp only [Specs.Secp256k1.curve, hs, GroupPoint.affine.injEq, Point.mk.injEq]
+      simp only [hs, GroupPoint.affine.injEq, Point.mk.injEq]
       constructor <;> ring
   · have hne : tx - rx ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
     constructor
@@ -94,7 +94,7 @@ theorem second_add {rx ry xS yS tx ty aF bF : Fp}
     rw [hyS]; linear_combination -hrel2
   constructor
   · exact CompleteAdd.chord_oncurve (x₁ := rx) (y₁ := ry) (x₂ := xS) (y₂ := yS) hR hSon hd hb
-      rfl rfl
+      (by ring) (by ring)
   · rw [← add_rot' _ _ hRon hTon, hS]
     -- add S R = add R S (commutativity through the bridge)
     have hcomm : add curve (.affine ⟨xS, yS⟩) (.affine ⟨rx, ry⟩) =
