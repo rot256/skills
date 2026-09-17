@@ -1,6 +1,5 @@
-import Solution.Secp256k1ScalarMul.Lazy.Certs
+import Solution.Secp256k1ScalarMul.Lazy.StepValues
 import Solution.Secp256k1ScalarMul.Lazy.MuxVec
-import Solution.Secp256k1ScalarMul.Lazy.StepMath
 
 /-!
 # One lazy variable-base chain step: `R' = 2R + T = (R + T) + R`
@@ -24,21 +23,7 @@ set_option autoImplicit false
 set_option maxHeartbeats 16000000
 set_option maxRecDepth 20000
 
-abbrev FlaggedPoint := Solution.Secp256k1ScalarMul.FlaggedPoint
-
-structure LazyPt (F : Type) where
-  x : fields 8 F
-  y : fields 8 F
-  isInf : F
-deriving ProvableStruct
-
-structure Inputs (F : Type) where
-  acc : LazyPt F
-  t : FlaggedPoint F
-  sp : F
-deriving ProvableStruct
-
-/-! ### Value-level views -/
+/-! ### Value-level views and honest witnesses -/
 
 def rx (i : Inputs Field) : Fp := valZ (zwords i.acc.x)
 def ry (i : Inputs Field) : Fp := valZ (zwords i.acc.y)
@@ -72,7 +57,7 @@ def zeroVec : Var (fields 8) Field := Vector.ofFn fun _ => (0 : Expression Field
 
 /-! ### Circuit -/
 
-noncomputable def main (n : ℕ) (hn : n ≤ depth) (i : Var Inputs Field) :
+noncomputable def main (n : ℕ) (hn : n + 1 ≤ depth) (i : Var Inputs Field) :
     Circuit Field (Var LazyPt Field) := do
   let lam1 ← ProvableType.witness (α := Emu) fun env => lam1W (eval env i)
   let a ← Sparse32Normalize.circuit lam1
@@ -89,7 +74,7 @@ noncomputable def main (n : ℕ) (hn : n ≤ depth) (i : Var Inputs Field) :
   Circuit.assertZero ((1 - i.sp) * i.t.isInf)
   let g ← subcircuit MulCell.circuit ⟨1 - i.sp, 1 - i.acc.isInf⟩
   let p ← subcircuit Products.circuit ⟨a, b, i.acc.x, i.acc.y, i.t.x, i.t.y⟩
-  assertion (Certs.circuit n hn) ⟨a, b, i.acc.x, i.acc.y, i.t.x, i.t.y, p, g, c, z⟩
+  assertion (Certs.circuit n (Nat.le_of_succ_le hn)) ⟨a, b, i.acc.x, i.acc.y, i.t.x, i.t.y, p, g, c, z⟩
   let rt ← subcircuit MulCell.circuit ⟨i.acc.isInf, i.t.isInf⟩
   let zrt ← subcircuit MulCell.circuit ⟨z, rt⟩
   let zOut := z + rt - zrt
@@ -103,35 +88,32 @@ noncomputable def main (n : ℕ) (hn : n ≤ depth) (i : Var Inputs Field) :
   let yo ← subcircuit MuxVec.circuit ⟨zOut, yv, zeroVec⟩
   return { x := xo, y := yo, isInf := zOut }
 
-noncomputable instance elaborated (n : ℕ) (hn : n ≤ depth) :
+noncomputable instance elaborated (n : ℕ) (hn : n + 1 ≤ depth) :
     ElaboratedCircuit Field Inputs LazyPt (main n hn) := by
   elaborate_circuit
 
-/-! ### Specification -/
+attribute [local irreducible] Sparse32Mul.outputExpr Sparse32Square.outputExpr
 
-def LazyValid (n : ℕ) (P : LazyPt Field) : Prop :=
-  IsBool P.isInf ∧ XIn (zwords P.x) ∧ YIn n (zwords P.y) ∧
-  (P.isInf = 1 → zwords P.x = (fun _ => 0) ∧ zwords P.y = (fun _ => 0))
+lemma eval_zeroVec (env : Environment Field) (k : Fin 8) :
+    (Vector.map (Expression.eval env) zeroVec)[k.val] = 0 := by
+  simp only [zeroVec, Vector.getElem_map, Vector.getElem_ofFn, Expression.eval]
 
-def OnCurveLazy (P : LazyPt Field) : Prop :=
-  P.isInf = 0 → valZ (zwords P.y) ^ 2 = valZ (zwords P.x) ^ 3 + 7
-
-def TValid (t : FlaggedPoint Field) : Prop :=
-  IsBool t.isInf ∧ BigInt.Normalized 64 t.x ∧ BigInt.Normalized 64 t.y ∧
-  (t.isInf = 0 → decodeFe t.y ^ 2 = decodeFe t.x ^ 3 + 7)
-
-def decodeL (P : LazyPt Field) : GroupPoint Fp :=
-  if P.isInf = 1 then .infinity else .affine ⟨valZ (zwords P.x), valZ (zwords P.y)⟩
-
-def decodeT (t : FlaggedPoint Field) : GroupPoint Fp :=
-  if t.isInf = 1 then .infinity else .affine ⟨decodeFe t.x, decodeFe t.y⟩
-
-def Assumptions (n : ℕ) (i : Inputs Field) : Prop :=
-  LazyValid n i.acc ∧ OnCurveLazy i.acc ∧ TValid i.t ∧ IsBool i.sp
-
-def Spec (n : ℕ) (i : Inputs Field) (o : LazyPt Field) : Prop :=
-  LazyValid (n + 1) o ∧
-  (i.sp = 0 → OnCurveLazy o ∧
-    decodeL o = add curve (add curve (decodeL i.acc) (decodeL i.acc)) (decodeT i.t))
+theorem soundness (n : ℕ) (hn : n + 1 ≤ depth) :
+    Soundness Field (main n hn) (Assumptions n) (Spec n) := by
+  circuit_proof_start_core
+  subst h_input
+  simp +arith only [main, Sparse32Normalize.circuit, Sparse32Normalize.Assumptions,
+    Sparse32Normalize.Spec, MulCell.circuit, MulCell.Assumptions, MulCell.Spec,
+    Products.circuit, Products.Assumptions, Certs.circuit, MuxVec.circuit, MuxVec.Assumptions,
+    MuxVec.Spec, circuit_norm, numLimbs, Nat.reduceAdd] at h_holds h_assumptions ⊢
+  obtain ⟨hn1, hn2, z1, z2, z3, z4, z5, z6, hg, hp, hcert, hrt, hzrt, m1, m2, m3, m4, m5, m6⟩ :=
+    h_holds
+  simp only [Products.map_vaddE, Products.map_vsubE, Products.map_embedExpr] at m1 m2 m4 m5
+  exact step_values n hn (hA := h_assumptions) (ha := hn1) (hb := hn2)
+    (hc := by linear_combination z1) (hz := by linear_combination z2) (hcz := z3)
+    (hic := z4) (hiz := z5) (hspt := by linear_combination z6) (hg := by linear_combination hg)
+    (hp := hp) (hcert := hcert) (hrt := hrt) (hzrt := hzrt) (hzo := by ring)
+    (hzv := eval_zeroVec env) (hxw := m1) (hxv := m2) (hxo := m3) (hyw := m4) (hyv := m5)
+    (hyo := m6)
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step

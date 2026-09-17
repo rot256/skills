@@ -626,7 +626,8 @@ theorem completeness (n : ℕ) (hn : n ≤ depth) :
     exact ⟨⟨hm1.1, hm1.2.mpr (by simp)⟩, ⟨hm2.1, hm2.2.mpr (by simp)⟩, ⟨hm3.1, hm3.2.mpr (by simp)⟩,
       ⟨hm4.1, hm4.2.mpr (by simp)⟩⟩
   · -- gate = 1: the honest contents
-    obtain ⟨ha, hb, hx, hy, htx, hty, hp⟩ := hrest hg
+    have hr := hrest hg
+    obtain ⟨ha, hb, hx, hy, htx, hty, hp⟩ := hr
     rw [hg] at e2 e4 e6 e8 e10 e11 e15 e17
     simp only [one_mul] at e2 e4 e6 e8 e10 e11 e15 e17
     have hch := eval_half_cast env.toEnvironment (chordW input_var)
