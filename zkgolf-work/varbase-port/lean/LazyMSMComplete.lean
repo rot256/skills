@@ -39,6 +39,7 @@ lemma seed_valid (input : Var Inputs (F circomPrime)) (env : Environment (F circ
         isInf := (eval env input).tinf[15] } := by
     simp only [seed, circuit_norm]
     rw [Products.map_embedExpr, Products.map_embedExpr]
+    simp only [circuit_norm, eval_vector, Vector.getElem_map]
   rw [hseed]
   simp only [Step.LazyValid, embed_zwords _ hx.1, embed_zwords _ hy.1]
   exact ⟨hb, xIn_embed (canon_emuz hx.1), yIn_embed (canon_emuz hy.1) 0⟩
@@ -140,7 +141,7 @@ lemma defect_of_unitBits (env : Environment (F circomPrime))
   rw [foldl_zero_of 63 _ (fun i => by
     have := hrest ⟨i.val + 1, by have := i.isLt; simp only [GLVMSM.coeffBits]; omega⟩
       (by simp only; omega)
-    simpa only [Vector.getElem_map] using this)]
+    simpa only [Fin.getElem_fin, Vector.getElem_map] using this)]
   have h0' : Expression.eval env m[0] = 1 := by
     have := h0; rw [Vector.getElem_map] at this; exact this
   rw [h0']; ring
@@ -151,7 +152,9 @@ set_option maxHeartbeats 16000000 in
 theorem completeness : GeneralFormalCircuit.Completeness (F circomPrime) (Output := unit) main
     (fun i _ _ => ProverAssumptions i) (fun _ _ _ => True) := by
   circuit_proof_start_core
-  subst h_input
+  have h_input' : eval env.toEnvironment input_var = input := by
+    simpa only [CircuitType.eval_expression_prover_to_verifier (M := Inputs)] using h_input
+  subst h_input'
   obtain ⟨hall, hnoinf, hchain, hunit⟩ := h_assumptions
   simp only [main, circuit_norm] at h_env ⊢
   simp only [stepBody, circuit_norm, GLVMSM.varLookup_localLength, GLVMSM.varLookup_output,
@@ -163,7 +166,92 @@ theorem completeness : GeneralFormalCircuit.Completeness (F circomPrime) (Output
     simpa only [StepHypC, tVar, stepIn, accL_succ, Step.circuit, circuit_norm] using h_fold k
   have hsp' := tinf15_eq env.toEnvironment input_var
   have hb15 : IsBool (eval env.toEnvironment input_var).tinf[15] := (hall.1 ⟨15, by norm_num⟩).1
-  refine ⟨fun k => ⟨lk_assumptions input_var env.toEnvironment hall k, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  all_goals sorry
+  have hlkA : ∀ k : Fin 64, VarLookup.circuit.Assumptions
+      (eval env.toEnvironment (lkInput input_var k)) :=
+    fun k => lk_assumptions input_var env.toEnvironment hall k
+  rcases hb15 with hsp0 | hsp1
+  · -- ordinary scalar
+    have hsp : Expression.eval env.toEnvironment (spE input_var) = 0 := by rw [hsp', hsp0]
+    have hni := hnoinf hsp0
+    have hsteps' : ∀ k : Fin 64, StepHyp input_var i₀ env.toEnvironment k :=
+      fun k => stepHyp_of_C input_var i₀ env.toEnvironment hall hni k (hsteps k)
+    have hinv := fold_inv input_var i₀ env.toEnvironment hall hsp hsteps'
+    have hacc : eval env.toEnvironment (accL input_var i₀ 64) =
+        { x := Vector.map (Expression.eval env.toEnvironment) (accL input_var i₀ 64).x,
+          y := Vector.map (Expression.eval env.toEnvironment) (accL input_var i₀ 64).y,
+          isInf := Expression.eval env.toEnvironment (accL input_var i₀ 64).isInf } := by
+      simp only [circuit_norm]
+    have hinv64 := hinv 64 le_rfl
+    rw [hacc] at hinv64
+    obtain ⟨⟨hib, hX, hY⟩, -, hd⟩ := hinv64
+    have hE : LazyChain.chainAcc (eval env.toEnvironment input_var) 64 =
+        decodePoint (GLVMSM.tableEntry (eval env.toEnvironment input_var) 15 (by norm_num)) :=
+      hchain hsp0
+    have hdec := hd.trans hE
+    simp only [Step.decodeL, GLVMSM.tableEntry, decodePoint, hsp0, zero_ne_one, ↓reduceIte] at hdec
+    have hi0 : Expression.eval env.toEnvironment (accL input_var i₀ 64).isInf = 0 := by
+      rcases hib with h | h
+      · exact h
+      · rw [if_pos h] at hdec; cases hdec
+    rw [if_neg (by rw [hi0]; exact zero_ne_one)] at hdec
+    simp only [GroupPoint.affine.injEq, Point.mk.injEq] at hdec
+    obtain ⟨hvx, hvy⟩ := hdec
+    have h15 := hall.1 ⟨15, by norm_num⟩
+    simp only [GLVMSM.tableEntry] at h15
+    have htx := tx15_eq env.toEnvironment input_var
+    have hty := ty15_eq env.toEnvironment input_var
+    have hCx : Canon (emuz (Vector.map (Expression.eval env.toEnvironment) input_var.tx[15])) := by
+      rw [htx]; exact canon_emuz h15.2.1.1
+    have hCy : Canon (emuz (Vector.map (Expression.eval env.toEnvironment) input_var.ty[15])) := by
+      rw [hty]; exact canon_emuz h15.2.2.1.1
+    rw [hsp] at hxl hxh hyl hyh
+    simp only [neg_zero, add_zero, one_mul] at hxl hxh hyl hyh
+    refine ⟨fun k => ⟨by simpa only [circuit_norm] using hlkA k, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · have hk := hinv k.val (by omega)
+      have hlks := (hsteps k).1 (hlkA k)
+      obtain ⟨hn, ht⟩ := lookup_value input_var env.toEnvironment k _ hlks
+      obtain ⟨htv, -⟩ := lookup_selected input_var env.toEnvironment hall k _ hlks
+      have hpa : Step.ProverAssumptions k.val (eval env.toEnvironment (stepIn input_var i₀ k)) := by
+        rw [stepIn_eval]
+        refine ⟨⟨hk.1, fun _ => hk.2.1, tValid_of_valid htv, Or.inl hsp⟩, fun _ => ?_⟩
+        show (eval env.toEnvironment (tVar i₀ k)).isInf = 0
+        rw [ht]; exact hni ⟨_, hn⟩
+      simpa only [stepIn, tVar, circuit_norm, Step.circuit] using hpa
+    · rw [hsp, hi0]; ring
+    · exact cert_diff_complete .rel1 env.toEnvironment (accL input_var i₀ 64).x input_var.tx[15] _ _
+        (rel1_of_xeq1 hX hCx) hxl hxh (by rw [htx]; exact hvx)
+    · exact cert_diff_complete .fin env.toEnvironment (accL input_var i₀ 64).y input_var.ty[15] _ _
+        (fin_of_ydiff hY hCy) hyl hyh (by rw [hty]; exact hvy)
+    all_goals rw [hsp, zero_mul]
+  · -- special scalar
+    have hsp : Expression.eval env.toEnvironment (spE input_var) = 1 := by rw [hsp', hsp1]
+    have hlv := lazyValid_fold input_var i₀ env.toEnvironment hall hsp hsteps
+    obtain ⟨hu0, hu1, hu2, hu3⟩ := hunit hsp1
+    have e0 : (eval env.toEnvironment input_var).m0 =
+        Vector.map (Expression.eval env.toEnvironment) input_var.m0 := by simp only [circuit_norm]
+    have e1 : (eval env.toEnvironment input_var).m1 =
+        Vector.map (Expression.eval env.toEnvironment) input_var.m1 := by simp only [circuit_norm]
+    have e2 : (eval env.toEnvironment input_var).m2 =
+        Vector.map (Expression.eval env.toEnvironment) input_var.m2 := by simp only [circuit_norm]
+    have e3 : (eval env.toEnvironment input_var).m3 =
+        Vector.map (Expression.eval env.toEnvironment) input_var.m3 := by simp only [circuit_norm]
+    rw [e0] at hu0; rw [e1] at hu1; rw [e2] at hu2; rw [e3] at hu3
+    rw [hsp] at hxl hxh hyl hyh
+    simp only [add_neg_cancel, zero_mul] at hxl hxh hyl hyh
+    refine ⟨fun k => ⟨by simpa only [circuit_norm] using hlkA k, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · have hlks := (hsteps k).1 (hlkA k)
+      obtain ⟨htv, -⟩ := lookup_selected input_var env.toEnvironment hall k _ hlks
+      have hpa : Step.ProverAssumptions k.val (eval env.toEnvironment (stepIn input_var i₀ k)) := by
+        rw [stepIn_eval]
+        exact ⟨⟨hlv k.val (by omega), fun h => absurd (h.symm.trans hsp) zero_ne_one,
+          tValid_of_valid htv, Or.inr hsp⟩, fun h => absurd (h.symm.trans hsp) zero_ne_one⟩
+      simpa only [stepIn, tVar, circuit_norm, Step.circuit] using hpa
+    · rw [hsp]; ring
+    · simp only [hxl, hxh]; exact cert_zero _
+    · simp only [hyl, hyh]; exact cert_zero _
+    · rw [hsp, one_mul]; exact defect_of_unitBits _ _ hu0
+    · rw [hsp, one_mul]; exact defect_of_unitBits _ _ hu1
+    · rw [hsp, one_mul]; exact defect_of_unitBits _ _ hu2
+    · rw [hsp, one_mul]; exact defect_of_unitBits _ _ hu3
 
 end Solution.Secp256k1ScalarMul.LazyMSM
