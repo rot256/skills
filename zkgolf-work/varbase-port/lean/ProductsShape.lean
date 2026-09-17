@@ -149,3 +149,4 @@ theorem affine_call_output (i : Var Inputs Field) (n : ℕ) :
   · exact Sparse32Mul.affine_outputExpr _ (affineW_mapRange_var _)
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Products
+

@@ -98,3 +98,32 @@ theorem affine_call_output (i : Var Inputs Field) (n : ℕ) :
   exact affineW_varFromOffset 8 n
 
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.MuxVec
+
+namespace Solution.Secp256k1ScalarMulFixedBase.LazyVar.MuxVec
+
+open SmallSquare Challenge.CostR1CS Cost
+
+set_option autoImplicit false
+
+attribute [local irreducible] isR1CSRow r1csProducts operationsIsR1CS flatOperationsIsR1CS
+
+theorem shape (i : Var Inputs Field) (hs : Affine i.sel) (hu : AffineW i.u) (hv : AffineW i.v) :
+    IsR1CSCirc (main i) := by
+  unfold main
+  refine IsR1CSCirc.bind_out (IsR1CSCirc.provableWitness _) fun k => ?_
+  have ho := affineW_provableWitness_bigInt (k := 8)
+    (fun env => if (eval env i).sel = 1 then (eval env i).v else (eval env i).u) k
+  refine IsR1CSCirc.bind ?_ fun _ => IsR1CSCirc.pure _
+  refine IsR1CSCirc.forEach_mem (α := Expression Field) fun j hj => ?_
+  refine IsR1CSCirc.assertZero ?_ hj
+  rw [Vector.getElem_ofFn]
+  exact CompactAdd.isR1CSRow_add_mul_sub (hu _ _) hs (Affine.sub (hv _ _) (hu _ _)) (ho _ _)
+
+theorem shape_call (i : Var Inputs Field) (hs : Affine i.sel) (hu : AffineW i.u)
+    (hv : AffineW i.v) : IsR1CSCirc (subcircuit circuit i) :=
+  IsR1CSCirc.subcircuit (fun n => shape i hs hu hv n)
+
+theorem localLength (i : Var Inputs Field) (n : ℕ) : (main i).localLength n = 8 := by
+  simp only [main, circuit_norm]
+
+end Solution.Secp256k1ScalarMulFixedBase.LazyVar.MuxVec

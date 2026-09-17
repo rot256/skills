@@ -112,7 +112,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     (hyo : IsBool zOut → yo = if zOut = 1 then zv else yv) :
     Spec n ⟨⟨ax, ay, aInf⟩, ⟨tx, ty, tInf⟩, sp⟩ ⟨xo, yo, zOut⟩ := by
   simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
-  obtain ⟨⟨hIb, hX, hY, hInfZ⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
+  obtain ⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
   have hcB : IsBool c := isBool_of_mul c hc
   have hzB : IsBool z := isBool_of_mul z hz
   have hrtB : IsBool rt := by rw [hrt]; exact isBool_mul' _ _ hIb hTb
@@ -136,7 +136,7 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
   have hyv' := hyv hIb
   have hxw' := hxw hcB
   have hyw' := hyw hcB
-  refine ⟨⟨hzoB, ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨⟨hzoB, ?_, ?_⟩, ?_⟩
   · -- XIn of the output x
     show XIn (zwords xo)
     rw [hxo']
@@ -161,11 +161,6 @@ theorem step_values (n : ℕ) (hn : n + 1 ≤ depth)
     split_ifs with h2
     · exact yIn_succ_of hY
     rw [hyPz]; exact yP_bounds hDa hDb hX hY hCx
-  · -- infinity output is the zero vector
-    intro h1
-    show zwords xo = _ ∧ zwords yo = _
-    rw [hxo', hyo', if_pos h1, if_pos h1]
-    exact ⟨hzvz, hzvz⟩
   · -- the group law
     intro hsp0
     replace hsp0 : sp = 0 := hsp0
@@ -315,7 +310,7 @@ theorem step_complete (n : ℕ) (hn : n + 1 ≤ depth)
       Certs.Spec ⟨a, b, ax, ay, tx, ty, p, g, c, z⟩) ∧
     IsBool c ∧ IsBool aInf ∧ IsBool (z + aInf * tInf + -(z * (aInf * tInf))) := by
   simp only [Assumptions, LazyValid, OnCurveLazy, TValid] at hA
-  obtain ⟨⟨hIb, hX, hY, hInfZ⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
+  obtain ⟨⟨hIb, hX, hY⟩, hOC, ⟨hTb, hTx, hTy, hTC⟩, hSp, hSpT⟩ := hA
   have hcB : IsBool c := by rw [hc]; exact cflagV_bool _
   have hzB : IsBool z := by rw [hz]; exact zflagV_bool _
   have hDa : Digits (digitsZ a) := digits_of_rep _ a ha

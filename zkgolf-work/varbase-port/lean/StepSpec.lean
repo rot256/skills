@@ -34,8 +34,7 @@ structure Inputs (F : Type) where
 deriving ProvableStruct
 
 def LazyValid (n : ℕ) (P : LazyPt Field) : Prop :=
-  IsBool P.isInf ∧ XIn (zwords P.x) ∧ YIn n (zwords P.y) ∧
-  (P.isInf = 1 → zwords P.x = (fun _ => 0) ∧ zwords P.y = (fun _ => 0))
+  IsBool P.isInf ∧ XIn (zwords P.x) ∧ YIn n (zwords P.y)
 
 def OnCurveLazy (P : LazyPt Field) : Prop :=
   P.isInf = 0 → valZ (zwords P.y) ^ 2 = valZ (zwords P.x) ^ 3 + 7
