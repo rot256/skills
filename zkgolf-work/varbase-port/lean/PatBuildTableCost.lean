@@ -99,14 +99,15 @@ lemma pack_eval_congr (raw : Var GLVBuildTable.RawTable CF) {e e' : PE}
     eval e (Pack.pack raw) = eval e' (Pack.pack raw) := by
   have hentry (i : Fin 16) :
       entry (eval e (Pack.pack raw)) i.val i.isLt = entry (eval e' (Pack.pack raw)) i.val i.isLt := by
-    have h1 := Pack.eval_pack_entry_whole e.toEnvironment raw i
-    have h2 := Pack.eval_pack_entry_whole e'.toEnvironment raw i
-    have h3 := rawEntry_eval e raw i
-    have h4 := rawEntry_eval e' raw i
-    simp only [circuit_norm] at h1 h2 h3 h4 ⊢
-    rw [h1, h2, h3, h4, h i]
+    calc entry (eval e (Pack.pack raw)) i.val i.isLt = rawEntry (eval e raw) i := by
+          simpa only [circuit_norm] using Pack.eval_pack_entry_whole e.toEnvironment raw i
+      _ = eval e (rawEntryV raw i) := rawEntry_eval e raw i
+      _ = eval e' (rawEntryV raw i) := h i
+      _ = rawEntry (eval e' raw) i := (rawEntry_eval e' raw i).symm
+      _ = entry (eval e' (Pack.pack raw)) i.val i.isLt := by
+          simpa only [circuit_norm] using (Pack.eval_pack_entry_whole e'.toEnvironment raw i).symm
   simp only [circuit_norm]
-  rw [Table.mk.injEq]
+  rw [GLVBuildTable.Table.mk.injEq]
   refine ⟨?_, ?_, ?_⟩
   · apply Vector.ext
     intro i hi
