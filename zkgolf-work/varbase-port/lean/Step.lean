@@ -86,19 +86,16 @@ theorem soundness (n : ℕ) (hn : n + 1 ≤ depth) :
     (hzv := eval_zeroVec env) (hxw := m1) (hxv := m2) (hxo := m3) (hyw := m4) (hyv := m5)
     (hyo := m6)
 
-end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+lemma witness_emu_eq (env : ProverEnvironment Field) (f : ℕ → ℕ) (w : Emu Field)
+    (h : ∀ i : Fin 4, env.get (f i.val) = w[i.val]) :
+    Vector.map (Expression.eval env.toEnvironment)
+      (Vector.mapRange 4 fun i => var { index := f i }) = w := by
+  apply Vector.ext
+  intro k hk
+  simp only [Vector.getElem_map, Vector.getElem_mapRange, Expression.eval, circuit_norm]
+  exact h ⟨k, hk⟩
 
-
-namespace Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
-open SmallSquare Sparse32 SparseX Challenge.CostR1CS Cost
-open Solution.Secp256k1ScalarMul.Lazy
-open Solution.Secp256k1ScalarMulFixedBase.LazyVar
-set_option autoImplicit false
-set_option maxHeartbeats 16000000
-set_option maxRecDepth 20000
-attribute [local irreducible] Sparse32Mul.outputExpr Sparse32Square.outputExpr
-
-theorem completeness_probe (n : ℕ) (hn : n + 1 ≤ depth) :
+theorem completeness (n : ℕ) (hn : n + 1 ≤ depth) :
     Completeness Field (main n hn) (Assumptions n) := by
   circuit_proof_start_core
   subst h_input
@@ -107,7 +104,41 @@ theorem completeness_probe (n : ℕ) (hn : n + 1 ≤ depth) :
     MulCell.circuit, MulCell.Assumptions, MulCell.Spec,
     Products.circuit, Products.Assumptions, Certs.circuit, MuxVec.circuit, MuxVec.Assumptions,
     MuxVec.Spec, circuit_norm, numLimbs, Nat.reduceAdd] at h_env h_assumptions ⊢
-  clear h_env h_assumptions
-  trace_state
-  sorry
+  obtain ⟨hlam1, hn1, hlam2, hn2, hfl, hg, hp, hrt, hzrt, m1, m2, m3, m4, m5, m6⟩ := h_env
+  have hl1 : Vector.map (Expression.eval env.toEnvironment)
+      (Vector.mapRange 4 fun i => var { index := i₀ + i }) = lam1W _ :=
+    witness_emu_eq env (fun i => i₀ + i) _ hlam1
+  have hl2 : Vector.map (Expression.eval env.toEnvironment)
+      (Vector.mapRange 4 fun i => var { index := i₀ + i + 256 }) = lam2W _ :=
+    witness_emu_eq env (fun i => i₀ + i + 256) _ hlam2
+  have hN1 : BigInt.Normalized 64 (Vector.map (Expression.eval env.toEnvironment)
+      (Vector.mapRange 4 fun i => var { index := i₀ + i })) := by
+    rw [hl1]; exact slopeWitness_normalized _
+  have hN2 : BigInt.Normalized 64 (Vector.map (Expression.eval env.toEnvironment)
+      (Vector.mapRange 4 fun i => var { index := i₀ + i + 256 })) := by
+    rw [hl2]; exact slopeWitness_normalized _
+  have ha := hn1 hN1
+  have hb := hn2 hN2
+  rw [hl1] at ha
+  rw [hl2] at hb
+  obtain ⟨e1, e2, e3, e4, e5, e6, ecert, b1, b2, b3⟩ :=
+    step_complete n hn (c := env.get (i₀ + 512)) (z := env.get (i₀ + 513))
+      (g := env.get (i₀ + 514)) (hA := h_assumptions) (ha := ha) (hb := hb)
+      (hc := by simpa [flagsW] using hfl 0) (hz := by simpa [flagsW] using hfl 1)
+      (hg := by linear_combination hg) (hp := hp)
+  refine ⟨hN1, hN2, by linear_combination e1, by linear_combination e2, e3, e4, e5,
+    by linear_combination e6, ecert, b1, b2, ?_, b1, b2, ?_⟩
+  · rw [hzrt, hrt]; exact b3
+  · rw [hzrt, hrt]; exact b3
+
+noncomputable def circuit (n : ℕ) (hn : n + 1 ≤ depth) : FormalCircuit Field Inputs LazyPt where
+  main := main n hn
+  elaborated := elaborated n hn
+  Assumptions := Assumptions n
+  Spec := Spec n
+  soundness := soundness n hn
+  completeness := completeness n hn
+
 end Solution.Secp256k1ScalarMulFixedBase.LazyVar.Step
+
+
