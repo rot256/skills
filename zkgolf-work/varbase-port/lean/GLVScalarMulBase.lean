@@ -5,7 +5,6 @@ import Solution.Secp256k1ScalarMul.CoeffWitness
 import Solution.Secp256k1ScalarMul.GLVScalarRelation
 import Solution.Secp256k1ScalarMul.GLVBuildTable
 import Solution.Secp256k1ScalarMul.GLVMSM
-import Solution.Secp256k1ScalarMul.GLVMSMCostCW
 import Solution.Secp256k1ScalarMul.Lazy.LazyBridge
 import Solution.Secp256k1ScalarMul.GLVVerifierTheorems
 import Solution.Secp256k1ScalarMul.OrderFactsCerts

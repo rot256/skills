@@ -2,7 +2,6 @@ import Solution.Secp256k1ScalarMul.GLVScalarMul
 import Solution.Secp256k1ScalarMul.GLVScalarRelationCW
 import Solution.Secp256k1ScalarMul.GLVBuildTableCostCW
 import Solution.Secp256k1ScalarMul.PointValidCost
-import Solution.Secp256k1ScalarMul.GLVMSMCostCW
 import Solution.Secp256k1ScalarMul.Lazy.PatBuildTableCost
 import Solution.Secp256k1ScalarMul.Lazy.LazyMSMShape
 import Challenge.Utils.ComputableWitnessLemmas

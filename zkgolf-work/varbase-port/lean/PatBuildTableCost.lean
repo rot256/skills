@@ -61,9 +61,11 @@ theorem isR1CS_main (input : VI)
   have hb2 : AffineFP ((subcircuit Prepare.circuit input).output nb).r2 := hb 2
   have hb3 : AffineFP ((subcircuit Prepare.circuit input).output nb).r3 := hb 3
   refine IsR1CSCirc.bind_out (isR1CS_sub_mux _ hb2.2.2 hz0 hb2.2.1.affineProvable) fun n2 => ?_
-  have hy2 := (affineProvable_sub_mux (M := Emu) (canonYInput _) n2).affineW
+  have hy2 := (affineProvable_sub_mux (M := Emu)
+    (canonYInput ((subcircuit Prepare.circuit input).output nb).r2) n2).affineW
   refine IsR1CSCirc.bind_out (isR1CS_sub_mux _ hb3.2.2 hz0 hb3.2.1.affineProvable) fun n3 => ?_
-  have hy3 := (affineProvable_sub_mux (M := Emu) (canonYInput _) n3).affineW
+  have hy3 := (affineProvable_sub_mux (M := Emu)
+    (canonYInput ((subcircuit Prepare.circuit input).output nb).r3) n3).affineW
   refine IsR1CSCirc.bind_out (PatTable.isR1CS_call _ (affineBases_canon _ _ _ hb hy2 hy3)) fun _ => ?_
   exact IsR1CSCirc.pure _
 
@@ -88,14 +90,21 @@ theorem affineTable_call (input : VI) (n : ℕ) (hP : AffineFP input.P) (hQ : Af
 
 /-! ### Output stability -/
 
-lemma pack_eval_congr (raw : Var RawTable CF) {e e' : PE} (h : eval e raw = eval e' raw) :
+lemma rawEntry_eval (e : PE) (t : Var GLVBuildTable.RawTable CF) (i : Fin 16) :
+    rawEntry (eval e t) i = eval e (rawEntryV t i) := by
+  fin_cases i <;> simp only [rawEntry, rawEntryV, circuit_norm]
+
+lemma pack_eval_congr (raw : Var GLVBuildTable.RawTable CF) {e e' : PE}
+    (h : ∀ i : Fin 16, eval e (rawEntryV raw i) = eval e' (rawEntryV raw i)) :
     eval e (Pack.pack raw) = eval e' (Pack.pack raw) := by
   have hentry (i : Fin 16) :
       entry (eval e (Pack.pack raw)) i.val i.isLt = entry (eval e' (Pack.pack raw)) i.val i.isLt := by
     have h1 := Pack.eval_pack_entry_whole e.toEnvironment raw i
     have h2 := Pack.eval_pack_entry_whole e'.toEnvironment raw i
-    simp only [circuit_norm] at h1 h2 h ⊢
-    rw [h1, h2, h]
+    have h3 := rawEntry_eval e raw i
+    have h4 := rawEntry_eval e' raw i
+    simp only [circuit_norm] at h1 h2 h3 h4 ⊢
+    rw [h1, h2, h3, h4, h i]
   simp only [circuit_norm]
   rw [Table.mk.injEq]
   refine ⟨?_, ?_, ?_⟩
@@ -157,19 +166,19 @@ theorem structuralComputableWitnesses (offset : ℕ) (input : VI) (env env' : PE
   · refine FormalCircuit.subcircuit_flatStructuralComputableWitnesses_of_condition
       (Parent := Inputs) (Mux.circuit (M := Emu)) _ _ _ ?_ (Mux.computableWitnesses (M := Emu)) env env'
     intro k e e' hle h_agree h_in
-    have hb := prepare_subOutput_of_agreesBelow input h_in h_agree (by omega)
-    obtain ⟨hx, hy, hi⟩ := PatTable.point_parts _ (congrArg Bases.r2 hb)
+    have hb := prepare_subOutput_of_agreesBelow input (offset := offset) h_in h_agree (by omega)
+    obtain ⟨hx, hy, hi⟩ := PatTable.point_parts _ (PatTable.bases_parts _ hb).2.2.1
     exact PatTable.cond_muxEmu _ _ _ hi PatTable.zeroConst_emu_stable hy
   · refine FormalCircuit.subcircuit_flatStructuralComputableWitnesses_of_condition
       (Parent := Inputs) (Mux.circuit (M := Emu)) _ _ _ ?_ (Mux.computableWitnesses (M := Emu)) env env'
     intro k e e' hle h_agree h_in
-    have hb := prepare_subOutput_of_agreesBelow input h_in h_agree (by omega)
-    obtain ⟨hx, hy, hi⟩ := PatTable.point_parts _ (congrArg Bases.r3 hb)
+    have hb := prepare_subOutput_of_agreesBelow input (offset := offset) h_in h_agree (by omega)
+    obtain ⟨hx, hy, hi⟩ := PatTable.point_parts _ (PatTable.bases_parts _ hb).2.2.2
     exact PatTable.cond_muxEmu _ _ _ hi PatTable.zeroConst_emu_stable hy
   · refine FormalCircuit.subcircuit_flatStructuralComputableWitnesses_of_condition
       (Parent := Inputs) PatTable.circuit _ _ _ ?_ PatTable.computableWitnesses env env'
     intro k e e' hle h_agree h_in
-    have hb := prepare_subOutput_of_agreesBelow input h_in h_agree (by omega)
+    have hb := prepare_subOutput_of_agreesBelow input (offset := offset) h_in h_agree (by omega)
     exact canonBases_stable _ _ _ hb
       (PatTable.muxEmu_output_stable _ h_agree (by omega))
       (PatTable.muxEmu_output_stable _ h_agree (by omega))

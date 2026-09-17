@@ -196,18 +196,84 @@ theorem isR1CS_call (b : Var Bases (F circomPrime)) (hb : ∀ i : Fin 4, AffineF
     IsR1CSCirc (subcircuit circuit b) :=
   IsR1CSCirc.subcircuit fun n => isR1CS_main b hb n
 
-/-- Every raw entry of the output is an affine point. -/
-theorem affine_output (b : Var Bases (F circomPrime)) (hb : ∀ i : Fin 4, AffineFP (baseEntryV b i))
-    (n : ℕ) : ∀ i : Fin 16, AffineFP (rawEntryV ((main b).output n) i) := by
+/-- Output invariants along a circuit, without computing the output. -/
+def OutInv {α : Type} (P : α → Prop) (c : Circuit (F circomPrime) α) : Prop := ∀ n, P (c.output n)
+
+lemma OutInv.bind {α β : Type} {P : α → Prop} {Q : β → Prop} {f : Circuit (F circomPrime) α}
+    {g : α → Circuit (F circomPrime) β} (hf : OutInv P f) (hg : ∀ a, P a → OutInv Q (g a)) :
+    OutInv Q (f >>= g) := fun n => by
+  rw [Circuit.bind_output_eq]
+  exact hg _ (hf n) _
+
+lemma OutInv.pure {α : Type} {P : α → Prop} {a : α} (h : P a) :
+    OutInv P (pure a : Circuit (F circomPrime) α) := fun n => by
+  rw [Circuit.pure_output_eq]
+  exact h
+
+theorem affine_output_inv (b : Var Bases (F circomPrime)) (hb : ∀ i : Fin 4, AffineFP (baseEntryV b i)) :
+    OutInv (fun t => ∀ i : Fin 16, AffineFP (rawEntryV t i)) (main b) := by
   obtain ⟨h0, h1, h2, h3⟩ := affineFP_bases b hb
-  simp only [main, negCanon, Circuit.bind_output_eq, Circuit.pure_output_eq]
+  unfold main
+  refine OutInv.bind (P := AffineW) (fun n => negY_affineW_sub _ h1 n) fun nr1y hn1 => ?_
+  refine OutInv.bind (P := AffineW) (fun n => negY_affineW_sub _ h3 n) fun nr3y hn3 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_phiPairAdd _ n h0) fun up hup => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_phiPairAdd _ n h0) fun um hum => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_phiPairAdd _ n h2) fun vp hvp => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_phiPairAdd _ n h2) fun vm hvm => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ hvp n) fun vpp hvpp => ?_
+  obtain ⟨hvp', hnvp⟩ := hvpp
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ hvm n) fun vmp hvmp => ?_
+  obtain ⟨hvm', hnvm⟩ := hvmp
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e15 h15 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e7 h7 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e11 h11 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e3 h3' => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e13 h13 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e5 h5 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e9 h9 => ?_
+  refine OutInv.bind (P := AffineFP) (fun n => affineFP_sub_completeAdd _ n) fun e1 h1' => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h15 n) fun p0 hp0 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h7 n) fun p8 hp8 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h11 n) fun p4 hp4 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h3' n) fun p12 hp12 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h13 n) fun p2 hp2 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h5 n) fun p10 hp10 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h9 n) fun p6 hp6 => ?_
+  refine OutInv.bind (P := fun p : VP × VP => AffineFP p.1 ∧ AffineFP p.2)
+    (fun n => affineFP_negCanon _ h1' n) fun p14 hp14 => ?_
+  apply OutInv.pure
   intro i
   fin_cases i <;> simp only [rawEntryV]
-  all_goals first
-    | exact affineFP_sub_completeAdd _ _
-    | exact affineFP_withXY _ _ _ (affineFP_sub_completeAdd _ _) (affineProvable_sub_mux _ _).affineW
-        (negY_affineW_sub _ (affineFP_withXY _ _ _ (affineFP_sub_completeAdd _ _)
-          (affineProvable_sub_mux _ _).affineW (affineProvable_sub_mux _ _).affineW) _)
+  · exact hp0.2
+  · exact h1'
+  · exact hp2.2
+  · exact h3'
+  · exact hp4.2
+  · exact h5
+  · exact hp6.2
+  · exact h7
+  · exact hp8.2
+  · exact h9
+  · exact hp10.2
+  · exact h11
+  · exact hp12.2
+  · exact h13
+  · exact hp14.2
+  · exact h15
+
+/-- Every raw entry of the output is an affine point. -/
+theorem affine_output (b : Var Bases (F circomPrime)) (hb : ∀ i : Fin 4, AffineFP (baseEntryV b i))
+    (n : ℕ) : ∀ i : Fin 16, AffineFP (rawEntryV ((main b).output n) i) :=
+  affine_output_inv b hb n
 
 theorem affine_call_output (b : Var Bases (F circomPrime))
     (hb : ∀ i : Fin 4, AffineFP (baseEntryV b i)) (n : ℕ) :
