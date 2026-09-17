@@ -27,7 +27,7 @@ def cornerHi (a₁ a₂ x₁ x₂ : ℤ) : ℤ :=
 
 private lemma min_mul_le {a x₁ x₂ : ℤ} (hx : x₁ ≤ x₂) (x : ℤ) (h : x₁ ≤ x ∧ x ≤ x₂) :
     min (a*x₁) (a*x₂) ≤ a*x ∧ a*x ≤ max (a*x₁) (a*x₂) := by
-  rcases le_or_lt 0 a with ha | ha
+  rcases le_or_gt 0 a with ha | ha
   · exact ⟨(min_le_left _ _).trans (mul_le_mul_of_nonneg_left h.1 ha),
       (mul_le_mul_of_nonneg_left h.2 ha).trans (le_max_right _ _)⟩
   · exact ⟨(min_le_right _ _).trans (mul_le_mul_of_nonpos_left h.2 ha.le),
