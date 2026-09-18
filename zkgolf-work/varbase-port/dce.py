@@ -109,6 +109,12 @@ os.makedirs(OUT)
 deleted = set()
 imports_of = {}
 stats = []
+deleted_last_all = set()
+for f in files:
+    for (s0, e0), ns in names.get(f, {}).items():
+        if (s0, e0) in keepr.get(f, set()): continue
+        for nm in ns:
+            deleted_last_all.add(real_name(nm).split(".")[-1])
 for f in sorted(files):
     src = open(os.path.join(SRC, f + ".lean")).read().split("\n")
     imports_of[f] = [re.match(r"import " + re.escape(ROOT) + r"(\S+)", l).group(1)
@@ -154,7 +160,8 @@ for f in sorted(files):
             i = j; continue
         i += 1
     # `open X (a b ...)` selective opens (possibly spanning lines) may name deleted
-    # declarations: widen them to `open X`
+    # declarations: drop those names (keeping the list selective, since widening
+    # changes name resolution inside proofs)
     i = 1
     while i <= n:
         m = re.match(r"^(\s*open\s+[\w.]+(?:\s+[\w.]+)*)\s*\(", src[i - 1])
@@ -162,11 +169,30 @@ for f in sorted(files):
             j = i
             while j <= n and ")" not in src[j - 1]:
                 j += 1
-            src[i - 1] = m.group(1)
+            text = "\n".join(src[i - 1:j])
+            inner = text[text.index("(") + 1:text.rindex(")")]
+            ids = [x for x in inner.split() if x.split(".")[-1] not in deleted_last_all]
+            src[i - 1] = m.group(1) + ((" (" + " ".join(ids) + ")") if ids else "")
             for q in range(i + 1, j + 1):
                 mask[q] = False
             i = j + 1; continue
         i += 1
+    # `attribute [...] a b c` lines naming deleted declarations of this module
+    deleted_last = set()
+    for (s0, e0), ns in names.get(f, {}).items():
+        if (s0, e0) in keep: continue
+        for nm in ns:
+            deleted_last.add(real_name(nm).split(".")[-1])
+    for i in range(1, n + 1):
+        if not mask[i]: continue
+        m = re.match(r"^(\s*attribute\s*\[[^\]]*\]\s*)(.*?)(\s+in)?\s*$", src[i - 1])
+        if m:
+            ids = m.group(2).split()
+            kept_ids = [x for x in ids if x.split(".")[-1] not in deleted_last]
+            if not kept_ids:
+                mask[i] = False
+            elif len(kept_ids) != len(ids):
+                src[i - 1] = m.group(1) + " ".join(kept_ids) + (m.group(3) or "")
     # dangling `... in` prefixes and orphan doc comments above deleted blocks
     i = 1
     while i <= n:
