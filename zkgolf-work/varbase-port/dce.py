@@ -246,8 +246,13 @@ for f in sorted(files):
             if trailing_in:
                 text = text.rstrip()[:-2].rstrip() if text.strip() != "in" else ""
             ids = text.split()
-            kept_ids = [x for x in ids if not (x.split(".")[-1] in deleted_last or
-                        (x.split(".")[-1] in deleted_last_g and x.split(".")[-1] not in kept_last_g))]
+            def dead(x):
+                parts = x.split(".")
+                if len(parts) >= 2:
+                    q = ".".join(parts[-2:])
+                    return q in deleted_q2 and q not in kept_q2
+                return parts[-1] in deleted_last or (parts[-1] in deleted_last_g and parts[-1] not in kept_last_g)
+            kept_ids = [x for x in ids if not dead(x)]
             if not kept_ids:
                 for q in range(i, j + 1): mask[q] = False
             else:
