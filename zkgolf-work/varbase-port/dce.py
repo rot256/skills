@@ -89,8 +89,8 @@ for _round in range(4):
                 if rfl_body and size <= 3 and (last in kept_tokens_mod.get(f, set()) or
                         (last in kept_last_tokens_all and last_count.get(last, 0) == 1)):
                     hit = True; break   # rule A: reference to a rfl helper (anywhere, if the name is unique)
-                # (a qualified-reference rule was tried here and dropped: it kept tiny accessors
-                # whose dependency closure is enormous, e.g. the fixed-base table data)
+                if rfl_body and size <= 3 and len(parts) >= 2 and ".".join(parts[-2:]) in kept_tokens_all:
+                    hit = True; break   # rule B: qualified reference anywhere to a rfl helper
             if hit:
                 keepr.setdefault(f, set()).add(r); added += 1
     print(f"textual keep round {_round}: +{added} declarations")
