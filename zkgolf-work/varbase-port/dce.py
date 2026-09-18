@@ -148,6 +148,18 @@ for f in sorted(files):
     for (s, e) in keep:
         for i in range(s, e + 1):
             mask[i] = True
+    # `mutual ... end` blocks live or die together
+    i = 1
+    while i <= n:
+        if re.match(r"^mutual\b", src[i - 1]):
+            j = i + 1
+            while j <= n and not re.match(r"^end\b", src[j - 1]):
+                j += 1
+            if any(mask[q] for q in range(i + 1, j)):
+                for q in range(i, min(j, n) + 1):
+                    mask[q] = True
+            i = j + 1; continue
+        i += 1
     # notation-like commands (their auxiliary constants are never referenced by terms)
     for (s, e) in allr.get(f, set()):
         first = next((src[i - 1] for i in range(s, e + 1) if src[i - 1].strip()), "")
