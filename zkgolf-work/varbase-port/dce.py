@@ -44,7 +44,7 @@ def real_name(n):
 TOK = re.compile(r"[A-Za-z_][\w'!?₀-₉.]*")
 srcs = {f[:-5]: open(os.path.join(SRC, f)).read().split("\n") for f in os.listdir(SRC) if f.endswith(".lean")}
 for _round in range(4):
-    kept_tokens_mod, kept_tokens_all = {}, set()
+    kept_tokens_mod, kept_tokens_all, kept_last_tokens_all = {}, set(), set()
     for f, src in srcs.items():
         keep = keepr.get(f, set())
         dele = set()
@@ -61,6 +61,7 @@ for _round in range(4):
                         toks.add(".".join(parts[j:]))
         kept_tokens_mod[f] = toks
         kept_tokens_all |= {t for t in toks if "." in t}
+        kept_last_tokens_all |= {t.split(".")[-1] for t in toks}
     added = 0
     for f in srcs:
         for r, ns in names.get(f, {}).items():
@@ -79,8 +80,8 @@ for _round in range(4):
                 parts = n.split(".")
                 last = parts[-1]
                 if last.startswith("_") or last in ("mk", "rec", "recOn", "casesOn", "noConfusion", "injEq", "sizeOf_spec"): continue
-                if rfl_body and size <= 3 and last in kept_tokens_mod.get(f, set()):
-                    hit = True; break   # rule A: same-module reference to a rfl helper
+                if rfl_body and size <= 3 and (last in kept_tokens_mod.get(f, set()) or last in kept_last_tokens_all):
+                    hit = True; break   # rule A: reference (anywhere) to a rfl helper
                 if len(parts) >= 2 and ".".join(parts[-2:]) in kept_tokens_all:
                     hit = True; break   # rule B: qualified reference anywhere
             if hit:
