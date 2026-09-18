@@ -8,6 +8,10 @@ namespace Solution.Secp256k1ScalarMul
 
 open Challenge.Instances.Secp256k1ScalarMul
 
+-- The comparator requires the exact public field-instance constant in root types
+-- (the bundled fixed-base donor declares a priority-2000 `Fact` instance).
+attribute [local instance 3000] Interface.instFactPrimeCircomPrime
+
 def packCoord (v : Vector (Expression (F Interface.circomPrime)) Interface.coordBytes) :
     Var Emu (F Interface.circomPrime) :=
   Vector.ofFn fun k : Fin numLimbs =>

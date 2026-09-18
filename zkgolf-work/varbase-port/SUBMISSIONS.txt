@@ -1,2 +1,3 @@
-9a4b1337-bed8-4aa9-a0ff-cdb89b2052ec  2026-09-18  varbase lazy chain  122710/123688 = 246398  (pending)
-94bbfb27-c09d-46a3-b791-24dadc619946  2026-09-18  varbase lazy chain + quadratic fusion  121558/122536 = 244094  (pending)
+9a4b1337-bed8-4aa9-a0ff-cdb89b2052ec  2026-09-18  varbase lazy chain  122710/123688 = 246398  FAILED: comparator (statement used fixed-base donor Fact instance)
+94bbfb27-c09d-46a3-b791-24dadc619946  2026-09-18  varbase lazy chain + quadratic fusion  121558/122536 = 244094  (same instance bug, expected to fail)
+0a754ef8-6c6c-4bb4-ad2a-845082ee56c1  2026-09-18  fused version, Interface Fact instance pinned in Main (statements verified identical to template)  121558/122536 = 244094  (pending)
