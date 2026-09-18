@@ -192,7 +192,10 @@ for f in sorted(files):
             ns_last = m.group(1).split()[-1].split(".")[-1]
             ids = [x for x in inner.split()
                    if not (ns_last + "." + x in deleted_q2 and ns_last + "." + x not in kept_q2)]
-            src[i - 1] = m.group(1) + ((" (" + " ".join(ids) + ")") if ids else "")
+            if ids:
+                src[i - 1] = m.group(1) + " (" + " ".join(ids) + ")"
+            else:
+                mask[i] = False
             for q in range(i + 1, j + 1):
                 mask[q] = False
             i = j + 1; continue
