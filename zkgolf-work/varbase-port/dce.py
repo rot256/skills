@@ -140,6 +140,12 @@ for f in sorted(files):
     for (s, e) in keep:
         for i in range(s, e + 1):
             mask[i] = True
+    # notation-like commands (their auxiliary constants are never referenced by terms)
+    for (s, e) in allr.get(f, set()):
+        first = next((src[i - 1] for i in range(s, e + 1) if src[i - 1].strip()), "")
+        if re.match(r"^\s*(@\[[^\]]*\]\s*)?((local|scoped)\s+)?(notation|macro|syntax|macro_rules|elab|elab_rules|infix|infixl|infixr|prefix|postfix|binder_predicate|declare_syntax_cat)\b", first):
+            for i in range(s, e + 1):
+                mask[i] = True
     # a deleted declaration's range may stop at its header line (structure fields,
     # `where` bodies): also delete the indented continuation lines and a trailing `deriving`
     i = 1
