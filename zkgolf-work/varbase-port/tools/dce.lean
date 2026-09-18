@@ -1,32 +1,29 @@
 import Solution.Secp256k1ScalarMul.Main
 open Lean
 
--- Emit, for every Solution module, the source ranges of all declarations (ALL) and of the
--- declarations reached by the constant closure of the exported theorems (KEEP).
+/-!
+Declaration-granularity closure of the exported theorems.
+
+Every constant of a Solution module is attributed to a source declaration range
+(its own, or that of the nearest prefix name living in the same module).  When a
+constant is reached, the whole declaration is kept and all constants attributed to
+that declaration are explored as well, so auxiliary proofs, match auxiliaries and
+structure fields never leave dangling references.
+-/
+
 run_meta do
   let env ← getEnv
   let roots : List Name := [``Solution.Secp256k1ScalarMul.soundness, ``Solution.Secp256k1ScalarMul.completeness,
     ``Solution.Secp256k1ScalarMul.mainCost, ``Solution.Secp256k1ScalarMul.isR1CS,
     ``Solution.Secp256k1ScalarMul.computableWitness]
-  let mut seen : NameSet := {}
-  let mut stack : List Name := roots
-  while !stack.isEmpty do
-    let n := stack.head!
-    stack := stack.tail!
-    if seen.contains n then continue
-    seen := seen.insert n
-    if let some ci := env.find? n then
-      for d in ci.getUsedConstantsAsSet do
-        if !seen.contains d then stack := d :: stack
-  let mut out : Array String := #[]
+  -- attribute constants to ranges
+  let mut rangeOf : Std.HashMap Name (Name × Nat × Nat) := {}
+  let mut members : Std.HashMap (Name × Nat × Nat) (Array Name) := {}
+  let mut allRanges : Std.HashMap Name (Std.HashSet (Nat × Nat)) := {}
+  let mut noRange : Array (Name × Name) := #[]
   for m in env.header.moduleNames, idx in [0:env.header.moduleNames.size] do
     if !(`Solution).isPrefixOf m then continue
-    let names := env.header.moduleData[idx]!.constNames
-    let mut allR : Std.HashSet (Nat × Nat) := {}
-    let mut keepR : Std.HashSet (Nat × Nat) := {}
-    let mut noRange : Array Name := #[]
-    for c in names do
-      -- find a range for c or one of its prefixes, provided that name lives in this module
+    for c in env.header.moduleData[idx]!.constNames do
       let mut cand := c
       let mut found : Option DeclarationRanges := none
       while cand != .anonymous do
@@ -37,18 +34,44 @@ run_meta do
         cand := cand.getPrefix
       match found with
       | some r =>
-        let key := (r.range.pos.line, r.range.endPos.line)
-        allR := allR.insert key
-        if seen.contains c then keepR := keepR.insert key
-      | none =>
-        if seen.contains c then noRange := noRange.push c
-    for (s, e) in allR.toList do
+        let key := (m, r.range.pos.line, r.range.endPos.line)
+        rangeOf := rangeOf.insert c key
+        members := members.insert key ((members.getD key #[]).push c)
+        allRanges := allRanges.insert m ((allRanges.getD m {}).insert (key.2.1, key.2.2))
+      | none => noRange := noRange.push (m, c)
+  -- closure
+  let mut seen : NameSet := {}
+  let mut keptKeys : Std.HashSet (Name × Nat × Nat) := {}
+  let mut stack : List Name := roots
+  while !stack.isEmpty do
+    let n := stack.head!
+    stack := stack.tail!
+    if seen.contains n then continue
+    seen := seen.insert n
+    if let some key := rangeOf[n]? then
+      if !keptKeys.contains key then
+        keptKeys := keptKeys.insert key
+        for c in members.getD key #[] do
+          if !seen.contains c then stack := c :: stack
+    if let some ci := env.find? n then
+      for d in ci.getUsedConstantsAsSet do
+        if !seen.contains d then stack := d :: stack
+  let mut out : Array String := #[]
+  for (m, rs) in allRanges.toList do
+    let mut keep := 0
+    for (s, e) in rs.toList do
       out := out.push s!"ALL {m} {s} {e}"
-    for (s, e) in keepR.toList do
-      out := out.push s!"KEEP {m} {s} {e}"
-    for c in noRange do
-      out := out.push s!"NORANGE {m} {c}"
-    out := out.push s!"SUMMARY {m} all={allR.size} keep={keepR.size} consts={names.size}"
-  let h ← IO.FS.Handle.mk "/tmp/claude-0/-home-user-skills/4fcfa319-a98c-5fdf-89f7-44b7afe6a05b/scratchpad/dce_ranges.txt" .write
+      let mem := (members.getD (m, s, e) #[]).toList.map (fun n => n.toString) |>.take 40
+      out := out.push s!"NAMES {m} {s} {e} {String.intercalate " " mem}"
+      if keptKeys.contains (m, s, e) then
+        out := out.push s!"KEEP {m} {s} {e}"
+        keep := keep + 1
+    out := out.push s!"SUMMARY {m} all={rs.size} keep={keep}"
+  for m in env.header.moduleNames do
+    if (`Solution).isPrefixOf m && !allRanges.contains m then
+      out := out.push s!"SUMMARY {m} all=0 keep=0"
+  for (m, c) in noRange do
+    if seen.contains c then out := out.push s!"NORANGE {m} {c}"
+  let h ← IO.FS.Handle.mk "dce_ranges.txt" .write
   for l in out do h.putStrLn l
-  logInfo m!"closure {seen.size}; wrote {out.size} lines"
+  logInfo m!"closure {seen.size} constants, {keptKeys.size} declarations; wrote {out.size} lines to dce_ranges.txt"

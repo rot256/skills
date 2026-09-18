@@ -17,14 +17,70 @@ def flat(mod):
     x = mod[len(ROOT):]
     return x.replace(".", "_") if not x.startswith("Lazy_Donor") else x
 
-allr, keepr, mods = {}, {}, set()
+allr, keepr, mods, names = {}, {}, set(), {}
 for line in open(RANGES):
     p = line.split()
     if p[0] in ("ALL", "KEEP"):
         m = flat(p[1]); mods.add(m)
         (allr if p[0] == "ALL" else keepr).setdefault(m, set()).add((int(p[2]), int(p[3])))
+    elif p[0] == "NAMES":
+        m = flat(p[1])
+        names.setdefault(m, {})[(int(p[2]), int(p[3]))] = p[4:]
     elif p[0] == "SUMMARY":
         mods.add(flat(p[1]))
+
+def real_name(n):
+    # strip private-name mangling `_private.<mod>.0.<name>`
+    if n.startswith("_private."):
+        i = n.find(".0.")
+        if i >= 0: n = n[i + 3:]
+    return n
+
+# Textual keep rule: a declaration whose (last-component or `A.b`) name occurs as an
+# identifier token in a kept line of the same module (or, qualified, anywhere) is kept
+# even if no proof term mentions it (rfl lemmas used by dsimp, `rw [X.def]` unfolds).
+TOK = re.compile(r"[A-Za-z_][\w'!?₀-₉.]*")
+srcs = {f[:-5]: open(os.path.join(SRC, f)).read().split("\n") for f in os.listdir(SRC) if f.endswith(".lean")}
+for _round in range(4):
+    kept_tokens_mod, kept_tokens_all = {}, set()
+    for f, src in srcs.items():
+        keep = keepr.get(f, set())
+        dele = set()
+        for (s, e) in allr.get(f, set()):
+            if (s, e) not in keep: dele.update(range(s, e + 1))
+        toks = set()
+        for i, l in enumerate(src, 1):
+            if i in dele or l.startswith("import "): continue
+            for t in TOK.findall(l):
+                toks.add(t)
+                if "." in t:
+                    parts = t.split(".")
+                    for j in range(len(parts)):
+                        toks.add(".".join(parts[j:]))
+        kept_tokens_mod[f] = toks
+        kept_tokens_all |= {t for t in toks if "." in t}
+    added = 0
+    for f in srcs:
+        for r, ns in names.get(f, {}).items():
+            if r in keepr.get(f, set()): continue
+            if r[1] - r[0] > 3: continue   # only small helpers (rfl lemmas, abbrevs)
+            body = "\n".join(srcs[f][r[0] - 1:r[1]])
+            if not re.search(r":=\s*(by\s+)?rfl\b|^\s*(@\[[^\]]*\]\s*)?(private\s+|protected\s+)?(abbrev|notation|macro)\b", body, re.M):
+                continue
+            hit = False
+            for n in ns:
+                n = real_name(n)
+                parts = n.split(".")
+                last = parts[-1]
+                if last.startswith("_") or last in ("mk", "rec", "recOn", "casesOn", "noConfusion", "injEq", "sizeOf_spec"): continue
+                if last in kept_tokens_mod.get(f, set()):
+                    hit = True; break
+                if len(parts) >= 2 and ".".join(parts[-2:]) in kept_tokens_all:
+                    hit = True; break
+            if hit:
+                keepr.setdefault(f, set()).add(r); added += 1
+    print(f"textual keep round {_round}: +{added} declarations")
+    if added == 0: break
 
 files = {f[:-5] for f in os.listdir(SRC) if f.endswith(".lean")}
 shutil.rmtree(OUT, ignore_errors=True)
@@ -51,6 +107,46 @@ for f in sorted(files):
     for (s, e) in keep:
         for i in range(s, e + 1):
             mask[i] = True
+    # a deleted declaration's range may stop at its header line (structure fields,
+    # `where` bodies): also delete the indented continuation lines and a trailing `deriving`
+    i = 1
+    while i <= n:
+        if not mask[i] and (i == n or mask[i + 1]):
+            j = i + 1
+            while j <= n and (src[j - 1].strip() == "" or src[j - 1][0] in " \t" or src[j - 1].startswith("deriving ")):
+                if src[j - 1].strip() != "":
+                    mask[j] = False
+                j += 1
+            i = j; continue
+        i += 1
+    # stray commands that may mention deleted names: `#print`/`#eval`/`#check`/`#guard`
+    # lines, and `example` blocks (an example extends over the following indented lines)
+    i = 1
+    while i <= n:
+        t = src[i - 1]
+        if re.match(r"#(print|eval|check|guard|reduce|synth)\b", t):
+            mask[i] = False
+        elif re.match(r"(private |protected |noncomputable )*example\b", t):
+            mask[i] = False
+            j = i + 1
+            while j <= n and (src[j - 1].strip() == "" or src[j - 1][0] in " \t"):
+                mask[j] = False; j += 1
+            i = j; continue
+        i += 1
+    # `open X (a b ...)` selective opens (possibly spanning lines) may name deleted
+    # declarations: widen them to `open X`
+    i = 1
+    while i <= n:
+        m = re.match(r"^(\s*open\s+[\w.]+(?:\s+[\w.]+)*)\s*\(", src[i - 1])
+        if m and mask[i]:
+            j = i
+            while j <= n and ")" not in src[j - 1]:
+                j += 1
+            src[i - 1] = m.group(1)
+            for q in range(i + 1, j + 1):
+                mask[q] = False
+            i = j + 1; continue
+        i += 1
     # dangling `... in` prefixes and orphan doc comments above deleted blocks
     i = 1
     while i <= n:
