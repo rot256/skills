@@ -14,7 +14,7 @@ import os, re, sys
 LOG, PKG = sys.argv[1], sys.argv[2]
 errs = []
 for l in open(LOG, errors="replace"):
-    m = re.match(r"error: Solution/Secp256k1ScalarMul/(\S+?)\.lean:(\d+):(\d+): (?:error\(lean\.unknownIdentifier\): )?Unknown identifier `([^`]+)`", l)
+    m = re.match(r"error: Solution/Secp256k1ScalarMul/(\S+?)\.lean:(\d+):(\d+): (?:error\([\w.]+\): )?Unknown (?:identifier|constant) `([^`]+)`", l)
     if m:
         errs.append((m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)))
 fixed = 0
@@ -24,6 +24,19 @@ for f, line, col, ident in errs:
     if line - 1 >= len(src):
         continue
     t = src[line - 1]
+    # `attribute [...] a b c` lines: drop the offending name (by last component)
+    if re.match(r"^\s*attribute\s*\[", t):
+        last = ident.split(".")[-1]
+        toks = t.split()
+        head = re.match(r"^(\s*attribute\s*\[[^\]]*\]\s*)", t).group(1)
+        rest = t[len(head):].split()
+        keep = [x for x in rest if x.split(".")[-1] != last]
+        if len(keep) != len(rest):
+            src[line - 1] = (head + " ".join(keep)) if keep else ""
+            open(p, "w").write("\n".join(src))
+            fixed += 1
+            print(f"fixed {f}:{line} removed {ident} from attribute")
+        continue
     # the identifier must sit inside a bracket list on this line (or a continuation line)
     before = t[:col]
     if "[" not in before and not re.match(r"^\s+[\w.'!?]+\s*[,\]]", t):
