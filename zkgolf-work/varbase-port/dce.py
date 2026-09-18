@@ -110,12 +110,18 @@ deleted = set()
 imports_of = {}
 stats = []
 deleted_q2, kept_q2 = set(), set()
+deleted_last_g, kept_last_g = set(), set()
+deleted_ns, kept_ns = set(), set()
 for f in files:
     for (s0, e0), ns in names.get(f, {}).items():
-        tgt = kept_q2 if (s0, e0) in keepr.get(f, set()) else deleted_q2
+        kept_here = (s0, e0) in keepr.get(f, set())
+        tgt = kept_q2 if kept_here else deleted_q2
         for nm in ns:
             parts = real_name(nm).split(".")
             if len(parts) >= 2: tgt.add(".".join(parts[-2:]))
+            (kept_last_g if kept_here else deleted_last_g).add(parts[-1])
+            for j in range(1, len(parts)):
+                (kept_ns if kept_here else deleted_ns).add(parts[j - 1])
 for f in sorted(files):
     src = open(os.path.join(SRC, f + ".lean")).read().split("\n")
     imports_of[f] = [re.match(r"import " + re.escape(ROOT) + r"(\S+)", l).group(1)
@@ -160,6 +166,17 @@ for f in sorted(files):
                 mask[j] = False; j += 1
             i = j; continue
         i += 1
+    # plain `open A B C` naming namespaces that no longer hold any declaration
+    for i in range(1, n + 1):
+        if not mask[i]: continue
+        m = re.match(r"^(\s*open\s+)([\w.]+(?:\s+[\w.]+)*)\s*$", src[i - 1])
+        if m and "(" not in src[i - 1]:
+            toks = m.group(2).split()
+            keep_toks = [t for t in toks if not (t.split(".")[-1] in deleted_ns and t.split(".")[-1] not in kept_ns)]
+            if not keep_toks:
+                mask[i] = False
+            elif len(keep_toks) != len(toks):
+                src[i - 1] = m.group(1) + " ".join(keep_toks)
     # `open X (a b ...)` selective opens (possibly spanning lines) may name deleted
     # declarations: drop those names (keeping the list selective, since widening
     # changes name resolution inside proofs)
@@ -191,7 +208,8 @@ for f in sorted(files):
         m = re.match(r"^(\s*attribute\s*\[[^\]]*\]\s*)(.*?)(\s+in)?\s*$", src[i - 1])
         if m:
             ids = m.group(2).split()
-            kept_ids = [x for x in ids if x.split(".")[-1] not in deleted_last]
+            kept_ids = [x for x in ids if not (x.split(".")[-1] in deleted_last or
+                        (x.split(".")[-1] in deleted_last_g and x.split(".")[-1] not in kept_last_g))]
             if not kept_ids:
                 mask[i] = False
             elif len(kept_ids) != len(ids):
