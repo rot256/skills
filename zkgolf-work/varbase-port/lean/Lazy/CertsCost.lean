@@ -1,4 +1,4 @@
-import Solution.Secp256k1ScalarMul.Lazy_Certs
+import Solution.Secp256k1ScalarMul.Lazy.Certs
 import Solution.Secp256k1ScalarMul.Lazy_Donor7
 
 /-! ## merged from `Lazy/CertsCost.lean` -/

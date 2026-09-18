@@ -1,5 +1,5 @@
 import Solution.Secp256k1ScalarMul.FusedStepTheorems
-import Solution.Secp256k1ScalarMul.Lazy_Certs
+import Solution.Secp256k1ScalarMul.Lazy.Certs
 
 /-! ## merged from `Lazy/StepMath.lean` -/
 section

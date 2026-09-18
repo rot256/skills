@@ -2,7 +2,7 @@ import Solution.Secp256k1ScalarMul.GLVScalarMulCWU1
 import Solution.Secp256k1ScalarMul.GLVScalarMulCWU2
 import Solution.Secp256k1ScalarMul.GLVScalarMulCWV1
 import Solution.Secp256k1ScalarMul.GLVScalarMulCWV2
-import Solution.Secp256k1ScalarMul.Lazy.LazyMSMCW
+import Solution.Secp256k1ScalarMul.Lazy.LazyMSMCost
 
 namespace Solution.Secp256k1ScalarMul
 

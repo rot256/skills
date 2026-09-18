@@ -1,6 +1,6 @@
-import Solution.Secp256k1ScalarMul.Lazy_StepCost
-import Solution.Secp256k1ScalarMul.Lazy_CertsCost
-import Solution.Secp256k1ScalarMul.Lazy_ProductsShape
+import Solution.Secp256k1ScalarMul.Lazy.StepCost
+import Solution.Secp256k1ScalarMul.Lazy.CertsCost
+import Solution.Secp256k1ScalarMul.Lazy.ProductsShape
 
 /-! Computable witnesses of one chain step. -/
 

@@ -1,4 +1,4 @@
-import Solution.Secp256k1ScalarMul.Lazy_Interval
+import Solution.Secp256k1ScalarMul.Lazy.Interval
 
 /-!
 # The seven sparse products of one chain step

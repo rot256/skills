@@ -39,7 +39,7 @@ theorem completeness : Completeness (F circomPrime) main Assumptions := by
   have hTab : ∀ X : Var GLVBuildTable.Inputs (F circomPrime),
       PatBuildTable.circuit.localLength X = 16366 := patBuildTable_localLength
   have hMSM : ∀ X : Var GLVMSM.Inputs (F circomPrime),
-      LazyMSM.circuit.localLength X = 104164 := lazyMSM_localLength
+      LazyMSM.circuit.localLength X = 103012 := lazyMSM_localLength
   simp only [main, mainOperations, mainOutput, opChain,
     qCircuit, qVar, pointValidCircuit, coeffCircuit, coeffVar,
     u1Circuit, u2Circuit, v1Circuit, v2Circuit, reduceCircuit, reduceVar,

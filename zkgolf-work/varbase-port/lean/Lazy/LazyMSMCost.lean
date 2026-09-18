@@ -1,7 +1,7 @@
-import Solution.Secp256k1ScalarMul.Lazy_LazyMSMFold
+import Solution.Secp256k1ScalarMul.Lazy.LazyMSMFold
 import Solution.Secp256k1ScalarMul.VarLookupCW
-import Solution.Secp256k1ScalarMul.Lazy_StepCost
-import Solution.Secp256k1ScalarMul.Lazy_StepCW
+import Solution.Secp256k1ScalarMul.Lazy.StepCost
+import Solution.Secp256k1ScalarMul.Lazy.StepCW
 
 /-! ## merged from `Lazy/LazyMSMCost.lean` -/
 section

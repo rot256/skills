@@ -1,5 +1,5 @@
-import Solution.Secp256k1ScalarMul.Lazy_Products
-import Solution.Secp256k1ScalarMul.Lazy_Interval
+import Solution.Secp256k1ScalarMul.Lazy.Products
+import Solution.Secp256k1ScalarMul.Lazy.Interval
 
 /-!
 # The four certificate slots of one chain step

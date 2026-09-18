@@ -1,6 +1,6 @@
-import Solution.Secp256k1ScalarMul.Lazy_LazyMSM
-import Solution.Secp256k1ScalarMul.Lazy_StepCost
-import Solution.Secp256k1ScalarMul.Lazy_ChainAlgebra
+import Solution.Secp256k1ScalarMul.Lazy.LazyMSM
+import Solution.Secp256k1ScalarMul.Lazy.StepCost
+import Solution.Secp256k1ScalarMul.Lazy.ChainAlgebra
 
 /-! ## merged from `Lazy/LazyMSMFold.lean` -/
 section

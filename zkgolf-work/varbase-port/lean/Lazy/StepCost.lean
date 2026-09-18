@@ -1,6 +1,6 @@
-import Solution.Secp256k1ScalarMul.Lazy_Step
-import Solution.Secp256k1ScalarMul.Lazy_CertsCost
-import Solution.Secp256k1ScalarMul.Lazy_ProductsShape
+import Solution.Secp256k1ScalarMul.Lazy.Step
+import Solution.Secp256k1ScalarMul.Lazy.CertsCost
+import Solution.Secp256k1ScalarMul.Lazy.ProductsShape
 
 /-! ## merged from `Lazy/StepCost.lean` -/
 section

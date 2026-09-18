@@ -269,7 +269,7 @@ def shortOffset (i₀ : ℕ) : ℕ := coeffOffset i₀ + 260
 def relationOffset (i₀ : ℕ) : ℕ := shortOffset i₀ + 0
 def tableOffset (i₀ : ℕ) : ℕ := relationOffset i₀ + 865
 def msmOffset (i₀ : ℕ) : ℕ := tableOffset i₀ + 16366
-def outOffset (i₀ : ℕ) : ℕ := msmOffset i₀ + 104164
+def outOffset (i₀ : ℕ) : ℕ := msmOffset i₀ + 103012
 
 def qCircuit (input : Var ScalarMul.Inputs (F circomPrime)) :
     Circuit (F circomPrime) (Var FlaggedPoint (F circomPrime)) :=
@@ -587,7 +587,7 @@ theorem patBuildTable_localLength
 
 theorem lazyMSM_localLength
     (input : Var GLVMSM.Inputs (F circomPrime)) :
-    LazyMSM.circuit.localLength input = 104164 :=
+    LazyMSM.circuit.localLength input = 103012 :=
   LazyMSM.circuit_localLength input
 
 private theorem opChain_localLength
@@ -602,9 +602,9 @@ private theorem opChain_localLength
     (hreduce : reduce.localLength = 0)
     (hrel : rel.localLength = 865)
     (htable : table.localLength = 16366)
-    (hmsm : msm.localLength = 104164)
+    (hmsm : msm.localLength = 103012)
     (hinf : inf.localLength = 0) :
-    (opChain q pv c u1 u2 v1 v2 reduce rel table msm inf).localLength = 122710 := by
+    (opChain q pv c u1 u2 v1 v2 reduce rel table msm inf).localLength = 121558 := by
   unfold opChain
   simp only [Operations.append_localLength, hq, hpv, hc, hu1, hu2, hv1, hv2,
     hreduce, hrel, htable, hmsm, hinf]
@@ -690,7 +690,7 @@ theorem tableCircuit_localLength
 
 theorem msmCircuit_localLength
     (input : Var ScalarMul.Inputs (F circomPrime)) (offset : ℕ) :
-    ((msmCircuit input offset).operations (msmOffset offset)).localLength = 104164 := by
+    ((msmCircuit input offset).operations (msmOffset offset)).localLength = 103012 := by
   simpa only [msmCircuit] using
     (generalFormalCircuitCall_localLength LazyMSM.circuit
       { tx := (tableVar input offset).tx
@@ -709,7 +709,7 @@ theorem infinityCircuit_localLength
 
 private theorem mainOperationsLocalLengthEq
     (input : Var ScalarMul.Inputs (F circomPrime)) (offset : ℕ) :
-    (mainOperations input offset).localLength = 122710 := by
+    (mainOperations input offset).localLength = 121558 := by
   change
     (opChain ((qCircuit input).operations offset)
       ((pointValidCircuit input offset).operations (pvOffset offset))
@@ -722,7 +722,7 @@ private theorem mainOperationsLocalLengthEq
       ((relationCircuit input offset).operations (relationOffset offset))
       ((tableCircuit input offset).operations (tableOffset offset))
       ((msmCircuit input offset).operations (msmOffset offset))
-      ((infinityCircuit input offset).operations (outOffset offset))).localLength = 122710
+      ((infinityCircuit input offset).operations (outOffset offset))).localLength = 121558
   exact opChain_localLength
     (qCircuit_localLength input offset)
     (pointValidCircuit_localLength input offset)
@@ -739,8 +739,8 @@ private theorem mainOperationsLocalLengthEq
 
 private theorem elaboratedLocalLengthEq
     (input : Var ScalarMul.Inputs (F circomPrime)) (offset : ℕ) :
-    (main input).localLength offset = 122710 := by
-  change (mainOperations input offset).localLength = 122710
+    (main input).localLength offset = 121558 := by
+  change (mainOperations input offset).localLength = 121558
   exact mainOperationsLocalLengthEq input offset
 
 private theorem qCircuit_subcircuitsConsistent
@@ -980,7 +980,7 @@ theorem elaboratedChannelsLawful :
 
 noncomputable instance elaborated :
     ElaboratedCircuit (F circomPrime) ScalarMul.Inputs ScalarMul.Outputs main where
-  localLength _ := 122710
+  localLength _ := 121558
   localLength_eq := elaboratedLocalLengthEq
   output _ i₀ :=
     outputFromValidated
@@ -1060,7 +1060,7 @@ private theorem mainConstraints_shape
   have hTab : ∀ X : Var GLVBuildTable.Inputs (F circomPrime),
       PatBuildTable.circuit.localLength X = 16366 := patBuildTable_localLength
   have hMSM : ∀ X : Var GLVMSM.Inputs (F circomPrime),
-      LazyMSM.circuit.localLength X = 104164 := lazyMSM_localLength
+      LazyMSM.circuit.localLength X = 103012 := lazyMSM_localLength
   simp only [MainHolds, main, mainOperations, mainOutput, opChain,
     qCircuit, qVar, pointValidCircuit, coeffCircuit, coeffVar,
     u1Circuit, u2Circuit, v1Circuit, v2Circuit, reduceCircuit, reduceVar,
@@ -1174,7 +1174,7 @@ theorem soundness : Soundness (F circomPrime) main Assumptions Spec := by
   have hTab : ∀ X : Var GLVBuildTable.Inputs (F circomPrime),
       PatBuildTable.circuit.localLength X = 16366 := patBuildTable_localLength
   have hMSM : ∀ X : Var GLVMSM.Inputs (F circomPrime),
-      LazyMSM.circuit.localLength X = 104164 := lazyMSM_localLength
+      LazyMSM.circuit.localLength X = 103012 := lazyMSM_localLength
   simp only [main, mainOperations, mainOutput, opChain,
     qCircuit, qVar, pointValidCircuit, coeffCircuit, coeffVar,
     u1Circuit, u2Circuit, v1Circuit, v2Circuit, reduceCircuit, reduceVar,

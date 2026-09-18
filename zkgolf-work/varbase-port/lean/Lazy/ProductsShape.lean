@@ -1,7 +1,7 @@
-import Solution.Secp256k1ScalarMul.Lazy_Products
+import Solution.Secp256k1ScalarMul.Lazy.Products
 import Solution.Secp256k1ScalarMul.Lazy_Donor7
-import Solution.Secp256k1ScalarMul.Lazy_Interval
-import Solution.Secp256k1ScalarMul.Lazy_MuxVec
+import Solution.Secp256k1ScalarMul.Lazy.Interval
+import Solution.Secp256k1ScalarMul.Lazy.MuxVec
 
 /-! ## merged from `Lazy/ProductsShape.lean` -/
 section

@@ -29,8 +29,8 @@ noncomputable instance elaborated :
     ElaboratedCircuit (F Interface.circomPrime) Interface.Input Interface.Output main := by
   elaborate_circuit_naive
 
-@[reducible] def allocations : Nat := 122710
-@[reducible] def constraints : Nat := 123688
+@[reducible] def allocations : Nat := 121558
+@[reducible] def constraints : Nat := 122536
 
 private theorem interfaceSpec_of_scalarSpec
     {input : Interface.Input (F Interface.circomPrime)}

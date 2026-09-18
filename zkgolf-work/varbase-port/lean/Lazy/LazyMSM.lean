@@ -1,6 +1,6 @@
-import Solution.Secp256k1ScalarMul.Lazy_Step
-import Solution.Secp256k1ScalarMul.Lazy_StepCost
-import Solution.Secp256k1ScalarMul.Lazy_ChainAlgebra
+import Solution.Secp256k1ScalarMul.Lazy.Step
+import Solution.Secp256k1ScalarMul.Lazy.StepCost
+import Solution.Secp256k1ScalarMul.Lazy.ChainAlgebra
 import Solution.Secp256k1ScalarMul.VarLookup
 
 /-!

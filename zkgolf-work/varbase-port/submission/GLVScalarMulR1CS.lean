@@ -108,7 +108,7 @@ private theorem isR1CS_glvTailFrom
   let iRel : ℕ := iShort + 0
   let iTable : ℕ := iRel + 865
   let iMSM : ℕ := iTable + 16366
-  let iOut : ℕ := iMSM + 104164
+  let iOut : ℕ := iMSM + 103012
   let qC : Circuit CF (Var FlaggedPoint CF) :=
     ProvableType.witness (F := CF) (α := FlaggedPoint)
       (GLVScalarMul.resultWitness input)

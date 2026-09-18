@@ -30,7 +30,7 @@ open Challenge.CostR1CS
 
 attribute [local irreducible] isR1CSRow r1csProducts operationsIsR1CS flatOperationsIsR1CS
 
-def glvScalarMulCost : Count := ⟨122710, 123688⟩
+def glvScalarMulCost : Count := ⟨121558, 122536⟩
 
 theorem costIs_glvScalarMul (input : Var ScalarMul.Inputs (CF)) :
     CostIs (GLVScalarMul.main input) glvScalarMulCost := by
@@ -227,7 +227,7 @@ noncomputable def glvTailFromOps
   let iRel : ℕ := iShort + 0
   let iTable : ℕ := iRel + 865
   let iMSM : ℕ := iTable + 16366
-  let iOut : ℕ := iMSM + 104164
+  let iOut : ℕ := iMSM + 103012
   let qC : Circuit CF (Var FlaggedPoint CF) :=
     ProvableType.witness (F := CF) (α := FlaggedPoint)
       (GLVScalarMul.resultWitness input)
