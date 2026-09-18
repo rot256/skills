@@ -33,18 +33,27 @@ buildtest() {  # $1 = package dir, $2 = log
   grep -q "Build completed" "$2"
 }
 
-echo "=== stage 1"
-seedloop $MAIN $ROOT/out/varbase-submission $S/stage1 $S/seeds1.txt
-if ! buildtest $S/stage1 $S/build_stage1.out; then
-  echo "=== stage 1 fixups"
-  (cd $ROOT && python3 varbase-port/fixup.py $S/build_stage1.out $S/stage1 | tail -3)
-  buildtest $S/stage1 $S/build_stage1b.out || { echo "STAGE 1 FAILED"; exit 1; }
+fixloop() {  # $1 = package dir, $2 = log prefix : build, apply fixups, rebuild (up to 6 rounds)
+  for r in 1 2 3 4 5 6; do
+    if buildtest "$1" "$2_$r.out"; then return 0; fi
+    echo "=== fixups round $r"
+    (cd $ROOT && python3 varbase-port/fixup.py "$2_$r.out" "$1" | tail -3) | tee $S/fix_$(basename "$1")_$r.txt
+    grep -q "^fixed" $S/fix_$(basename "$1")_$r.txt || { echo "no fixup applicable"; return 1; }
+  done
+  return 1
+}
+
+START=${START:-stage1}
+if [ "$START" = stage1 ]; then
+  echo "=== stage 1"
+  seedloop $MAIN $ROOT/out/varbase-submission $S/stage1 $S/seeds1.txt
 fi
-echo "=== stage 2"
-seedloop $TEST $S/stage1 $S/stage2 $S/seeds2.txt
-if ! buildtest $S/stage2 $S/build_stage2.out; then
-  echo "=== stage 2 fixups"
-  (cd $ROOT && python3 varbase-port/fixup.py $S/build_stage2.out $S/stage2 | tail -3)
-  buildtest $S/stage2 $S/build_stage2b.out || { echo "STAGE 2 FAILED"; exit 1; }
+if [ "$START" = stage1 ] || [ "$START" = fix1 ]; then
+  fixloop $S/stage1 $S/build_stage1 || { echo "STAGE 1 FAILED"; exit 1; }
 fi
+if [ "$START" != fix2 ]; then
+  echo "=== stage 2"
+  seedloop $TEST $S/stage1 $S/stage2 $S/seeds2.txt
+fi
+fixloop $S/stage2 $S/build_stage2 || { echo "STAGE 2 FAILED"; exit 1; }
 echo "=== done: $(ls $S/stage2 | wc -l) files, $(du -sh $S/stage2 | cut -f1)"
