@@ -30,6 +30,12 @@ for line in open(RANGES):
         mods.add(flat(p[1]))
 
 orig_keep = {m: set(v) for m, v in keepr.items()}
+last_count = {}
+for _f, _rs in names.items():
+    for _r, _ns in _rs.items():
+        for _n in _ns:
+            _l = _n.split(".")[-1]
+            last_count[_l] = last_count.get(_l, 0) + 1
 
 def real_name(n):
     # strip private-name mangling `_private.<mod>.0.<name>`
@@ -80,8 +86,9 @@ for _round in range(4):
                 parts = n.split(".")
                 last = parts[-1]
                 if last.startswith("_") or last in ("mk", "rec", "recOn", "casesOn", "noConfusion", "injEq", "sizeOf_spec"): continue
-                if rfl_body and size <= 3 and (last in kept_tokens_mod.get(f, set()) or last in kept_last_tokens_all):
-                    hit = True; break   # rule A: reference (anywhere) to a rfl helper
+                if rfl_body and size <= 3 and (last in kept_tokens_mod.get(f, set()) or
+                        (last in kept_last_tokens_all and last_count.get(last, 0) == 1)):
+                    hit = True; break   # rule A: reference to a rfl helper (anywhere, if the name is unique)
                 if len(parts) >= 2 and ".".join(parts[-2:]) in kept_tokens_all:
                     hit = True; break   # rule B: qualified reference anywhere
             if hit:
