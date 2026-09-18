@@ -232,17 +232,29 @@ for f in sorted(files):
         if (s0, e0) in keep: continue
         for nm in ns:
             deleted_last.add(real_name(nm).split(".")[-1])
-    for i in range(1, n + 1):
-        if not mask[i]: continue
-        m = re.match(r"^(\s*attribute\s*\[[^\]]*\]\s*)(.*?)(\s+in)?\s*$", src[i - 1])
+    i = 1
+    while i <= n:
+        if not mask[i]:
+            i += 1; continue
+        m = re.match(r"^(\s*attribute\s*\[[^\]]*\]\s*)(.*?)\s*$", src[i - 1])
         if m:
-            ids = m.group(2).split()
+            j = i
+            while j < n and src[j].strip() != "" and src[j][0] in " \t":
+                j += 1
+            text = " ".join([m.group(2)] + [src[q].strip() for q in range(i, j)])
+            trailing_in = text.rstrip().endswith(" in") or text.strip() == "in"
+            if trailing_in:
+                text = text.rstrip()[:-2].rstrip() if text.strip() != "in" else ""
+            ids = text.split()
             kept_ids = [x for x in ids if not (x.split(".")[-1] in deleted_last or
                         (x.split(".")[-1] in deleted_last_g and x.split(".")[-1] not in kept_last_g))]
             if not kept_ids:
-                mask[i] = False
-            elif len(kept_ids) != len(ids):
-                src[i - 1] = m.group(1) + " ".join(kept_ids) + (m.group(3) or "")
+                for q in range(i, j + 1): mask[q] = False
+            else:
+                src[i - 1] = m.group(1) + " ".join(kept_ids) + (" in" if trailing_in else "")
+                for q in range(i + 1, j + 1): mask[q] = False
+            i = j + 1; continue
+        i += 1
     # dangling `... in` prefixes and orphan doc comments above deleted blocks
     i = 1
     while i <= n:
