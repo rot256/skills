@@ -1,4 +1,4 @@
 9a4b1337-bed8-4aa9-a0ff-cdb89b2052ec  2026-09-18  varbase lazy chain  122710/123688 = 246398  FAILED: comparator (statement used fixed-base donor Fact instance)
 94bbfb27-c09d-46a3-b791-24dadc619946  2026-09-18  varbase lazy chain + quadratic fusion  121558/122536 = 244094  (same instance bug, expected to fail)
 0a754ef8-6c6c-4bb4-ad2a-845082ee56c1  2026-09-18  fused, instance pinned  121558/122536 = 244094  TIMEOUT: verifier limit is 20 min per job; build of the 190-file package alone took ~16.5 min there
-8cd30848-e868-44c6-95f3-469651763a4b  2026-09-18  fused, instance pinned, declaration-level pruned package (156 files, 2.7 MB, serial compile 1612 s locally)  121558/122536 = 244094  (pending)
+8cd30848-e868-44c6-95f3-469651763a4b  2026-09-18  fused, instance pinned, pruned package (156 files)  121558/122536 = 244094  VERIFIED, RECORD (verified 05:10:37, job ~17 min)
