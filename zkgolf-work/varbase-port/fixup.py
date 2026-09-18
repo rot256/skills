@@ -26,15 +26,15 @@ for f, line, col, ident in errs:
     t = src[line - 1]
     # the identifier must sit inside a bracket list on this line (or a continuation line)
     before = t[:col]
-    if "[" not in before and not t.lstrip().startswith(("Mux", "Mul", "Is", "Div", "Comp")) and not re.match(r"^\s+[\w.]+[,\]]", t):
+    if "[" not in before and not re.match(r"^\s+[\w.'!?]+\s*[,\]]", t):
         continue
-    pat = re.compile(r"(?<![\w.])" + re.escape(ident) + r"(?![\w.])")
+    pat = re.compile(r"(?<![\w.'])" + re.escape(ident) + r"(?![\w.'])")
     if not pat.search(t):
         continue
     # remove `ident,` or `, ident` or a lone `ident`
-    t2 = re.sub(r"(?<![\w.])" + re.escape(ident) + r"(?![\w.])\s*,\s*", "", t, count=1)
+    t2 = re.sub(r"(?<![\w.'])" + re.escape(ident) + r"(?![\w.'])\s*,\s*", "", t, count=1)
     if t2 == t:
-        t2 = re.sub(r",\s*(?<![\w.])" + re.escape(ident) + r"(?![\w.])", "", t, count=1)
+        t2 = re.sub(r",\s*(?<![\w.'])" + re.escape(ident) + r"(?![\w.'])", "", t, count=1)
     if t2 == t:
         t2 = pat.sub("", t, count=1)
     if t2 != t:
