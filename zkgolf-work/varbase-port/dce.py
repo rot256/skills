@@ -120,8 +120,8 @@ for f in files:
             parts = real_name(nm).split(".")
             if len(parts) >= 2: tgt.add(".".join(parts[-2:]))
             (kept_last_g if kept_here else deleted_last_g).add(parts[-1])
-            for j in range(1, len(parts)):
-                (kept_ns if kept_here else deleted_ns).add(parts[j - 1])
+            if len(parts) >= 4:   # Solution.<Instance>.<Namespace>.<...>
+                (kept_ns if kept_here else deleted_ns).add(parts[2])
 for f in sorted(files):
     src = open(os.path.join(SRC, f + ".lean")).read().split("\n")
     imports_of[f] = [re.match(r"import " + re.escape(ROOT) + r"(\S+)", l).group(1)
