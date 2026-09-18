@@ -39,10 +39,20 @@ run_meta do
         members := members.insert key ((members.getD key #[]).push c)
         allRanges := allRanges.insert m ((allRanges.getD m {}).insert (key.2.1, key.2.2))
       | none => noRange := noRange.push (m, c)
-  -- closure
+  -- closure; extra seeds `Module:startLine,...` from DCE_EXTRA (textual keeps found by dce.py)
+  let extra := ((← IO.getEnv "DCE_EXTRA").getD "").splitOn "," |>.filter (· ≠ "")
+  let mut seeds : Array Name := #[]
+  for ex in extra do
+    match ex.splitOn ":" with
+    | [modS, lineS] =>
+      let modN := modS.toName
+      let line := lineS.toNat!
+      for (key, mem) in members.toList do
+        if key.1 == modN && key.2.1 == line then seeds := seeds ++ mem
+    | _ => pure ()
   let mut seen : NameSet := {}
   let mut keptKeys : Std.HashSet (Name × Nat × Nat) := {}
-  let mut stack : List Name := roots
+  let mut stack : List Name := roots ++ seeds.toList
   while !stack.isEmpty do
     let n := stack.head!
     stack := stack.tail!

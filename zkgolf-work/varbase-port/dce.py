@@ -29,6 +29,8 @@ for line in open(RANGES):
     elif p[0] == "SUMMARY":
         mods.add(flat(p[1]))
 
+orig_keep = {m: set(v) for m, v in keepr.items()}
+
 def real_name(n):
     # strip private-name mangling `_private.<mod>.0.<name>`
     if n.startswith("_private."):
@@ -63,24 +65,42 @@ for _round in range(4):
     for f in srcs:
         for r, ns in names.get(f, {}).items():
             if r in keepr.get(f, set()): continue
-            if r[1] - r[0] > 3: continue   # only small helpers (rfl lemmas, abbrevs)
+            size = r[1] - r[0] + 1
+            if size > 6: continue   # only small helpers
             body = "\n".join(srcs[f][r[0] - 1:r[1]])
-            if not re.search(r":=\s*(by\s+)?rfl\b|^\s*(@\[[^\]]*\]\s*)?(private\s+|protected\s+)?(abbrev|notation|macro)\b", body, re.M):
-                continue
+            rfl_body = re.search(r":=\s*(by\s+)?rfl\b|^\s*(@\[[^\]]*\]\s*)?(private\s+|protected\s+)?(abbrev|notation|macro)\b", body, re.M) is not None
+            attributed = re.search(r"@\[[^\]]*(simp|circuit_norm|reducible)", body) is not None
             hit = False
+            if rfl_body and attributed and size <= 4:
+                hit = True   # rule C: simp-set rfl lemmas act invisibly through dsimp
             for n in ns:
+                if hit: break
                 n = real_name(n)
                 parts = n.split(".")
                 last = parts[-1]
                 if last.startswith("_") or last in ("mk", "rec", "recOn", "casesOn", "noConfusion", "injEq", "sizeOf_spec"): continue
-                if last in kept_tokens_mod.get(f, set()):
-                    hit = True; break
+                if rfl_body and size <= 3 and last in kept_tokens_mod.get(f, set()):
+                    hit = True; break   # rule A: same-module reference to a rfl helper
                 if len(parts) >= 2 and ".".join(parts[-2:]) in kept_tokens_all:
-                    hit = True; break
+                    hit = True; break   # rule B: qualified reference anywhere
             if hit:
                 keepr.setdefault(f, set()).add(r); added += 1
     print(f"textual keep round {_round}: +{added} declarations")
     if added == 0: break
+# textual keeps must be closed under dependencies by the Lean side: emit them as seeds
+extra_path = os.environ.get("DCE_EXTRA_OUT")
+if extra_path:
+    old = set(open(extra_path).read().split(",")) if os.path.exists(extra_path) else set()
+    old.discard("")
+    new = set()
+    for f, rs in keepr.items():
+        for (s0, e0) in rs:
+            if (s0, e0) not in orig_keep.get(f, set()):
+                mod = ROOT + (f if f.startswith("Lazy_Donor") or not f.startswith("Lazy_") else "Lazy." + f[5:])
+                new.add(f"{mod}:{s0}")
+    allx = old | new
+    open(extra_path, "w").write(",".join(sorted(allx)))
+    print(f"textual seeds: {len(new - old)} new, {len(allx)} total -> {extra_path}")
 
 files = {f[:-5] for f in os.listdir(SRC) if f.endswith(".lean")}
 shutil.rmtree(OUT, ignore_errors=True)
