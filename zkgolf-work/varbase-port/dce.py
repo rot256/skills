@@ -109,12 +109,13 @@ os.makedirs(OUT)
 deleted = set()
 imports_of = {}
 stats = []
-deleted_last_all = set()
+deleted_q2, kept_q2 = set(), set()
 for f in files:
     for (s0, e0), ns in names.get(f, {}).items():
-        if (s0, e0) in keepr.get(f, set()): continue
+        tgt = kept_q2 if (s0, e0) in keepr.get(f, set()) else deleted_q2
         for nm in ns:
-            deleted_last_all.add(real_name(nm).split(".")[-1])
+            parts = real_name(nm).split(".")
+            if len(parts) >= 2: tgt.add(".".join(parts[-2:]))
 for f in sorted(files):
     src = open(os.path.join(SRC, f + ".lean")).read().split("\n")
     imports_of[f] = [re.match(r"import " + re.escape(ROOT) + r"(\S+)", l).group(1)
@@ -171,7 +172,9 @@ for f in sorted(files):
                 j += 1
             text = "\n".join(src[i - 1:j])
             inner = text[text.index("(") + 1:text.rindex(")")]
-            ids = [x for x in inner.split() if x.split(".")[-1] not in deleted_last_all]
+            ns_last = m.group(1).split()[-1].split(".")[-1]
+            ids = [x for x in inner.split()
+                   if not (ns_last + "." + x in deleted_q2 and ns_last + "." + x not in kept_q2)]
             src[i - 1] = m.group(1) + ((" (" + " ".join(ids) + ")") if ids else "")
             for q in range(i + 1, j + 1):
                 mask[q] = False
