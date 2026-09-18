@@ -216,8 +216,11 @@ for f in sorted(files):
             text = "\n".join(src[i - 1:j])
             inner = text[text.index("(") + 1:text.rindex(")")]
             ns_last = m.group(1).split()[-1].split(".")[-1]
-            ids = [x for x in inner.split()
-                   if not (ns_last + "." + x in deleted_q2 and ns_last + "." + x not in kept_q2)]
+            def dead_open(x):
+                full = ns_last + "." + x
+                q = ".".join(full.split(".")[-2:])
+                return q in deleted_q2 and q not in kept_q2
+            ids = [x for x in inner.split() if not dead_open(x)]
             if ids:
                 src[i - 1] = m.group(1) + " (" + " ".join(ids) + ")"
             else:
